@@ -1,5 +1,7 @@
 from pathlib import Path
 import pandas as pd
+
+from attack_graph.output_contracts import safe_artifact_stem
 import json
 import streamlit as st
 from langchain_core.messages import HumanMessage
@@ -330,7 +332,8 @@ factor_h = selected_row.get('host_involvement_factor', float('nan'))
 factor_t = selected_row.get('temporal_correlation_factor', float('nan'))
 
 # Check if Markdown report file exists in outputs folder
-report_file_path = Path(f"outputs/agentic_investigation_output/report_{selected_event_id}.md")
+safe_event_stem = safe_artifact_stem(selected_event_id)
+report_file_path = Path("outputs/agentic_investigation_output") / f"report_{safe_event_stem}.md"
 report_content = ""
 if report_file_path.exists():
     try:
@@ -378,10 +381,10 @@ with tab1:
                     output_dir = Path("outputs/agentic_investigation_output")
                     output_dir.mkdir(parents=True, exist_ok=True)
 
-                    json_file_path = output_dir / f"investigation_{selected_event_id}.json"
+                    json_file_path = output_dir / f"investigation_{safe_event_stem}.json"
                     json_file_path.write_text(investigation_json_str, encoding="utf-8")
 
-                    md_file_path = output_dir / f"report_{selected_event_id}.md"
+                    md_file_path = output_dir / f"report_{safe_event_stem}.md"
                     md_file_path.write_text(report_content, encoding="utf-8")
 
                     st.success("Evidence review generated and saved.")
@@ -407,16 +410,16 @@ with tab1:
             st.download_button(
                 label="Download Report as Markdown (.md)",
                 data=report_content,
-                file_name=f"report_{selected_event_id}.md",
+                file_name=f"report_{safe_event_stem}.md",
                 mime="text/markdown"
             )
         with col_d2:
-            json_file = Path(f"outputs/agentic_investigation_output/investigation_{selected_event_id}.json")
+            json_file = Path("outputs/agentic_investigation_output") / f"investigation_{safe_event_stem}.json"
             json_data = json_file.read_text(encoding="utf-8") if json_file.exists() else "{}"
             st.download_button(
                 label="Download Report as JSON (.json)",
                 data=json_data,
-                file_name=f"investigation_{selected_event_id}.json",
+                file_name=f"investigation_{safe_event_stem}.json",
                 mime="application/json"
             )
     else:
