@@ -1,40 +1,66 @@
-# Generated outputs
+# Generated outputs and runtime workflows
 
-This directory contains representative investigation reports and incident-risk results.
+This directory is the runtime output location for the metadata-rich detection, event-correlation, graph, risk-triage and investigation workflows. Large datasets and environment secrets must stay outside version control.
 
-## Generate detection, events and graph outputs
+## 1. Train and evaluate the detector (benchmark mode)
 
-Run the metadata-rich CICIDS2017 CSV pipeline:
+Use metadata-rich CICIDS2017 CSV files with timestamps, source/destination addresses, protocol, numeric flow features and a ground-truth `Label` column:
 
 ```bash
-python attack_graph/if_attack_graph_pipeline.py /path/to/metadata-rich-csvs --output-dir outputs
+python attack_graph/if_attack_graph_pipeline.py /path/to/metadata-rich-csvs \
+  --mode benchmark \
+  --output-dir outputs \
+  --benign-sample-n 500000 \
+  --calibration-rows 5000 \
+  --evaluation-rows 160000 \
+  --calibration-quantile 0.05
 ```
 
-By default, the pipeline reads all rows from the input CSV files. The `--nrows` option is only for quick smoke tests because reading a prefix of each file is not suitable for temporal or incident analysis.
+By default, the pipeline reads all rows. A positive `--nrows` is only for quick smoke tests; reading a prefix of each file is not suitable for temporal or incident analysis.
 
-Required metadata includes timestamps, source and destination addresses, protocol and flow-level numeric features. Ground-truth `Label` is kept separate from model features and is never used to decide which events the detector flags or how events are grouped.
+Benchmark mode uses labels only to construct benign-only fit/calibration pools and for held-out evaluation. Labels are not numeric features, detector predictions, event-group keys, graph classifications or risk weights.
 
-The detection pipeline:
-- splits benign data into disjoint fit, calibration and held-out evaluation groups;
-- groups exact duplicate numeric feature vectors so they cannot cross these partitions;
-- fits the median imputer and Isolation Forest on the benign training partition only;
-- calibrates the anomaly threshold using held-out benign calibration rows only;
-- evaluates on held-out benign rows plus attack rows with no exact feature-hash overlap with fit/calibration;
-- creates suspicious-flow outputs and downstream events/graphs only from the held-out evaluation rows.
+The fit, calibration and evaluation roles are separated by exact numeric-feature hashes:
+- fit: benign-only training groups;
+- calibration: benign-only held-out groups for the threshold;
+- evaluation: held-out benign groups plus attack rows whose exact feature hash does not occur in fit/calibration.
 
-Generated files:
-- `suspicious_flows_with_metadata.csv` — held-out flows flagged by the detector, with ground-truth labels retained only for offline evaluation.
-- `detection_metrics.json` — held-out ROC-AUC, Average Precision, precision, recall, F1, FPR/FNR and confusion counts.
-- `per_attack_detection_evaluation.csv` — per-attack recall with support.
-- `attack_events.csv` — label-independent flow groups; attack type remains Unclassified unless a separate classifier provides a prediction.
-- `incident_groups.csv` — candidate multi-event groups formed from shared-host temporal-correlation edges. Each group requires analyst validation and is not a confirmed campaign.
+The median imputer and Isolation Forest are fitted on the benign training sample only. The benchmark output includes a reusable `isolation_forest_model.joblib` artifact containing the fitted detector, imputer, feature order, benign-calibrated threshold and calibration score quantiles. **Joblib artifacts are executable pickle-based files; load only artifacts from a trusted project environment.**
+
+## 2. Score unlabeled network traffic (inference mode)
+
+After a benchmark model artifact exists, a new metadata-rich CSV directory can be scored without any ground-truth `Label` column:
+
+```bash
+python attack_graph/if_attack_graph_pipeline.py /path/to/unlabeled-flow-csvs \
+  --mode infer \
+  --model-artifact outputs/isolation_forest_model.joblib \
+  --output-dir outputs
+```
+
+Inference mode:
+- does not require or read ground-truth labels;
+- applies the stored imputer and feature order from training;
+- applies the stored threshold calibrated on benign validation traffic;
+- uses only `predicted_anomaly` to select suspicious flows;
+- leaves attack type as `Unclassified` unless a separate classifier supplies `predicted_attack_type`.
+
+Inference requires the same numeric feature schema and the metadata fields needed for event grouping (timestamp, source/destination and protocol). Missing or incompatible feature columns cause an explicit error rather than a silent feature substitution.
+
+## 3. Generated files
+
+Detection/graph outputs:
+- `isolation_forest_model.joblib` — reusable fitted detector and preprocessing/threshold artifact (benchmark mode).
+- `suspicious_flows_with_metadata.csv` — held-out benchmark detections or unlabeled inference detections.
+- `detection_metrics.json` — held-out benchmark metrics (benchmark mode only).
+- `per_attack_detection_evaluation.csv` — per-attack held-out recall/support (benchmark mode only).
+- `attack_events.csv` — label-independent time/connection event groups.
+- `incident_groups.csv` — candidate multi-event groups from shared-host temporal-correlation edges. These require analyst validation and do not prove causality.
 - `attack_graph.gexf` — full host/event/incident graph.
 - `attack_graph.png` — deterministic visual sample if the graph is too large for one layout.
-- `pipeline_summary.json` — thresholds, calibration distribution, split counts, overlap checks, metrics, graph counts and run metadata.
+- `pipeline_summary.json` — split, threshold, model, detection, event and graph metadata.
 
-## Generate event and incident triage scores
-
-Risk scoring is a separate step:
+Risk triage is a separate step:
 
 ```bash
 python risk_analyzer.py \
@@ -44,13 +70,13 @@ python risk_analyzer.py \
 ```
 
 This generates:
-- `event_risk_scores.csv` — transparent, heuristic event triage index, not an incident probability.
-- `incident_risk_scores.csv` — maximum available event triage index per candidate incident, clearly marked as an unconfirmed correlation requiring analyst review.
+- `event_risk_scores.csv` — transparent heuristic event triage index, not a calibrated incident probability.
+- `incident_risk_scores.csv` — maximum available event triage index per candidate incident, marked as an unconfirmed correlation requiring analyst review.
 
-The score uses observed anomaly scores relative to the benign calibration distribution, event volume, host involvement and temporal links where available. Missing factors are omitted and remaining configured weights are renormalised. At least two factors are required; otherwise the item is marked UNASSESSED. Current weights and normalisation caps are engineering defaults, not statistically learned or validated risk probabilities.
+The risk index uses anomaly scores relative to the benign calibration distribution, event volume, host involvement and temporal links where available. Missing factors are omitted and remaining configured weights renormalised. At least two factors are required; otherwise an item is `UNASSESSED`. Current weights and normalisation caps are engineering defaults—not statistically learned or validated risk probabilities.
 
-## Investigation reports
+## 4. Investigation reports
 
-The application can generate evidence-grounded investigation reports using the retrieved event, flow, host and graph tools. Reports distinguish observed facts from hypotheses and explicitly state unknown fields. Analyst review is required before containment or other operational action.
+The agentic investigator retrieves event, flow, host and graph evidence through predefined tools. Its report renderer is deterministic and reports unknown fields explicitly. Tool-grounded prompts and formatting reduce unsupported statements but do not prove LLM factual accuracy; independent analyst review remains required before containment or other operational action.
 
-The JSON investigation examples and Markdown reports in this directory are representative project outputs, not a substitute for running the workflow against the event data being investigated.
+The JSON investigation examples and Markdown reports in this directory are representative outputs, not a substitute for running the workflow against the traffic data being investigated.
