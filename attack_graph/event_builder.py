@@ -80,10 +80,13 @@ def validate_event_input(df: pd.DataFrame, require_metadata: bool = True) -> dic
 
 
 def _truthy(series: pd.Series) -> pd.Series:
+    """Parse boolean, textual and numeric 1/0 prediction flags consistently."""
     if pd.api.types.is_bool_dtype(series):
         return series.fillna(False)
-    values = series.astype(str).str.strip().str.casefold()
-    return values.isin({"1", "true", "yes", "y", "attack", "anomaly"})
+    values = series.astype("string").str.strip().str.casefold()
+    textual = values.isin({"true", "yes", "y", "attack", "anomaly"})
+    numeric = pd.to_numeric(series, errors="coerce").eq(1).fillna(False)
+    return textual | numeric
 
 
 def _event_key_columns(work: pd.DataFrame, config: EventConfig) -> list[str]:
