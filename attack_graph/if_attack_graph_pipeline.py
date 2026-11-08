@@ -634,7 +634,7 @@ def run(
     calibration_hashes = set(hashes[chosen_calibration_positions].tolist())
     test_hashes = set(hashes[evaluation_positions].tolist())
     summary = {
-        "pipeline_version": "2.1",
+        "pipeline_version": "2.2",
         "dataset_rows": int(len(work)),
         "missing_or_blank_label_rows_excluded": missing_label_rows,
         "feature_count": int(len(feature_columns)),
@@ -643,6 +643,9 @@ def run(
             str(k): int(v) for k, v in labels.value_counts().items()
         },
         "data_split": split_metadata,
+        "cross_day_generalisation_established": (
+            split_metadata.get("strategy") == "chronological_calendar_day_holdout"
+        ),
         "attack_evaluation_selection": attack_split_description,
         "benign_train_pool_unique_rows": int(len(unique_train_pool)),
         "benign_training_rows_used": int(len(chosen_train_positions)),
