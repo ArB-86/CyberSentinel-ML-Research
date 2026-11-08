@@ -12,9 +12,9 @@ This folder contains the literature review, baseline audit, experimental protoco
 - [Scaling validation protocol](SCALING_VALIDATION_PROTOCOL.md) — paired 5k/25k/50k training-size study.
 - [Scaling validation results](SCALING_VALIDATION_RESULTS.md) — measured mean/std, per-model trade-offs and limitations.
 - [Research evidence and model selection](RESEARCH_EVIDENCE_AND_MODEL_SELECTION.md) — paper-by-paper justification for the design.
+- [Viva design-decision matrix](VIVA_DESIGN_DECISION_MATRIX.md) — paper-backed rationale for every major implementation choice.
 - [Deep viva Q&A](DEEP_VIVA_QA.md) — technical questions and grounded answers.
 - [Scaling validation status](SCALING_VALIDATION_STATUS.md) — completed run and outputs.
-- [Scaling validation status](SCALING_VALIDATION_STATUS.md) — current run state and results location.
 - [Results status](RESULTS_STATUS.md) — completed pilot and current validation stages.
 
 ## Key research decision
