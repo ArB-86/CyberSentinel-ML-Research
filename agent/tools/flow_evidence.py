@@ -59,6 +59,9 @@ def get_flow_evidence(event_id: str, max_flows: int = 5) -> str:
             return f"Event ID {event_id} was not found."
 
         event = event_match.iloc[0]
+        # Validate event metadata before loading or inspecting the flow source.
+        # Malformed port metadata must never be hidden by an unrelated data error.
+        observed_ports = _observed_port_pairs(event.get("ports_observed"))
         flows_df = get_flows()
 
         if not {"src_ip", "dst_ip"}.issubset(flows_df.columns):
@@ -71,7 +74,6 @@ def get_flow_evidence(event_id: str, max_flows: int = 5) -> str:
         ip_pair_total = len(matched)
         note = f"Matched {ip_pair_total} flow(s) by source/destination IP."
 
-        observed_ports = _observed_port_pairs(event.get("ports_observed"))
         if observed_ports:
             if not {"src_port", "dst_port"}.issubset(matched.columns):
                 return (
