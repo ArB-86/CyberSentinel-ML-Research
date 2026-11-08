@@ -60,9 +60,12 @@ def prepare_features(
     drop = [c for c in work.columns if str(c).strip().casefold() in NON_FEATURE_COLUMNS]
     raw = work.drop(columns=drop, errors="ignore")
     x = raw.select_dtypes(include=np.number).copy()
+    # Preserve the declared numeric feature schema before partitioning.
+    # Do not remove columns because they happen to be all-missing or constant
+    # across the complete file: that would inspect held-out evaluation data.
+    # SimpleImputer(keep_empty_features=True) handles columns that are empty
+    # in the benign training partition without consulting calibration/test rows.
     x = x.replace([np.inf, -np.inf], np.nan)
-    x = x.dropna(axis=1, how="all")
-    x = x.loc[:, x.nunique(dropna=True) > 1]
 
     if feature_columns is None:
         feature_columns = x.columns.tolist()
@@ -508,6 +511,8 @@ if __name__ == "__main__":
     parser.add_argument("--calibration-quantile", type=float, default=0.05)
     parser.add_argument("--time-window-seconds", type=int, default=60)
     parser.add_argument("--max-sequence-gap-seconds", type=int, default=300)
+    parser.add_argument("--calibration-rows", type=int, default=5_000)
+    parser.add_argument("--evaluation-rows", type=int, default=160_000)
     args = parser.parse_args()
     run(
         args.data_dir,
@@ -518,4 +523,6 @@ if __name__ == "__main__":
         args.calibration_quantile,
         args.time_window_seconds,
         args.max_sequence_gap_seconds,
+        args.calibration_rows,
+        args.evaluation_rows,
     )
