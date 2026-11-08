@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from bisect import bisect_left
 from collections import defaultdict
 
 import networkx as nx
@@ -109,10 +110,10 @@ def add_sequence_edges(
 ) -> nx.DiGraph:
     """Link chronologically adjacent events that share a host.
 
-    Each host has its own event timeline. This avoids the previous global
-    adjacent-row bug, which missed related events whenever an unrelated event
-    occurred between them in the global time ordering. Edges represent temporal
-    correlation only; they do not assert causation.
+    Each host has its own event timeline. For every event, the nearest later
+    non-overlapping event on that host is considered. Overlapping events cannot
+    hide a valid later precedence edge. Edges represent temporal correlation
+    only; they do not assert causation.
     """
     if max_gap_seconds <= 0:
         raise ValueError("max_gap_seconds must be positive.")
@@ -144,14 +145,18 @@ def add_sequence_edges(
     edge_candidates: dict[tuple[str, str], dict] = {}
     for host, items in host_events.items():
         items.sort(key=lambda item: (item["start"], item["event_id"]))
-        for left, right in zip(items, items[1:]):
+        starts = [item["start"] for item in items]
+        for index, left in enumerate(items[:-1]):
+            # Find the nearest event on this host whose start is at or after
+            # the current event's end. This skips overlapping events without
+            # allowing them to hide a later valid precedence relationship.
+            next_index = bisect_left(starts, left["end"], lo=index + 1)
+            if next_index >= len(items):
+                continue
+            right = items[next_index]
             if left["event_id"] == right["event_id"]:
                 continue
-            # A "precedes" edge requires the earlier event to finish before
-            # the later event starts. Overlapping events are correlated by host
-            # but are not asserted to be sequential.
-            if right["start"] < left["end"]:
-                continue
+
             gap = float((right["start"] - left["end"]).total_seconds())
             if gap > max_gap_seconds:
                 continue
@@ -172,6 +177,7 @@ def add_sequence_edges(
             record["shared_hosts"].add(host)
             record["link_basis"].add(basis)
             record["gap_seconds"] = min(record["gap_seconds"], gap)
+
 
     for (left_id, right_id), attrs in edge_candidates.items():
         left_node = f"event:{left_id}"
