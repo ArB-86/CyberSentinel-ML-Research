@@ -169,6 +169,91 @@ def _benign_three_way_split(
     return train_positions, calibration_positions, test_positions
 
 
+def _chronological_benign_split(
+    benign_positions: np.ndarray,
+    hashes: np.ndarray,
+    timestamps: pd.Series,
+) -> dict | None:
+    """Hold out later calendar days when at least three distinct days exist.
+
+    The first ~60% of days are model-fit data, the next ~20% calibrate the
+    threshold, and the final ~20% form held-out evaluation. Exact duplicate
+    feature hashes are retained in the earliest partition only. Returns None
+    when fewer than three distinct calendar days exist; callers must then
+    label the fallback as a non-temporal duplicate-group split.
+    """
+    parsed = pd.to_datetime(timestamps, errors="coerce", utc=True, format="mixed")
+    if parsed.isna().any():
+        raise ValueError("Benchmark mode requires valid timestamps on every flow row.")
+    day_values = parsed.dt.floor("D")
+    unique_days = sorted(day_values.dropna().unique())
+    if len(unique_days) < 3:
+        return None
+
+    day_count = len(unique_days)
+    train_end = max(1, int(np.floor(day_count * 0.60)))
+    calibration_end = max(train_end + 1, int(np.floor(day_count * 0.80)))
+    calibration_end = min(calibration_end, day_count - 1)
+
+    train_days = unique_days[:train_end]
+    calibration_days = unique_days[train_end:calibration_end]
+    evaluation_days = unique_days[calibration_end:]
+    if not train_days or not calibration_days or not evaluation_days:
+        raise ValueError("Unable to form non-empty chronological train/calibration/evaluation day ranges.")
+
+    dates = day_values.to_numpy()
+    train_day_set = set(train_days)
+    calibration_day_set = set(calibration_days)
+    evaluation_day_set = set(evaluation_days)
+    train_positions = benign_positions[np.isin(dates[benign_positions], list(train_day_set))]
+    calibration_candidates = benign_positions[
+        np.isin(dates[benign_positions], list(calibration_day_set))
+    ]
+    evaluation_candidates = benign_positions[
+        np.isin(dates[benign_positions], list(evaluation_day_set))
+    ]
+    if min(len(train_positions), len(calibration_candidates), len(evaluation_candidates)) == 0:
+        raise ValueError(
+            "Chronological split produced an empty benign partition. "
+            "The dataset must contain benign rows in the training, calibration and evaluation periods."
+        )
+
+    train_hashes = np.unique(hashes[train_positions])
+    calibration_keep = ~np.isin(hashes[calibration_candidates], train_hashes)
+    calibration_positions = calibration_candidates[calibration_keep]
+    calibration_hashes = np.unique(hashes[calibration_positions])
+
+    evaluation_forbidden = np.concatenate([train_hashes, calibration_hashes])
+    evaluation_keep = ~np.isin(hashes[evaluation_candidates], evaluation_forbidden)
+    evaluation_positions = evaluation_candidates[evaluation_keep]
+    if len(calibration_positions) == 0 or len(evaluation_positions) == 0:
+        raise ValueError(
+            "Exact feature duplicates removed all benign rows from chronological "
+            "calibration or evaluation. Supply more distinct benign flows."
+        )
+
+    evaluation_day_mask = np.isin(dates, list(evaluation_day_set))
+    return {
+        "train_positions": train_positions,
+        "calibration_positions": calibration_positions,
+        "benign_test_positions": evaluation_positions,
+        "evaluation_day_mask": evaluation_day_mask,
+        "strategy": "chronological_calendar_day_holdout",
+        "train_day_start": str(train_days[0]),
+        "train_day_end": str(train_days[-1]),
+        "calibration_day_start": str(calibration_days[0]),
+        "calibration_day_end": str(calibration_days[-1]),
+        "evaluation_day_start": str(evaluation_days[0]),
+        "evaluation_day_end": str(evaluation_days[-1]),
+        "benign_calibration_rows_excluded_for_earlier_duplicate_hash": int(
+            len(calibration_candidates) - len(calibration_positions)
+        ),
+        "benign_evaluation_rows_excluded_for_earlier_duplicate_hash": int(
+            len(evaluation_candidates) - len(evaluation_positions)
+        ),
+    }
+
+
 def _one_row_per_hash(positions: np.ndarray, hashes: np.ndarray) -> np.ndarray:
     if len(positions) == 0:
         return positions
@@ -243,6 +328,18 @@ def run(
         raise ValueError("No rows with valid ground-truth labels remain for benchmark evaluation.")
     binary = labels.str.casefold().ne("benign").to_numpy(dtype=np.int8)
     benign_mask = binary == 0
+    if labels.isna().any() or labels.str.casefold().isin({"", "nan", "none", "null"}).any():
+        raise ValueError("Benchmark mode contains missing ground-truth labels; clean or exclude those rows first.")
+    if "timestamp" not in work.columns:
+        raise ValueError("Benchmark mode requires a timestamp column for chronological holdout and event reconstruction.")
+    parsed_timestamps = pd.to_datetime(
+        work["timestamp"], errors="coerce", utc=True, format="mixed"
+    )
+    if parsed_timestamps.isna().any():
+        raise ValueError(
+            f"Benchmark mode found {int(parsed_timestamps.isna().sum())} invalid timestamps. "
+            "Fix or exclude these rows before temporal evaluation."
+        )
     benign_positions = np.flatnonzero(benign_mask)
     if len(benign_positions) < 10:
         raise ValueError(
@@ -253,9 +350,36 @@ def run(
     # Hash every numeric model vector without labels. Exact duplicate vectors
     # are assigned to one benign partition before model fitting or evaluation.
     hashes = pd.util.hash_pandas_object(x_raw, index=False).to_numpy(dtype=np.uint64)
-    train_pool_positions, calibration_pool_positions, benign_test_positions = (
-        _benign_three_way_split(benign_positions, hashes, seed=42)
+    temporal_split = _chronological_benign_split(
+        benign_positions, hashes, parsed_timestamps
     )
+    if temporal_split is not None:
+        train_pool_positions = temporal_split["train_positions"]
+        calibration_pool_positions = temporal_split["calibration_positions"]
+        benign_test_positions = temporal_split["benign_test_positions"]
+        evaluation_day_mask = temporal_split["evaluation_day_mask"]
+        split_metadata = {
+            key: value for key, value in temporal_split.items()
+            if key not in {
+                "train_positions", "calibration_positions",
+                "benign_test_positions", "evaluation_day_mask",
+            }
+        }
+        attack_positions = np.flatnonzero(
+            (binary == 1) & evaluation_day_mask
+        )
+        attack_split_description = "attack rows from the held-out evaluation day range only"
+    else:
+        train_pool_positions, calibration_pool_positions, benign_test_positions = (
+            _benign_three_way_split(benign_positions, hashes, seed=42)
+        )
+        split_metadata = {
+            "strategy": "random_exact_feature_hash_group_fallback",
+            "temporal_holdout_unavailable_reason": "fewer than three distinct calendar days",
+            "cross_day_generalisation_established": False,
+        }
+        attack_positions = np.flatnonzero(binary == 1)
+        attack_split_description = "all attack rows; non-temporal duplicate-group fallback"
 
     # Train/calibration samples are deduplicated to avoid repeatedly weighting
     # identical flow vectors. The held-out evaluation keeps observed row counts.
@@ -281,7 +405,6 @@ def run(
         hashes[train_pool_positions],
         hashes[calibration_pool_positions],
     ]))
-    attack_positions = np.flatnonzero(binary == 1)
     attack_hashes = hashes[attack_positions]
 
     overlaps_fit_or_calibration = np.isin(attack_hashes, fit_calibration_hashes)
@@ -505,6 +628,8 @@ def run(
         "label_distribution_for_evaluation_only": {
             str(k): int(v) for k, v in labels.value_counts().items()
         },
+        "data_split": split_metadata,
+        "attack_evaluation_selection": attack_split_description,
         "benign_train_pool_unique_rows": int(len(unique_train_pool)),
         "benign_training_rows_used": int(len(chosen_train_positions)),
         "benign_calibration_pool_unique_rows": int(len(unique_calibration_pool)),
@@ -546,7 +671,7 @@ def run(
         "limitations": [
             "Labels are used to select benign fit/calibration pools and for final evaluation only. They are never numeric model features, predictions, event-group keys, graph classifications, or risk weights.",
             "The held-out evaluation set excludes attack rows whose exact numeric feature hash occurs in benign fit/calibration partitions and excludes same-test conflicting attack rows matching a benign test hash.",
-            "Exact duplicate feature vectors are separated across fit/calibration/evaluation. This run does not establish cross-day or external-network generalisation.",
+            "Exact duplicate feature vectors are separated across fit/calibration/evaluation. Chronological day holdout is used when at least three distinct dates are present; otherwise a random duplicate-group fallback is used and cross-day generalisation is not established.",
             "The cleaned and metadata-rich files may omit connection identifiers or timestamps depending on the source; this pipeline requires timestamp and source/destination metadata for event/graph stages.",
             "Attack type remains Unclassified unless a separate trained classifier supplies predicted_attack_type.",
             "Potential incidents are graph-connected candidate groups, not confirmed incidents. Temporal edges denote correlation/order, not causation.",
