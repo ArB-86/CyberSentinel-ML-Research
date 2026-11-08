@@ -12,8 +12,7 @@ from typing import Any
 import networkx as nx
 import pandas as pd
 
-DEFAULT_ISOLATION_FOREST_THRESHOLD = 0.032849
-ISOLATION_FOREST_THRESHOLD = DEFAULT_ISOLATION_FOREST_THRESHOLD
+ISOLATION_FOREST_THRESHOLD: float | None = None
 
 REQUIRED_EVENT_COLUMNS = {
     "event_id",
@@ -113,8 +112,11 @@ def _resolve_isolation_forest_threshold(
         except (OSError, ValueError, TypeError, json.JSONDecodeError):
             pass
 
-    # Compatibility fallback for event bundles without pipeline_summary.json.
-    return DEFAULT_ISOLATION_FOREST_THRESHOLD
+    raise ValueError(
+        "No Isolation Forest threshold is available. Run the metadata-rich "
+        "detection pipeline to generate pipeline_summary.json, or supply an "
+        "explicit --threshold calibrated for this exact feature space."
+    )
 
 
 def _system_instructions() -> str:
