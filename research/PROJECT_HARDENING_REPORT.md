@@ -129,7 +129,17 @@ The manual response checklist no longer claims to execute SOAR, firewall blocks,
 - Risk pages call the score a heuristic triage index and state when it is unassessed.
 - Generated-output instructions now distinguish benchmark training from unlabeled inference and document the separate risk-analysis command.
 
-## 3. How to run the two detector modes
+### 2.9 Research comparison preprocessing
+
+**Before:** both model-comparison loaders removed all-empty and constant numeric columns using statistics calculated across the complete Parquet before creating train/validation/test partitions. Numeric event/incident identifiers were also not explicitly excluded.
+
+**Now:**
+- Both `compare_models.py` and `compare_model_scales.py` exclude labels, attack flags, flow/event/incident IDs, endpoints and timestamps by column name.
+- They preserve the numeric feature schema; no full-dataset missingness or variance filter is applied before splitting.
+- Every comparison model fits `SimpleImputer(strategy="median", keep_empty_features=True)` on its own training subset and applies that fitted imputer to calibration/test rows.
+- New Parquet-fixture tests cover constant, all-missing and numeric identifier columns in both loaders.
+
+**Limit:** the existing comparison CSVs and reported rankings are historical outputs generated before this preprocessing change. The processed Parquet is not committed to Git (see `DATASET_SOURCES.md`), so this session has not regenerated the full CICIDS2017 comparison metrics. Do not present the old numbers as results of the current hardened experiment until the exact verified Parquet is rerun.## 3. How to run the two detector modes
 
 Install development/runtime requirements:
 
@@ -176,9 +186,9 @@ GitHub Actions workflow: `.github/workflows/reliability-checks.yml`.
 Latest completed green validation on the working branch:
 - Python module compile check: passed.
 - Direct CLI smoke tests for `python attack_graph/if_attack_graph_pipeline.py --help` and `python risk_analyzer.py --help`: passed.
-- Pytest: **29 passed**.
+- Pytest: **32 passed**.
 
-The tests cover label-independent and port-aware event creation, detector-output requirements, interleaved host timelines, non-overlapping temporal links, GEXF null handling, candidate incident grouping, chronological day holdout and single-day fallback, risk-score missing evidence semantics, unknown graph degrees, zero-weight risk factors, valid empty incident outputs, train-only preprocessing, benchmark-to-artifact-to-unlabeled-inference flow, ground-truth-label separation from downstream artefacts and agent evidence, exact port/time flow matching, malformed metadata fail-closed behaviour, safe artifact filenames, event ID formatting, stale metric suppression, missing-label handling, and deterministic report rendering.
+The tests cover label-independent and port-aware event creation, detector-output requirements, interleaved host timelines, non-overlapping temporal links, GEXF null handling, candidate incident grouping, chronological day holdout and single-day fallback, risk-score missing evidence semantics, unknown graph degrees, zero-weight risk factors, valid empty incident outputs, stale benchmark-output cleanup during inference, train-only preprocessing, benchmark-to-artifact-to-unlabeled-inference flow, ground-truth-label separation from downstream artefacts and agent evidence, exact port/time flow matching, malformed metadata fail-closed behaviour, safe artifact filenames, event ID formatting, stale metric suppression, numeric identifier exclusion and all-missing feature handling in both comparison loaders, missing-label handling, and deterministic report rendering.
 
 These are unit/integration tests on synthetic fixtures. They do not constitute a full-scale end-to-end evaluation on all metadata-rich CICIDS2017 files or a live enterprise network.
 
