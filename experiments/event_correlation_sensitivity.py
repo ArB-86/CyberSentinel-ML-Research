@@ -111,12 +111,16 @@ def run_sensitivity(
     if pd.api.types.is_bool_dtype(prediction_values):
         flagged_mask = prediction_values.fillna(False)
     else:
-        flagged_mask = (
+        textual_flags = (
             prediction_values.astype("string")
             .str.strip()
             .str.casefold()
-            .isin({"1", "true", "yes", "y", "attack", "anomaly"})
+            .isin({"true", "yes", "y", "attack", "anomaly"})
         )
+        numeric_flags = pd.to_numeric(
+            prediction_values, errors="coerce"
+        ).eq(1).fillna(False)
+        flagged_mask = textual_flags | numeric_flags
     suspicious = normalized.loc[flagged_mask].copy()
     if suspicious.empty:
         raise ValueError(
