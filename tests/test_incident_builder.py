@@ -34,7 +34,7 @@ def test_connected_temporal_events_form_a_potential_incident_only():
     assert row["event_count"] == 2
     assert row["flow_count"] == 5
     assert row["confirmation_status"] == "potential_correlation_requires_analyst_validation"
-    assert row["causal_claim"] is False
+    assert bool(row["causal_claim"]) is False
 
 
 def test_no_temporal_edges_means_no_confirmed_incident():
@@ -43,3 +43,10 @@ def test_no_temporal_edges_means_no_confirmed_incident():
     grouped, incidents = build_potential_incidents(events, graph)
     assert grouped["incident_id"].isna().all()
     assert incidents.empty
+
+def test_overlapping_events_are_not_linked_as_precedence():
+    events = _events().iloc[:2].copy()
+    events.loc[0, "end_time"] = "2026-01-01T00:00:20Z"
+    events.loc[1, "start_time"] = "2026-01-01T00:00:10Z"
+    graph = add_sequence_edges(build_attack_graph(events), events, max_gap_seconds=60)
+    assert not graph.has_edge("event:EVT-00001", "event:EVT-00002")
