@@ -195,7 +195,7 @@ GitHub Actions workflow: `.github/workflows/reliability-checks.yml`.
 Latest completed green validation on the working branch:
 - Python module compile check: passed.
 - Direct CLI smoke tests for `python attack_graph/if_attack_graph_pipeline.py --help` and `python risk_analyzer.py --help`: passed.
-- Pytest: **35 passed**.
+- Pytest: **39 passed**.
 
 The tests cover label-independent and port-aware event creation, detector-output requirements, interleaved host timelines, overlapping-event successor recovery, non-overlapping temporal links, GEXF null handling, candidate incident grouping, chronological day holdout and single-day fallback, risk-score missing evidence semantics, unknown graph degrees, zero-weight risk factors, valid empty incident outputs, stale benchmark-output cleanup during inference, train-only preprocessing, benchmark-to-artifact-to-unlabeled-inference flow, ground-truth-label separation from downstream artefacts and agent evidence, exact port/time flow matching, numeric float prediction flags, malformed metadata fail-closed behaviour, safe artifact filenames, event ID formatting, structural event-window/temporal-gap sensitivity reporting, stale metric suppression, numeric identifier exclusion and all-missing feature handling in both comparison loaders, missing-label handling, and deterministic report rendering.
 
