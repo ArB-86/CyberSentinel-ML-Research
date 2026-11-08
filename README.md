@@ -146,12 +146,13 @@ The experiment guide documents repeated-seed runs and the evaluation protocol.
 
 ## Extended training-size validation
 
-A separate sensitivity study is running on `research/extended-validation`. It evaluates Isolation Forest, LOF and exact RBF One-Class SVM at 5,000, 25,000 and 50,000 benign training rows. All configurations share one fixed duplicate-grouped split, one benign calibration sample and one held-out test sample; training subsets are nested within each repetition.
+A paired sensitivity study has completed on `research/extended-validation`. It evaluates Isolation Forest, LOF and exact RBF One-Class SVM at 5,000, 25,000 and 50,000 benign training rows. All configurations share one fixed duplicate-grouped split, one benign calibration sample and one held-out test sample; training subsets are nested within each repetition.
 
 - [Scaling validation protocol](research/SCALING_VALIDATION_PROTOCOL.md)
+- [Measured scaling results](research/SCALING_VALIDATION_RESULTS.md)
+- [Research evidence and model-selection rationale](research/RESEARCH_EVIDENCE_AND_MODEL_SELECTION.md)
+- [Deep viva Q&A](research/DEEP_VIVA_QA.md)
 - [Extended experiment runner](experiments/compare_model_scales.py)
-
-Results will be added here only after the completed run has produced verified outputs.
 
 ## Research documentation
 
