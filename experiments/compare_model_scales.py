@@ -217,9 +217,6 @@ def main():
     train_idx, val_idx, test_idx, groups, overlap = duplicate_group_split(
         x, y, args.folds, args.split_seed
     )
-    cal_idx = sample_rows(val_idx[y[val_idx] == 0], y, args.calibration_rows, args.split_seed + 10)
-    # sample_rows above expects indices and stratifies; with a benign-only index,
-    # it is valid but uses a single class. Use an explicit RNG sample instead.
     rng_cal = np.random.default_rng(args.split_seed + 10)
     val_benign = val_idx[y[val_idx] == 0]
     if len(val_benign) < args.calibration_rows:
