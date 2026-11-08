@@ -1,0 +1,108 @@
+# CICIDS2017 model-comparison results — pilot v1
+
+**Execution status:** completed successfully. The repeated-seed model training ran in GitHub Actions run [42507646357](https://github.com/ArB-86/ML-Based-Cyber-Attack-Detection-and-Incident-Investigation-using-Agentic-AI-Research/actions/runs/42507646357). The result artifact was then recovered and committed by publisher run [42511189956](https://github.com/ArB-86/ML-Based-Cyber-Attack-Detection-and-Incident-Investigation-using-Agentic-AI-Research/actions/runs/42511189956). No model training was repeated during artifact publishing.
+
+**Dataset:** processed CICIDS2017 Parquet release v1.0.1, SHA-256 verified by the training workflow. The 2,228,970 rows contain 69 numeric flow features. Binary distribution: 1,892,671 benign and 336,299 attacks.
+
+**Important:** these are pilot results from a bounded 5,000-benign-row unsupervised training budget and 15,000-row shared test sample per seed. They are not production-performance claims or a complete replication of the original 500,000-benign-row Isolation Forest notebook.
+
+## 1. Experimental protocol actually run
+
+| Setting | Value |
+|---|---|
+| Seeds | 42, 43, 44 |
+| Split | StratifiedGroupKFold, 7 folds |
+| Grouping | Hash of numeric feature vector; exact duplicates kept within one split |
+| Train partition | Remaining 5 folds |
+| Validation | Fold 0; 5,000 benign calibration rows sampled |
+| Test | Fold 1; binary-stratified 15,000-row sample shared by all models in each seed |
+| Unsupervised training | 5,000 benign flows per model |
+| Threshold target | Upper 5% tail of held-out benign calibration scores |
+| Isolation Forest | 200 trees; max_samples=1,024; seed-specific random_state |
+| LOF | novelty=True; 35 neighbours; StandardScaler |
+| One-Class SVM | RBF; nu=0.05; gamma=scale; StandardScaler |
+| Random Forest | Separate supervised reference; 50,000 labelled training rows; 200 trees; balanced_subsample |
+
+All modelling features are numeric and the label column is removed from X. Unsupervised models fit benign data only. Random Forest is trained on labelled benign and attack examples and must not be described as an unsupervised competitor.
+
+The split metadata reports zero exact numeric-feature-hash overlap between train, validation and test. It does **not** prove connection-level or temporal separation because the cleaned Parquet has no flow IDs, addresses, ports or timestamps.
+
+## 2. Main results
+
+Values below are **mean ± sample standard deviation across the three seeds**. PR-AUC is scikit-learn Average Precision. Runtime is the mean observed on the GitHub Actions runner; it is environment-specific.
+
+| Model | ROC-AUC | PR-AUC / AP | Attack precision | Attack recall | Attack F1 | Test FPR |
+|---|---:|---:|---:|---:|---:|---:|
+| Isolation Forest | 0.8900 ± 0.0010 | 0.6794 ± 0.0112 | 0.6989 ± 0.0054 | 0.6531 ± 0.0623 | 0.6743 ± 0.0348 | 0.0500 ± 0.0041 |
+| LOF (novelty) | **0.8984 ± 0.0028** | 0.5647 ± 0.0118 | 0.6210 ± 0.0475 | 0.4659 ± 0.0807 | 0.5315 ± 0.0709 | 0.0498 ± 0.0012 |
+| RBF One-Class SVM | 0.8389 ± 0.0096 | **0.7670 ± 0.0108** | **0.7346 ± 0.0073** | **0.7505 ± 0.0058** | **0.7424 ± 0.0038** | **0.0482 ± 0.0020** |
+| Random Forest (supervised reference) | 0.9997 ± 0.0004 | 0.9991 ± 0.0005 | 0.6807 ± 0.0038 | 0.9996 ± 0.0008 | 0.8099 ± 0.0025 | 0.0833 ± 0.0015 |
+
+### Interpretation
+
+- **RBF One-Class SVM is the strongest unsupervised model in this pilot under PR-AUC and the fixed-threshold precision/recall/F1 view.** Its mean AP is 0.7670 and mean F1 is 0.7424, at a measured test FPR of about 4.82%.
+- **LOF has the highest unsupervised ROC-AUC (0.8984), but the weakest AP, recall and F1 at the selected operating point.** This demonstrates why ROC-AUC alone is not enough for an imbalanced intrusion-detection dataset.
+- **Isolation Forest remains a credible middle baseline.** It beats LOF on AP, precision, recall and F1 in this experiment, but trails RBF One-Class SVM on AP and F1.
+- **Random Forest is not a like-for-like competitor.** Its almost-perfect ranking metrics use 50,000 labelled training examples. Also, probability ties caused the 5% quantile threshold to produce a mean *calibration* FPR of 8.16% (seed values: 8.52%, 8.14%, 7.82%), and the mean test FPR was 8.33%. Its thresholded result therefore does not meet the same nominal alert budget as the three unsupervised detectors. Treat the supervised metrics as a reference, not a fair winner at 5% FPR.
+- Model selection is still provisional: this is a three-seed, bounded-sample pilot on one processed benchmark.
+
+## 3. Computational cost
+
+Mean wall-clock values from this particular GitHub Actions runner:
+
+| Model | Fit seconds | Calibration scoring seconds | Test scoring seconds (15,000 rows) |
+|---|---:|---:|---:|
+| Isolation Forest | 0.302 | 0.0476 | 0.107 |
+| LOF (novelty) | 0.137 | 0.1004 | 0.295 |
+| RBF One-Class SVM | 0.109 | 0.0781 | 0.231 |
+| Random Forest (supervised) | 6.286 | 0.0580 | 0.071 |
+
+Do not generalise these timings to production hardware. LOF's test scoring was slowest among the unsupervised methods in this 15,000-row scoring sample. Repeat at larger train/test sizes before making any scalability claim. The small 5,000-row model-fit cap particularly favours computationally heavier methods.
+
+## 4. Per-attack recall (pooled test observations across three seeds)
+
+Pooled detections / pooled support, with the denominator shown so small categories are not mistaken for stable estimates.
+
+| Attack type | Support | Isolation Forest | LOF | RBF One-Class SVM | Random Forest |
+|---|---:|---:|---:|---:|---:|
+| DoS Hulk | 3,515 | 85.2% | 43.5% | 89.5% | 100.0% |
+| DDoS | 2,569 | 48.5% | 59.6% | 63.6% | 100.0% |
+| DoS GoldenEye | 194 | 42.3% | 26.3% | 75.3% | 100.0% |
+| DoS Slowhttptest | 104 | 39.4% | 37.5% | 92.3% | 100.0% |
+| DoS slowloris | 117 | 55.6% | 12.0% | 57.3% | 100.0% |
+| FTP-Patator | 138 | 0.0% | 0.0% | 0.0% | 100.0% |
+| SSH-Patator | 52 | 0.0% | 0.0% | 0.0% | 100.0% |
+| Bot | 38 | 5.3% | 0.0% | 5.3% | 92.1% |
+| PortScan | 27 | 7.4% | 0.0% | 7.4% | 100.0% |
+| Web Attack - Brute Force | 21 | 0.0% | 0.0% | 0.0% | 100.0% |
+| Web Attack - XSS | 13 | 0.0% | 0.0% | 0.0% | 100.0% |
+| Infiltration | 1 | 100.0% | 0.0% | 100.0% | 100.0% |
+
+The per-attack metrics expose an important weakness hidden by binary aggregate scores: the unsupervised models did not detect any FTP-Patator, SSH-Patator, web brute-force or XSS records in these sampled test folds. The single Infiltration observation is not enough to support a meaningful conclusion.
+
+**Heartbleed and SQL Injection had no observations in the sampled test sets.** Their performance is unmeasured, not zero and not 100%. The available dataset contains only 7 Heartbleed and 21 SQL Injection rows in this processed release. Bot, XSS, web brute-force and PortScan support is also small; interpret those percentages cautiously.
+
+## 5. Research conclusion — what we can and cannot say
+
+A defensible conclusion for the panel is:
+
+> "We retained Isolation Forest as the original unsupervised baseline and trained two additional unsupervised alternatives, LOF in novelty mode and RBF One-Class SVM, using benign-only training data. Under a shared exact-duplicate-grouped split and held-out benign calibration targeting 5% FPR, RBF One-Class SVM achieved the highest mean PR-AUC (0.7670) and thresholded F1 (0.7424) among the three unsupervised models. LOF achieved a slightly higher ROC-AUC than Isolation Forest but weaker precision-recall performance. Random Forest achieved much higher ranking scores, but it used attack labels during training and its probability ties caused a higher calibration FPR; it is shown only as a supervised reference. The experiment also shows poor minority-attack detection for several attack families. Therefore, the result supports RBF One-Class SVM as the best candidate in this bounded pilot, not as a proven production winner."
+
+### Remaining limitations / next experiments
+
+1. Increase benign-only training samples from 5,000 to 25,000 and then 50,000, if compute permits, to test whether the ranking changes. LOF and RBF One-Class SVM runtime should be measured at each scale.
+2. Improve the supervised RF threshold calibration to handle discrete probability ties so it can be evaluated at a true <=5% calibration FPR; do not compare its current thresholded F1 directly with the unsupervised models.
+3. Run a connection-grouped and temporal split on metadata-rich CICIDS2017 data. The cleaned Parquet cannot provide this separation.
+4. Evaluate minority classes using their full held-out records or a clearly designed per-class protocol. Do not oversample the test set and present it as natural prevalence.
+5. Repeat the study on an independent dataset or later capture period before claiming generalisation to unknown attacks.
+
+## 6. Reproducibility artifacts
+
+Raw outputs are committed in this branch:
+
+- [Seed 42 metrics](../experiments/results/processed-v1.0.1/seed-42/metrics.csv)
+- [Seed 43 metrics](../experiments/results/processed-v1.0.1/seed-43/metrics.csv)
+- [Seed 44 metrics](../experiments/results/processed-v1.0.1/seed-44/metrics.csv)
+- Each seed directory also includes `per_attack_recall.csv`, `predictions.csv`, `run_metadata.json` and `roc_pr_curves.png`.
+
+Training workflow: [run 42507646357](https://github.com/ArB-86/ML-Based-Cyber-Attack-Detection-and-Incident-Investigation-using-Agentic-AI-Research/actions/runs/42507646357). Artifact publication workflow: [run 42511189956](https://github.com/ArB-86/ML-Based-Cyber-Attack-Detection-and-Incident-Investigation-using-Agentic-AI-Research/actions/runs/42511189956).
