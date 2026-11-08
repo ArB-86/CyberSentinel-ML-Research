@@ -150,16 +150,21 @@ def run(
     labels = work["label"].astype(str).str.strip()
     benign_mask = labels.str.casefold().eq("benign").to_numpy()
     benign_positions = np.flatnonzero(benign_mask)
-    if len(benign_positions) < 100:
+    if len(benign_positions) < 10:
         raise ValueError(
             f"Only {len(benign_positions)} benign flows found; "
-            "at least 100 are required for a train/calibration split."
+            "at least 10 are required for a train/calibration split."
         )
 
     x_benign_raw = x_raw.iloc[benign_positions].reset_index(drop=True)
     train_local, calibration_local = _benign_train_validation_indices(x_benign_raw)
     train_positions = benign_positions[train_local]
     calibration_positions = benign_positions[calibration_local]
+    if len(train_positions) < 2 or len(calibration_positions) < 2:
+        raise ValueError(
+            "The benign duplicate-group split produced too few rows for both "
+            "model fitting and calibration. Supply more distinct benign flows."
+        )
 
     # Fit imputation ONLY on benign training data. Calibration and all inference
     # rows are transformed using these learned medians; no validation/test
