@@ -1,6 +1,6 @@
 # Extended validation status
 
-**Completed successfully.** The larger-sample CICIDS2017 validation ran with three fixed repetitions and all three training sizes.
+**Historical pre-hardening run completed successfully; current scripts have since changed.** The larger-sample CICIDS2017 validation ran with three fixed repetitions and all three training sizes, but the archived metrics have not yet been regenerated after train-only feature-schema and imputation fixes. Treat the numerical rankings as historical until rerun.
 
 ## Final configuration
 
