@@ -33,3 +33,14 @@ def test_file_set_signature_tracks_fallback_candidate_paths(tmp_path):
     assert before[0][1] is not None
     assert before[1][1] is None
     assert after[1][1] is not None
+
+
+def test_missing_path_signature_changes_after_first_pipeline_write(tmp_path):
+    output_path = tmp_path / "pipeline_summary.json"
+    before = file_cache_signature(output_path)
+    assert before is None
+
+    output_path.write_text('{"mode":"benchmark"}', encoding="utf-8")
+    after = file_cache_signature(output_path)
+    assert after is not None
+    assert before != after
