@@ -430,6 +430,9 @@ def run(
     )
 
     suspicious = evaluation_frame.loc[evaluation_frame["predicted_anomaly"]].copy()
+    # Ground-truth labels remain in detection_metrics/per_attack evaluation only.
+    # Never pass benchmark annotations to event grouping, graphs or agent tools.
+    suspicious = suspicious.drop(columns=["label"], errors="ignore")
     suspicious.to_csv(output / "suspicious_flows_with_metadata.csv", index=False)
 
     events = build_attack_events(
