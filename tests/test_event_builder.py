@@ -63,3 +63,27 @@ def test_missing_temporal_metadata_fails_closed():
     frame = _flows().drop(columns=["timestamp"])
     with pytest.raises(ValueError, match="metadata columns"):
         build_attack_events(frame)
+
+
+
+def test_port_aware_grouping_keeps_distinct_services_separate():
+    frame = pd.DataFrame([
+        {
+            "timestamp": "2026-01-01T00:00:00Z",
+            "src_ip": "10.0.0.1", "dst_ip": "10.0.0.2",
+            "src_port": 51000, "dst_port": 22, "protocol": 6,
+            "predicted_anomaly": True, "anomaly_score": -0.2,
+        },
+        {
+            "timestamp": "2026-01-01T00:00:10Z",
+            "src_ip": "10.0.0.1", "dst_ip": "10.0.0.2",
+            "src_port": 51000, "dst_port": 443, "protocol": 6,
+            "predicted_anomaly": True, "anomaly_score": -0.3,
+        },
+    ])
+    events = build_attack_events(
+        frame,
+        config=EventConfig(time_window_seconds=60, use_ports_in_key=True),
+    )
+    assert len(events) == 2
+    assert sorted(events["flow_count"].tolist()) == [1, 1]
