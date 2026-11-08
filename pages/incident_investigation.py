@@ -1024,7 +1024,7 @@ correlation_steps = [
         "04",
         "Attack Graph",
         "Events are represented in the NetworkX attack graph "
-        "alongside source hosts, target hosts and attack types.",
+        "alongside source hosts, target hosts and model-predicted attack types when available.",
     ),
     (
         "05",
