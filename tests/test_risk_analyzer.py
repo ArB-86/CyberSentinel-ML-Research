@@ -52,4 +52,6 @@ def test_missing_graph_is_not_treated_as_zero_graph_evidence(tmp_path):
     result = calculate_incident_risks(events_path, None, output_path)
     assert pd.isna(result.loc[0, "host_involvement_factor"])
     assert pd.isna(result.loc[0, "temporal_correlation_factor"])
-    assert result.loc[0, "risk_score"] == 100.0
+    assert pd.isna(result.loc[0, "risk_score"])
+    assert result.loc[0, "risk_level"] == "UNASSESSED"
+    assert result.loc[0, "risk_score_semantics"] == "heuristic_triage_score_not_probability"
