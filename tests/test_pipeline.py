@@ -93,7 +93,10 @@ def test_metadata_pipeline_runs_with_train_only_imputation(tmp_path):
     inference_dir.mkdir()
     unlabeled = pd.read_csv(data_dir / "flows.csv").drop(columns=["Label"])
     unlabeled.to_csv(inference_dir / "unlabeled_flows.csv", index=False)
-    inference_output = tmp_path / "inference-output"
+    # Reuse the benchmark output directory to prove stale benchmark metrics are removed.
+    inference_output = output_dir
+    assert (inference_output / "detection_metrics.json").exists()
+    assert (inference_output / "per_attack_detection_evaluation.csv").exists()
     run_inference(
         str(inference_dir),
         str(model_artifact),
@@ -108,6 +111,8 @@ def test_metadata_pipeline_runs_with_train_only_imputation(tmp_path):
     assert inference_summary["mode"] == "unlabeled_inference"
     assert inference_summary["ground_truth_labels_required"] is False
     assert inference_summary["ground_truth_labels_used"] is False
+    assert not (inference_output / "detection_metrics.json").exists()
+    assert not (inference_output / "per_attack_detection_evaluation.csv").exists()
     assert (inference_output / "event_risk_scores.csv").exists()
     assert (inference_output / "incident_risk_scores.csv").exists()
     suspicious = pd.read_csv(inference_output / "suspicious_flows_with_metadata.csv")
