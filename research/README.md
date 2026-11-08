@@ -9,7 +9,8 @@ This folder contains the literature review, baseline audit, experimental protoco
 - [Baseline evaluation](BASELINE_EVALUATION.md) — what the original notebook already proves and what it does not.
 - [Viva preparation](VIVA_PREPARATION.md) — evidence-based panel questions and answers.
 - [Experiment results](EXPERIMENT_RESULTS.md) — three-seed metrics, per-attack detection and limitations.
-- [Results status](RESULTS_STATUS.md) — current execution status and remaining work.
+- [Scaling validation protocol](SCALING_VALIDATION_PROTOCOL.md) — paired 5k/25k/50k training-size study.
+- [Results status](RESULTS_STATUS.md) — completed pilot and current validation stages.
 
 ## Key research decision
 
