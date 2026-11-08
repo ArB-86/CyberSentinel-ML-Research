@@ -206,7 +206,7 @@ with st.sidebar:
 
             <div class="green"
                  style="font-weight:800;font-size:.76rem">
-                ● SYSTEM ONLINE
+                ● GRAPH DATA AVAILABLE
             </div>
 
             <div style="
