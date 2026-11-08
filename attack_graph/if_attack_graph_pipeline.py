@@ -48,7 +48,8 @@ LABEL_MAP = {
 # Identifiers/targets are not model features. Numeric source/destination ports
 # and protocol remain available as flow features, matching CICIDS feature data.
 NON_FEATURE_COLUMNS = {
-    "flow id", "flow_id", "src_ip", "dst_ip", "source ip", "destination ip",
+    "flow id", "flow_id", "event_id", "event id", "incident_id", "incident id",
+    "_id", "src_ip", "dst_ip", "source ip", "destination ip",
     "timestamp", "label", "is_attack", "predicted_anomaly",
     "predicted_attack_type", "anomaly_score", "attack_type",
 }
