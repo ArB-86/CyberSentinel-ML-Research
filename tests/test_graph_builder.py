@@ -1,6 +1,6 @@
 import pandas as pd
 
-from attack_graph.graph_builder import add_sequence_edges, build_attack_graph
+from attack_graph.graph_builder import add_sequence_edges, build_attack_graph, write_attack_graph_gexf
 
 
 def _events():
@@ -40,3 +40,17 @@ def test_dataset_labels_are_not_added_as_predicted_attack_nodes():
     events["Label"] = ["DoS", "Bot", "DDoS"]
     graph = build_attack_graph(events)
     assert not any(str(node).startswith("attack:") for node in graph.nodes)
+
+
+
+def test_gexf_export_omits_missing_optional_attributes(tmp_path):
+    events = _events().iloc[:1].copy()
+    events["mean_anomaly_score"] = None
+    graph = build_attack_graph(events)
+    path = tmp_path / "graph.gexf"
+    write_attack_graph_gexf(graph, str(path))
+
+    assert path.exists()
+    loaded = __import__("networkx").read_gexf(path)
+    event = loaded.nodes["event:EVT-00001"]
+    assert "mean_anomaly_score" not in event
