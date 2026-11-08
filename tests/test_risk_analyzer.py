@@ -78,3 +78,38 @@ def test_no_candidate_incidents_writes_readable_empty_incident_file(tmp_path):
     incident_scores = pd.read_csv(incident_path)
     assert incident_scores.empty
     assert "incident_id" in incident_scores.columns
+
+
+
+def test_missing_flow_count_is_not_treated_as_zero_evidence(tmp_path):
+    events_path = tmp_path / "attack_events.csv"
+    graph_path = tmp_path / "attack_graph.gexf"
+    summary_path = tmp_path / "pipeline_summary.json"
+    output_path = tmp_path / "event_risk_scores.csv"
+
+    pd.DataFrame([
+        {"event_id": "E1", "src_ip": "A", "dst_ip": "B",
+         "flow_count": None, "mean_anomaly_score": -0.1},
+        {"event_id": "E2", "src_ip": "C", "dst_ip": "D",
+         "flow_count": None, "mean_anomaly_score": -0.2},
+    ]).to_csv(events_path, index=False)
+    summary_path.write_text(json.dumps({
+        "calibration_score_quantiles": {
+            "0.0": -0.5, "0.5": 0.0, "1.0": 0.5
+        }
+    }), encoding="utf-8")
+
+    graph = nx.DiGraph()
+    for event in ("E1", "E2"):
+        graph.add_node(f"event:{event}")
+        graph.add_node(f"host:{'A' if event == 'E1' else 'C'}")
+        graph.add_node(f"host:{'B' if event == 'E1' else 'D'}")
+    graph.add_edge("host:A", "event:E1", relation="initiates")
+    graph.add_edge("event:E1", "host:B", relation="targets")
+    graph.add_edge("host:C", "event:E2", relation="initiates")
+    graph.add_edge("event:E2", "host:D", relation="targets")
+    nx.write_gexf(graph, graph_path)
+
+    result = calculate_incident_risks(events_path, graph_path, output_path)
+    assert result["frequency_factor"].isna().all()
+    assert result["risk_score"].notna().all()
