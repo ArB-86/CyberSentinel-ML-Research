@@ -20,7 +20,7 @@ The model-comparison runs used the following processed Parquet artifact:
 
 Store this file locally at `data/cleaned_cicids2017.parquet`. It is not committed to Git because it is a large dataset asset. Verify the checksum before running experiments.
 
-The preprocessing notebook is [`notebooks/dataset_preprocessing.ipynb`](../notebooks/dataset_preprocessing.ipynb). The model comparison harness and exact command are documented in [`experiments/README.md`](../experiments/README.md).
+The preprocessing notebook is [`notebooks/dataset_preprocessing.ipynb`](notebooks/dataset_preprocessing.ipynb). The model comparison harness and exact command are documented in [`experiments/README.md`](experiments/README.md).
 
 ## Data handling
 
