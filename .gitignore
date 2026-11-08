@@ -25,3 +25,6 @@ outputs/event_risk_scores.csv
 outputs/incident_risk_scores.csv
 outputs/agentic_investigation_output/investigation_*.json
 outputs/agentic_investigation_output/report_*.md
+
+# Generated structural sensitivity outputs
+experiments/results/event-sensitivity/
