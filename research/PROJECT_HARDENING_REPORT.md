@@ -139,7 +139,15 @@ The manual response checklist no longer claims to execute SOAR, firewall blocks,
 - Every comparison model fits `SimpleImputer(strategy="median", keep_empty_features=True)` on its own training subset and applies that fitted imputer to calibration/test rows.
 - New Parquet-fixture tests cover constant, all-missing and numeric identifier columns in both loaders.
 
-**Limit:** the existing comparison CSVs and reported rankings are historical outputs generated before this preprocessing change. The processed Parquet is not committed to Git (see `DATASET_SOURCES.md`), so this session has not regenerated the full CICIDS2017 comparison metrics. Do not present the old numbers as results of the current hardened experiment until the exact verified Parquet is rerun.## 3. How to run the two detector modes
+**Limit:** the existing comparison CSVs and reported rankings are historical outputs generated before this preprocessing change. The processed Parquet is not committed to Git (see `DATASET_SOURCES.md`), so this session has not regenerated the full CICIDS2017 comparison metrics. Do not present the old numbers as results of the current hardened experiment until the exact verified Parquet is rerun.
+
+### 2.10 Event/incident parameter sensitivity harness
+
+A reproducible structural sensitivity runner is available at `experiments/event_correlation_sensitivity.py`. Its default grid evaluates 30/60/120-second flow-grouping windows against 60/180/300/600-second temporal graph gaps on detector-flagged metadata-rich flows. It records event counts, flows-per-event distributions, event durations, temporal-edge counts, candidate-incident counts and event coverage, along with the input SHA-256 and timestamp range.
+
+The runner excludes ground-truth labels from grouping and calls every incident group a candidate correlation requiring analyst validation. It does not claim that one parameter setting is correct. **The full sensitivity sweep has not yet been run on the team's actual full metadata-rich export**; synthetic regression coverage validates the runner contract only.
+
+## 3. How to run the two detector modes
 
 Install development/runtime requirements:
 
@@ -186,9 +194,9 @@ GitHub Actions workflow: `.github/workflows/reliability-checks.yml`.
 Latest completed green validation on the working branch:
 - Python module compile check: passed.
 - Direct CLI smoke tests for `python attack_graph/if_attack_graph_pipeline.py --help` and `python risk_analyzer.py --help`: passed.
-- Pytest: **32 passed**.
+- Pytest: **33 passed**.
 
-The tests cover label-independent and port-aware event creation, detector-output requirements, interleaved host timelines, non-overlapping temporal links, GEXF null handling, candidate incident grouping, chronological day holdout and single-day fallback, risk-score missing evidence semantics, unknown graph degrees, zero-weight risk factors, valid empty incident outputs, stale benchmark-output cleanup during inference, train-only preprocessing, benchmark-to-artifact-to-unlabeled-inference flow, ground-truth-label separation from downstream artefacts and agent evidence, exact port/time flow matching, malformed metadata fail-closed behaviour, safe artifact filenames, event ID formatting, stale metric suppression, numeric identifier exclusion and all-missing feature handling in both comparison loaders, missing-label handling, and deterministic report rendering.
+The tests cover label-independent and port-aware event creation, detector-output requirements, interleaved host timelines, non-overlapping temporal links, GEXF null handling, candidate incident grouping, chronological day holdout and single-day fallback, risk-score missing evidence semantics, unknown graph degrees, zero-weight risk factors, valid empty incident outputs, stale benchmark-output cleanup during inference, train-only preprocessing, benchmark-to-artifact-to-unlabeled-inference flow, ground-truth-label separation from downstream artefacts and agent evidence, exact port/time flow matching, malformed metadata fail-closed behaviour, safe artifact filenames, event ID formatting, structural event-window/temporal-gap sensitivity reporting, stale metric suppression, numeric identifier exclusion and all-missing feature handling in both comparison loaders, missing-label handling, and deterministic report rendering.
 
 These are unit/integration tests on synthetic fixtures. They do not constitute a full-scale end-to-end evaluation on all metadata-rich CICIDS2017 files or a live enterprise network.
 
@@ -196,7 +204,7 @@ These are unit/integration tests on synthetic fixtures. They do not constitute a
 
 1. **Attack-family classification:** the current detector is binary anomaly detection. Event attack type remains `Unclassified` unless a separately trained and evaluated multiclass classifier supplies `predicted_attack_type`. Ground-truth labels are not substituted for predictions.
 2. **Temporal/connection-level generalisation:** chronological calendar-day holdout is now used when at least three dates exist; one-day/single-day exports use an explicitly labelled random duplicate-group fallback. The current split does not hold out by host, subnet or attack scenario, and exact feature hashes are not the same as connection-group IDs. The cleaned 69-feature Parquet lacks timestamps/endpoints; the metadata-rich original traffic export is required for temporal and event-level analysis.
-3. **Event window/gap sensitivity:** the 60-second event grouping window and 300-second temporal edge gap are configurable engineering heuristics. A sensitivity study (for example 30/60/120-second grouping and 60/180/300/600-second edge gaps) with event fragmentation/merging metrics is still required.
+3. **Event window/gap sensitivity:** a reproducible 30/60/120-second grouping × 60/180/300/600-second temporal-gap structural sensitivity harness is implemented and tested. The full sweep still needs to be run on the team's complete metadata-rich export. Without analyst-labelled incident/stage ground truth, this measures structural fragmentation/merging only—not incident accuracy or causal validity.
 4. **Incident correlation validity:** connected components represent candidate shared-host temporal correlations. They are not confirmed incidents, causal chains or multi-stage attack ground truth. A labelled incident/stage benchmark and analyst adjudication are needed.
 5. **Risk-score calibration:** current factor weights, normalization references and bands are heuristic. They need calibration/validation against analyst-confirmed incident severity and operational outcomes before they can be used as severity estimates.
 6. **Agent factuality:** evidence prompts and deterministic rendering are safeguards, not a measured factuality guarantee. Evaluate on analyst-labelled investigations and measure unsupported claims, evidence citation precision, tool success and abstention.
@@ -209,7 +217,7 @@ These are unit/integration tests on synthetic fixtures. They do not constitute a
 
 1. Run benchmark mode on the full metadata-rich CICIDS2017 flow export and inspect the saved split counts, excluded duplicate counts, metrics and graph outputs.
 2. Run unlabeled inference mode against a separate capture or a held-out export with the `Label` column removed.
-3. Measure event-window/gap sensitivity and compare candidate incidents with known attack scenarios.
+3. Run `experiments/event_correlation_sensitivity.py` on the complete metadata-rich export; then compare the candidate groups with documented CICIDS scenarios and analyst adjudication where a valid reference mapping exists.
 4. Add a separate multiclass attack-family model only if it can be evaluated with a duplicate/group-aware split and per-class support reporting.
 5. Create an analyst-reviewed investigation set for the agent; measure evidence accuracy and unsupported claims.
 6. Recalibrate the heuristic risk index with confirmed incident outcomes before treating it as a prioritisation score beyond a demonstration.
