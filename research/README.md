@@ -15,6 +15,7 @@ This folder contains the literature review, baseline audit, experimental protoco
 - [Viva design-decision matrix](VIVA_DESIGN_DECISION_MATRIX.md) — paper-backed rationale for every major implementation choice.
 - [Deep viva Q&A](DEEP_VIVA_QA.md) — technical questions and grounded answers.
 - [Scaling validation status](SCALING_VALIDATION_STATUS.md) — completed run and outputs.
+- [Project hardening report](PROJECT_HARDENING_REPORT.md) — code fixes, validation evidence and limitations still open.
 - [Results status](RESULTS_STATUS.md) — completed pilot and current validation stages.
 
 ## Key research decision
