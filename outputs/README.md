@@ -51,7 +51,7 @@ Inference requires the same numeric feature schema and the metadata fields neede
 
 Detection/graph outputs:
 - `isolation_forest_model.joblib` — reusable fitted detector and preprocessing/threshold artifact (benchmark mode).
-- `suspicious_flows_with_metadata.csv` — held-out benchmark detections or unlabeled inference detections.
+- `suspicious_flows_with_metadata.csv` — held-out benchmark detections or unlabeled inference detections. Ground-truth `Label` and `is_attack` fields are removed before this downstream artefact is written; benchmark annotations remain only in the evaluation calculation.
 - `detection_metrics.json` — held-out benchmark metrics (benchmark mode only).
 - `per_attack_detection_evaluation.csv` — per-attack held-out recall/support (benchmark mode only).
 - `attack_events.csv` — label-independent time/connection event groups.
@@ -79,6 +79,6 @@ The risk index uses anomaly scores relative to the benign calibration distributi
 
 ## 4. Investigation reports
 
-The agentic investigator retrieves event, flow, host and graph evidence through predefined tools. Its report renderer is deterministic and reports unknown fields explicitly. Tool-grounded prompts and formatting reduce unsupported statements but do not prove LLM factual accuracy; independent analyst review remains required before containment or other operational action.
+The agentic investigator retrieves event, flow, host and graph evidence through predefined tools. The flow loader explicitly excludes `Label` and `is_attack`, and the flow-evidence tool never returns benchmark annotations to the LLM. Its report renderer is deterministic and reports unknown fields explicitly. Tool-grounded prompts and formatting reduce unsupported statements but do not prove LLM factual accuracy; independent analyst review remains required before containment or other operational action.
 
 The JSON investigation examples and Markdown reports in this directory are representative outputs, not a substitute for running the workflow against the traffic data being investigated.
