@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import time
+import joblib
 from pathlib import Path
 
 import networkx as nx
@@ -43,10 +44,13 @@ NON_FEATURE_COLUMNS = {
 }
 
 
-def clean_labels(df: pd.DataFrame) -> pd.DataFrame:
+def clean_labels(df: pd.DataFrame, *, require_label: bool = False) -> pd.DataFrame:
+    """Normalize metadata while allowing genuinely unlabeled inference traffic."""
     out = normalize_columns(df)
     if "label" not in out.columns:
-        raise ValueError("Metadata-rich CICIDS files must contain a Label column.")
+        if require_label:
+            raise ValueError("Benchmark training/evaluation requires a Label column.")
+        return out
     out["label"] = out["label"].astype(str).str.strip().replace(LABEL_MAP)
     return out
 
@@ -208,6 +212,12 @@ def run(
 
     df = load_metadata_sample(Path(data_dir), nrows=nrows)
     work, x_raw, feature_columns = prepare_features(df)
+    if "label" not in work.columns:
+        raise ValueError(
+            "Benchmark mode requires ground-truth Label for benign-only partitioning "
+            "and held-out evaluation. Use --mode infer with a trained model artifact "
+            "for unlabeled network traffic."
+        )
     labels = work["label"].astype(str).str.strip()
     binary = labels.str.casefold().ne("benign").to_numpy(dtype=np.int8)
     benign_mask = binary == 0
@@ -322,6 +332,23 @@ def run(
         str(q): float(np.quantile(calibration_scores, q))
         for q in (0.0, 0.01, 0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99, 1.0)
     }
+
+    model_artifact_path = output / "isolation_forest_model.joblib"
+    joblib.dump({
+        "artifact_version": 1,
+        "model_name": "IsolationForest",
+        "model": model,
+        "imputer": imputer,
+        "feature_columns": feature_columns,
+        "threshold": threshold,
+        "score_direction": "lower score is more anomalous",
+        "calibration_score_quantiles": calibration_score_quantiles,
+        "training_rows": int(len(chosen_train_positions)),
+        "n_estimators": int(n_estimators),
+        "max_samples": int(min(1024, len(chosen_train_positions))),
+        "calibration_quantile": float(calibration_quantile),
+        "threshold_source": "held_out_benign_only_calibration",
+    }, model_artifact_path)
 
     score_started = time.perf_counter()
     evaluation_scores = model.score_samples(x_evaluation)
@@ -457,6 +484,7 @@ def run(
         "threshold_source": "held_out_benign_only_calibration",
         "threshold_rule": f"lower {calibration_quantile:.1%} quantile of benign Isolation Forest score_samples",
         "isolation_forest_threshold": threshold,
+        "model_artifact": str(model_artifact_path),
         "calibration_quantile": calibration_quantile,
         "calibration_score_quantiles": calibration_score_quantiles,
         "measured_calibration_fpr": measured_calibration_fpr,
@@ -496,11 +524,120 @@ def run(
     print(json.dumps(summary, indent=2, default=str))
 
 
+def run_inference(
+    data_dir: str,
+    model_artifact_path: str,
+    output_dir: str,
+    nrows: int = 0,
+    time_window_seconds: int = 60,
+    max_sequence_gap_seconds: int = 300,
+) -> None:
+    """Score unlabeled network-flow CSVs with a previously calibrated artifact.
+
+    This path does not require or access ground-truth Label. The persisted
+    imputer, feature order, detector and benign-calibrated threshold come from
+    benchmark training. Only predicted anomaly flags drive event construction.
+    Load joblib artifacts only from a trusted project environment.
+    """
+    start_time = time.perf_counter()
+    artifact_path = Path(model_artifact_path)
+    if not artifact_path.exists():
+        raise FileNotFoundError(f"Trained model artifact not found: {artifact_path}")
+
+    artifact = joblib.load(artifact_path)
+    required_artifact = {
+        "artifact_version", "model_name", "model", "imputer",
+        "feature_columns", "threshold", "calibration_score_quantiles",
+    }
+    if not isinstance(artifact, dict) or not required_artifact.issubset(artifact):
+        raise ValueError("Model artifact is incomplete or has an unsupported format.")
+    if artifact["artifact_version"] != 1 or artifact["model_name"] != "IsolationForest":
+        raise ValueError("Unsupported model artifact version or detector.")
+
+    df = load_metadata_sample(Path(data_dir), nrows=nrows)
+    work, x_raw, _ = prepare_features(
+        df, feature_columns=list(artifact["feature_columns"])
+    )
+    if "label" in work.columns:
+        # Ground-truth labels are deliberately excluded from inference outputs.
+        work = work.drop(columns=["label"])
+    x_transformed = artifact["imputer"].transform(x_raw)
+    model = artifact["model"]
+    score_started = time.perf_counter()
+    scores = model.score_samples(x_transformed)
+    scoring_seconds = time.perf_counter() - score_started
+    threshold = float(artifact["threshold"])
+    work["anomaly_score"] = scores
+    work["predicted_anomaly"] = scores < threshold
+
+    suspicious = work.loc[work["predicted_anomaly"]].copy()
+    output = Path(output_dir)
+    output.mkdir(parents=True, exist_ok=True)
+    suspicious.to_csv(output / "suspicious_flows_with_metadata.csv", index=False)
+
+    events = build_attack_events(
+        suspicious,
+        anomalous_only=True,
+        config=EventConfig(time_window_seconds=time_window_seconds),
+    )
+    correlation_graph = build_attack_graph(events)
+    correlation_graph = add_sequence_edges(
+        correlation_graph, events, max_gap_seconds=max_sequence_gap_seconds
+    )
+    events, incidents = build_potential_incidents(events, correlation_graph)
+    events.to_csv(output / "attack_events.csv", index=False)
+    incidents.to_csv(output / "incident_groups.csv", index=False)
+
+    graph = build_attack_graph(events)
+    graph = add_sequence_edges(graph, events, max_gap_seconds=max_sequence_gap_seconds)
+    write_attack_graph_gexf(graph, str(output / "attack_graph.gexf"))
+
+    summary = {
+        "pipeline_version": "2.2-inference",
+        "mode": "unlabeled_inference",
+        "dataset_rows": int(len(work)),
+        "feature_count": int(len(artifact["feature_columns"])),
+        "feature_columns": list(artifact["feature_columns"]),
+        "ground_truth_labels_required": False,
+        "ground_truth_labels_used": False,
+        "model_name": artifact["model_name"],
+        "model_artifact": str(artifact_path),
+        "threshold_source": artifact.get("threshold_source", "benign_calibration_in_model_artifact"),
+        "isolation_forest_threshold": threshold,
+        "calibration_score_quantiles": artifact["calibration_score_quantiles"],
+        "score_direction": artifact.get("score_direction", "lower score is more anomalous"),
+        "suspicious_flows": int(len(suspicious)),
+        "attack_events": int(len(events)),
+        "potential_incidents": int(len(incidents)),
+        "standalone_events": int(events["incident_id"].isna().sum()) if "incident_id" in events.columns else int(len(events)),
+        "graph_nodes": int(graph.number_of_nodes()),
+        "graph_edges": int(graph.number_of_edges()),
+        "sequence_edge_semantics": "shared-host temporal correlation; not causation",
+        "time_window_seconds": time_window_seconds,
+        "max_sequence_gap_seconds": max_sequence_gap_seconds,
+        "scoring_seconds": scoring_seconds,
+        "elapsed_seconds": round(time.perf_counter() - start_time, 2),
+        "limitations": [
+            "No ground-truth labels were required or used for flow scoring, suspicious-flow selection, event grouping or graph construction.",
+            "Attack type remains Unclassified unless a separately trained classifier supplies predicted_attack_type.",
+            "Potential incidents are graph-based candidate correlations requiring analyst validation, not confirmed campaigns or causal chains.",
+            "The feature schema and threshold must match the environment/data source for which the model artifact was validated.",
+        ],
+    }
+    (output / "pipeline_summary.json").write_text(
+        json.dumps(summary, indent=2, default=str), encoding="utf-8"
+    )
+    print(json.dumps(summary, indent=2, default=str))
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Run benign-only anomaly detection and label-independent attack graph construction."
     )
-    parser.add_argument("data_dir", help="Folder containing metadata-rich CICIDS2017 CSV files")
+    parser.add_argument("data_dir", help="Folder containing metadata-rich flow CSV files")
+    parser.add_argument("--mode", choices=["benchmark", "infer"], default="benchmark")
+    parser.add_argument("--model-artifact", default="outputs/isolation_forest_model.joblib",
+                        help="Trusted Isolation Forest artifact required for --mode infer")
     parser.add_argument("--output-dir", default="outputs")
     parser.add_argument(
         "--nrows", type=int, default=0,
@@ -514,15 +651,25 @@ if __name__ == "__main__":
     parser.add_argument("--calibration-rows", type=int, default=5_000)
     parser.add_argument("--evaluation-rows", type=int, default=160_000)
     args = parser.parse_args()
-    run(
-        args.data_dir,
-        args.output_dir,
-        args.nrows,
-        args.benign_sample_n,
-        args.n_estimators,
-        args.calibration_quantile,
-        args.time_window_seconds,
-        args.max_sequence_gap_seconds,
-        args.calibration_rows,
-        args.evaluation_rows,
-    )
+    if args.mode == "benchmark":
+        run(
+            args.data_dir,
+            args.output_dir,
+            args.nrows,
+            args.benign_sample_n,
+            args.n_estimators,
+            args.calibration_quantile,
+            args.time_window_seconds,
+            args.max_sequence_gap_seconds,
+            args.calibration_rows,
+            args.evaluation_rows,
+        )
+    else:
+        run_inference(
+            args.data_dir,
+            args.model_artifact,
+            args.output_dir,
+            args.nrows,
+            args.time_window_seconds,
+            args.max_sequence_gap_seconds,
+        )
