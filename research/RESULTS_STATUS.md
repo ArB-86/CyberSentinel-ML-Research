@@ -1,13 +1,11 @@
-# Results status
+# Experiment status
 
-<badge>Completed — pilot results committed</badge>
+**Completed:** the CICIDS2017 model-comparison pilot has been executed across three independent seeds (42, 43 and 44).
 
-The three-seed CICIDS2017 comparison completed successfully and its metrics, predictions, per-attack recall, metadata and plots are committed under `experiments/results/processed-v1.0.1/` on `research/model-comparison`.
+The repository contains the per-seed metrics, predictions, per-attack recall, run metadata and ROC/PR plots under `experiments/results/processed-v1.0.1/`.
 
-Read the consolidated analysis in [EXPERIMENT_RESULTS.md](EXPERIMENT_RESULTS.md). It reports mean ± sample standard deviation across seeds 42, 43 and 44, states the fixed benign-only threshold protocol, separates the supervised Random Forest reference, and explains the false-positive calibration tie issue observed for Random Forest.
+The consolidated findings are in [EXPERIMENT_RESULTS.md](EXPERIMENT_RESULTS.md). The report includes mean ± sample standard deviation, the benign-only training and calibration protocol, the separate supervised Random Forest reference, and the study limitations.
 
-Key pilot finding: RBF One-Class SVM achieved the strongest unsupervised PR-AUC and F1 at the tested operating point; Isolation Forest was intermediate; LOF had the strongest ROC-AUC but weaker PR-AUC and F1. This is a bounded 5,000-benign-training-row pilot, not a production winner claim.
+**Pilot finding:** RBF One-Class SVM achieved the strongest unsupervised PR-AUC and F1 at the tested operating point. Isolation Forest remains the detector in the current application until larger-sample and metadata-rich evaluation justify a model change.
 
-**Important execution detail:** The initial training workflow completed all model runs and uploaded its 15 output files but failed at its last commit step because `experiments/results/` is intentionally ignored by Git. The results were recovered from that run's GitHub Actions artifact and published by a separate workflow using `git add -f`. No model retraining occurred during publication.
-
-Next work: larger training-sample sensitivity checks; a tie-aware supervised reference threshold; metadata-rich temporal/connection-grouped evaluation; and better support for rare attack types.
+Next research steps are larger training-sample sensitivity checks, tie-aware supervised threshold calibration, temporal or connection-grouped evaluation, and improved assessment of rare attack classes.
