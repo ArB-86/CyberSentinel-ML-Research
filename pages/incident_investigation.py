@@ -9,7 +9,7 @@ import streamlit as st
 # ============================================================
 
 st.set_page_config(
-    page_title="CyberSentinel | Event Investigation",
+    page_title="CyberSentinel | Attack Event Investigation",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -326,7 +326,7 @@ with st.sidebar:
     st.page_link("pages/attack_detection.py", label="Attack Detection")
 
     st.markdown('<div class="smallcaps" style="margin-top:18px">Investigation</div>', unsafe_allow_html=True)
-    st.page_link("pages/incident_investigation.py", label="Incident Investigation")
+    st.page_link("pages/incident_investigation.py", label="Event Investigation")
     st.page_link("pages/attack_graph.py", label="Attack Graph")
 
     st.markdown('<div class="smallcaps" style="margin-top:18px">Future Modules</div>', unsafe_allow_html=True)
@@ -341,7 +341,7 @@ with st.sidebar:
 
             <div class="green"
                  style="font-weight:800;font-size:.76rem">
-                ● SYSTEM ONLINE
+                ● EVENT DATA READY
             </div>
 
             <div style="
@@ -349,7 +349,7 @@ with st.sidebar:
                 font-size:.7rem;
                 margin-top:6px;
             ">
-                CICIDS2017 · {len(events):,} flows
+                {len(events):,} grouped events
             </div>
 
         </div>
@@ -400,7 +400,7 @@ standalone_events = (
 # ============================================================
 
 # st.markdown(
-#     '<div class="smallcaps">CYBERSENTINEL INVESTIGATION</div>',
+#     '<div class="smallcaps">CYBERSENTINEL EVENT REVIEW</div>',
 #     unsafe_allow_html=True,
 # )
 
@@ -479,6 +479,31 @@ for col, (label, value, description) in zip(
             '</div>',
             unsafe_allow_html=True,
         )
+
+
+if not potential_incidents.empty:
+    st.markdown("#### Candidate incident groups")
+    display_cols = [
+        column for column in [
+            "incident_id", "start_time", "end_time", "event_count",
+            "flow_count", "unique_host_count", "confirmation_status"
+        ]
+        if column in potential_incidents.columns
+    ]
+    st.dataframe(
+        potential_incidents[display_cols],
+        use_container_width=True,
+        hide_index=True,
+    )
+    st.caption(
+        "These are candidate groups based on shared-host temporal correlation. "
+        "They are not confirmed incidents and do not establish causation."
+    )
+else:
+    st.info(
+        "No multi-event candidate groups were generated. Individual grouped events "
+        "remain available for review; this does not mean no attack activity occurred."
+    )
 
 
 # ============================================================
