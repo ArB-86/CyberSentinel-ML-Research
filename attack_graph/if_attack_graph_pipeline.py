@@ -51,7 +51,9 @@ def clean_labels(df: pd.DataFrame, *, require_label: bool = False) -> pd.DataFra
         if require_label:
             raise ValueError("Benchmark training/evaluation requires a Label column.")
         return out
-    out["label"] = out["label"].astype(str).str.strip().replace(LABEL_MAP)
+    labels = out["label"].astype("string").str.strip()
+    labels = labels.replace("", pd.NA).replace(LABEL_MAP)
+    out["label"] = labels
     return out
 
 
@@ -232,7 +234,13 @@ def run(
             "and held-out evaluation. Use --mode infer with a trained model artifact "
             "for unlabeled network traffic."
         )
-    labels = work["label"].astype(str).str.strip()
+    valid_label_mask = work["label"].notna() & work["label"].astype("string").str.strip().ne("")
+    missing_label_rows = int((~valid_label_mask).sum())
+    work = work.loc[valid_label_mask].reset_index(drop=True)
+    x_raw = x_raw.loc[valid_label_mask].reset_index(drop=True)
+    labels = work["label"].astype("string").str.strip()
+    if labels.empty:
+        raise ValueError("No rows with valid ground-truth labels remain for benchmark evaluation.")
     binary = labels.str.casefold().ne("benign").to_numpy(dtype=np.int8)
     benign_mask = binary == 0
     benign_positions = np.flatnonzero(benign_mask)
@@ -487,7 +495,8 @@ def run(
     test_hashes = set(hashes[evaluation_positions].tolist())
     summary = {
         "pipeline_version": "2.1",
-        "dataset_rows": int(len(df)),
+        "dataset_rows": int(len(work)),
+        "missing_or_blank_label_rows_excluded": missing_label_rows,
         "feature_count": int(len(feature_columns)),
         "feature_columns": feature_columns,
         "label_distribution_for_evaluation_only": {
