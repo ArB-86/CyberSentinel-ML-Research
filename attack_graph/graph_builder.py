@@ -25,12 +25,21 @@ def _gexf_safe(value):
 
 
 def _sanitize_graph_for_gexf(graph: nx.DiGraph) -> nx.DiGraph:
+    """Convert supported attributes and omit missing values for GEXF export."""
+    def clean_attributes(attrs: dict) -> dict:
+        cleaned = {}
+        for key, value in attrs.items():
+            safe_value = _gexf_safe(value)
+            if safe_value is not None:
+                cleaned[str(key)] = safe_value
+        return cleaned
+
     safe = nx.DiGraph()
-    safe.graph.update({k: _gexf_safe(v) for k, v in graph.graph.items()})
+    safe.graph.update(clean_attributes(graph.graph))
     for node, attrs in graph.nodes(data=True):
-        safe.add_node(node, **{k: _gexf_safe(v) for k, v in attrs.items()})
-    for u, v, attrs in graph.edges(data=True):
-        safe.add_edge(u, v, **{k: _gexf_safe(vv) for k, vv in attrs.items()})
+        safe.add_node(node, **clean_attributes(attrs))
+    for source, target, attrs in graph.edges(data=True):
+        safe.add_edge(source, target, **clean_attributes(attrs))
     return safe
 
 
