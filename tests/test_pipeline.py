@@ -5,9 +5,9 @@ from attack_graph.if_attack_graph_pipeline import prepare_features, run
 
 def test_prepare_features_preserves_missing_values_for_train_only_imputation():
     frame = pd.DataFrame({
-        "Timestamp": ["2026-01-01 00:00:00", "2026-01-01 00:00:01"],
-        "Source IP": ["A", "B"],
-        "Destination IP": ["B", "C"],
+        "Timestamp": ["2026-01-01 00:00:00", "2026-01-01 00:00:01", "2026-01-01 00:00:02"],
+        "Source IP": ["A", "B", "C"],
+        "Destination IP": ["B", "C", "D"],
         "Source Port": [1000, 1001, 1002],
         "Destination Port": [80, 81, 82],
         "Protocol": [6, 17, 6],
