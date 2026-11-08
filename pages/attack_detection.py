@@ -6,6 +6,7 @@ import numpy as np
 import plotly.graph_objects as go
 
 from attack_graph.output_contracts import benchmark_metrics_available
+from utils.cache_keys import file_cache_signature, file_set_cache_signature
 
 
 # ============================================================
@@ -183,7 +184,7 @@ st.markdown(
 # ============================================================
 
 @st.cache_data
-def load_pipeline_summary():
+def load_pipeline_summary(cache_signature):
 
     if not SUMMARY_PATH.exists():
         return {}
@@ -207,7 +208,7 @@ def load_pipeline_summary():
 # ============================================================
 
 @st.cache_data
-def load_suspicious_flows():
+def load_suspicious_flows(cache_signature):
 
     paths = [
         # Correct path pointing to your outputs/ folder
@@ -239,7 +240,7 @@ def load_suspicious_flows():
 
 
 @st.cache_data
-def count_csv_rows(path):
+def count_csv_rows(path, cache_signature):
 
     if path is None or not path.exists():
         return None
@@ -256,7 +257,7 @@ def count_csv_rows(path):
         return None
 
 @st.cache_data
-def load_detection_metrics():
+def load_detection_metrics(cache_signature):
     path = OUTPUT_DIR / "detection_metrics.json"
     if not path.exists():
         return {}
@@ -268,7 +269,7 @@ def load_detection_metrics():
 
 
 @st.cache_data
-def load_per_attack_evaluation():
+def load_per_attack_evaluation(cache_signature):
     path = OUTPUT_DIR / "per_attack_detection_evaluation.csv"
     if not path.exists():
         return pd.DataFrame()
@@ -278,18 +279,22 @@ def load_per_attack_evaluation():
         return pd.DataFrame()
 
 
-pipeline_summary = load_pipeline_summary()
+pipeline_summary = load_pipeline_summary(file_cache_signature(SUMMARY_PATH))
 has_benchmark_evaluation = benchmark_metrics_available(pipeline_summary)
 if has_benchmark_evaluation:
-    detection_metrics = load_detection_metrics()
-    per_attack_evaluation = load_per_attack_evaluation()
+    detection_metrics = load_detection_metrics(file_cache_signature(OUTPUT_DIR / 'detection_metrics.json'))
+    per_attack_evaluation = load_per_attack_evaluation(file_cache_signature(OUTPUT_DIR / 'per_attack_detection_evaluation.csv'))
 else:
     # Do not reuse benchmark metrics left in outputs/ after an inference run.
     detection_metrics = {}
     per_attack_evaluation = pd.DataFrame()
 
 suspicious_df, suspicious_file = (
-    load_suspicious_flows()
+    load_suspicious_flows(file_set_cache_signature([
+        SUSPICIOUS_PATH,
+        ROOT / "attack_graph_output" / "suspicious_flows_with_metadata.csv",
+        ROOT / "suspicious_flows_with_metadata.csv",
+    ]))
 )
 
 suspicious_count = pipeline_summary.get(
@@ -298,7 +303,8 @@ suspicious_count = pipeline_summary.get(
 
 if suspicious_count is None:
     suspicious_count = count_csv_rows(
-        suspicious_file
+        suspicious_file,
+        file_cache_signature(suspicious_file),
     )
 
 
