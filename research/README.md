@@ -16,10 +16,11 @@ This folder contains the literature review, baseline audit, experimental protoco
 - [Deep viva Q&A](DEEP_VIVA_QA.md) — technical questions and grounded answers.
 - [Scaling validation status](SCALING_VALIDATION_STATUS.md) — completed run and outputs.
 - [Project hardening report](PROJECT_HARDENING_REPORT.md) — code fixes, validation evidence and limitations still open.
+- [Event-correlation sensitivity runner](../experiments/event_correlation_sensitivity.py) — parameter sweep for event windows and shared-host temporal gaps.
 - [Results status](RESULTS_STATUS.md) — completed pilot and current validation stages.
 
 ## Key research decision
 
 Isolation Forest remains the existing unsupervised baseline. LOF and RBF One-Class SVM are the primary unsupervised comparators. Random Forest is a separate supervised reference and must not be presented as an equivalent unsupervised detector.
 
-In the three-seed pilot, RBF One-Class SVM achieved the strongest mean PR-AUC and F1 among the unsupervised models. Treat this as a bounded benchmark finding; larger-sample and temporal/connection-grouped evaluation remain necessary before production model selection.
+In the historical pre-hardening three-seed pilot, RBF One-Class SVM achieved the strongest mean PR-AUC and F1 among the unsupervised models. These metrics have not yet been regenerated under the current train-only feature preprocessing; treat the ranking as provisional until the checksum-verified Parquet is rerun.
