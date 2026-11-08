@@ -2,7 +2,7 @@
 
 **Machine-learning-based cyber attack detection and incident investigation**
 
-CyberSentinel is a cybersecurity analysis platform that processes network-flow data, identifies anomalous activity, correlates related events, reconstructs attack relationships as a graph, assesses incident risk, and assists investigations with an AI-powered workflow.
+CyberSentinel is a cybersecurity analysis platform that processes network-flow data, identifies anomalous activity, correlates related events, reconstructs observed relationships as a graph, provides heuristic event/incident triage, and assists investigations with an AI-powered workflow.
 
 ## System architecture
 
@@ -17,11 +17,11 @@ Suspicious Network Events
         |
 Temporal and Entity Correlation
         |
-Incident Formation
+Potential Incident Correlation
         |
 Attack Graph Construction
         |
-Risk Assessment
+Heuristic Risk Triage
         |
 Agentic AI Investigation
         |
@@ -33,7 +33,7 @@ Evidence-Backed Findings
 - Flow-level anomaly detection using Isolation Forest.
 - Event grouping and temporal correlation.
 - Graph representation of hosts, attack events, targets and observed relationships.
-- Incident risk scoring.
+- Heuristic event and candidate-incident triage indexes (not calibrated incident probabilities or validated severity scores).
 - AI-assisted incident investigation using predefined tools and retrieved evidence.
 - Streamlit interface for attack detection, investigation, graph exploration and risk assessment.
 
@@ -156,6 +156,7 @@ A paired sensitivity study has completed on `research/extended-validation`. It e
 - [Deep viva Q&A](research/DEEP_VIVA_QA.md)
 - [Extended experiment runner](experiments/compare_model_scales.py)
 - [Event/incident sensitivity runner](experiments/event_correlation_sensitivity.py)
+- [Event/incident sensitivity runner](experiments/event_correlation_sensitivity.py)
 
 ## Project hardening
 
@@ -163,7 +164,7 @@ A separate engineering pass addresses data leakage, held-out detection evaluatio
 
 - [Project hardening report](research/PROJECT_HARDENING_REPORT.md) — fixes, tests and remaining research limitations.
 - [Output workflows](outputs/README.md) — benchmark training, artifact creation, unlabeled inference, graph and risk-triage commands.
-- [Regression tests](tests/) — 33 unit/integration checks, plus compile and CLI smoke tests in GitHub Actions.
+- [Regression tests](tests/) — 35 unit/integration checks, plus compile and CLI smoke tests in GitHub Actions.
 
 Hardening changes are isolated to the `research/project-hardening` branch. The application still uses Isolation Forest; a calibrated artifact can now be applied to unlabeled flow exports in inference mode.
 
