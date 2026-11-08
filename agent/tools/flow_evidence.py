@@ -43,9 +43,9 @@ def get_flow_evidence(event_id: str, max_flows: int = 5) -> str:
     """
     Retrieve individual network flow evidence for a specific event.
 
-    Returns a summary (flow count, label counts) plus up to `max_flows`
-    flow records with IPs, ports, packet counts, TCP flags, label and
-    anomaly score (lower score = more anomalous).
+    Returns a flow count plus up to `max_flows` flow records with IPs,
+    ports, packet counts, TCP flags and anomaly score (lower score = more
+    anomalous). Ground-truth labels are intentionally excluded from agent evidence.
 
     Use this when the event metadata alone is insufficient to explain
     the suspicious network behaviour.
@@ -126,11 +126,6 @@ def get_flow_evidence(event_id: str, max_flows: int = 5) -> str:
                 f"evidence is unavailable."
             )
 
-        label_counts = (
-            matched["label"].value_counts().head(5).to_dict()
-            if "label" in matched.columns else {}
-        )
-
         max_flows = max(1, min(int(max_flows), 20))
 
         if "anomaly_score" in matched.columns:
@@ -165,7 +160,6 @@ def get_flow_evidence(event_id: str, max_flows: int = 5) -> str:
                 f"Connection: {row.get('src_ip')}:{safe_int(row.get('src_port'))}"
                 f" -> {row.get('dst_ip')}:{safe_int(row.get('dst_port'))}\n"
                 f"Time: {row.get('timestamp', 'N/A')}\n"
-                f"Label: {row.get('label', 'Unknown')}\n"
                 f"Anomaly score: {row.get('anomaly_score', 'N/A')}\n"
                 f"Duration: {row.get('flow duration', 'N/A')}\n"
                 f"Forward packets: {row.get('total fwd packets', 'N/A')}\n"
