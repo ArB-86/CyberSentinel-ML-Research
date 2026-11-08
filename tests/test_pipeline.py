@@ -12,12 +12,15 @@ def test_prepare_features_preserves_missing_values_for_train_only_imputation():
         "Destination Port": [80, 81, 82],
         "Protocol": [6, 17, 6],
         "Flow Duration": [10.0, None, 20.0],
+        "Entirely Missing Feature": [None, None, None],
         "Label": ["BENIGN", "DoS", "DDoS"],
     })
     _, x, _ = prepare_features(frame)
     assert x["Flow Duration"].isna().sum() == 1
     assert "Label" not in x.columns
     assert "src_ip" not in x.columns
+    assert "Entirely Missing Feature" in x.columns
+    assert x["Entirely Missing Feature"].isna().all()
 
 
 def test_metadata_pipeline_runs_with_train_only_imputation(tmp_path):
