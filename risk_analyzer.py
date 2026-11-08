@@ -27,14 +27,49 @@ def _normalize_log(values: pd.Series, reference_q95: float | None = None) -> pd.
     return (100.0 * np.log1p(numeric) / denominator).clip(0.0, 100.0)
 
 
-def _anomaly_severity(scores: pd.Series) -> pd.Series:
-    """Convert lower-is-more-anomalous scores to within-batch severity percentiles."""
+def _anomaly_severity(
+    scores: pd.Series,
+    calibration_quantiles: dict[str, float] | None = None,
+) -> tuple[pd.Series, str]:
+    """Map lower-is-more-anomalous scores to a calibration-relative severity.
+
+    If a benign calibration distribution is available, use its empirical
+    quantile grid. Otherwise use within-batch rank only when multiple events
+    exist; a single event is not automatically assigned maximum severity.
+    """
     numeric = pd.to_numeric(scores, errors="coerce")
-    if numeric.notna().sum() == 0:
-        return pd.Series(np.nan, index=scores.index, dtype=float)
-    # Lowest score receives the highest percentile severity.
+    if calibration_quantiles:
+        try:
+            points = sorted(
+                (float(q), float(value))
+                for q, value in calibration_quantiles.items()
+                if np.isfinite(float(q)) and np.isfinite(float(value))
+            )
+            x_values = np.asarray([value for _, value in points], dtype=float)
+            y_values = np.asarray([q for q, _ in points], dtype=float)
+            unique_x, inverse = np.unique(x_values, return_inverse=True)
+            if len(unique_x) >= 2:
+                unique_y = np.asarray([
+                    float(y_values[inverse == idx].mean())
+                    for idx in range(len(unique_x))
+                ])
+                cdf = np.interp(
+                    numeric.to_numpy(dtype=float),
+                    unique_x,
+                    unique_y,
+                    left=float(unique_y[0]),
+                    right=float(unique_y[-1]),
+                )
+                severity = 100.0 * (1.0 - cdf)
+                return pd.Series(severity, index=scores.index).where(numeric.notna()), "benign_calibration_distribution"
+        except (TypeError, ValueError, OverflowError):
+            pass
+
+    if numeric.notna().sum() < 2:
+        return pd.Series(np.nan, index=scores.index, dtype=float), "unavailable_insufficient_reference"
+    # Lowest score receives the highest within-batch severity percentile.
     ranked = numeric.rank(method="average", ascending=False, pct=True) * 100.0
-    return ranked.where(numeric.notna())
+    return ranked.where(numeric.notna()), "relative_event_batch_rank"
 
 
 def _risk_level(score: float) -> str:
@@ -96,13 +131,24 @@ def calculate_incident_risks(
         if graph_path.exists():
             graph = nx.read_gexf(graph_path)
 
+    summary_path = events_path.parent / "pipeline_summary.json"
+    calibration_quantiles = None
+    if summary_path.exists():
+        try:
+            summary = __import__("json").loads(summary_path.read_text(encoding="utf-8"))
+            calibration_quantiles = summary.get("calibration_score_quantiles")
+        except (OSError, ValueError, TypeError):
+            calibration_quantiles = None
+
     flow_count = pd.to_numeric(events["flow_count"], errors="coerce").fillna(0).clip(lower=0)
     frequency = _normalize_log(flow_count)
-    anomaly = (
-        _anomaly_severity(events["mean_anomaly_score"])
-        if "mean_anomaly_score" in events.columns
-        else pd.Series(np.nan, index=events.index)
-    )
+    if "mean_anomaly_score" in events.columns:
+        anomaly, anomaly_reference_source = _anomaly_severity(
+            events["mean_anomaly_score"], calibration_quantiles
+        )
+    else:
+        anomaly = pd.Series(np.nan, index=events.index)
+        anomaly_reference_source = "unavailable_no_anomaly_score"
 
     host_values = []
     temporal_values = []
@@ -139,8 +185,12 @@ def calculate_incident_risks(
         in_degrees.append(in_degree)
         out_degrees.append(out_degree)
 
-    host_factor = _normalize_log(pd.Series(host_values, index=events.index))
-    temporal_factor = _normalize_log(pd.Series(temporal_values, index=events.index), reference_q95=5.0)
+    host_series = pd.Series(host_values, index=events.index, dtype=float)
+    temporal_series = pd.Series(temporal_values, index=events.index, dtype=float)
+    host_factor = _normalize_log(host_series).where(host_series.notna())
+    temporal_factor = _normalize_log(
+        temporal_series, reference_q95=5.0
+    ).where(temporal_series.notna())
 
     factor_values = {
         "anomaly_severity": anomaly,
@@ -179,6 +229,7 @@ def calculate_incident_risks(
             "out_degree": int(out_degrees[index]),
             "risk_score_semantics": "heuristic_triage_score_not_probability",
             "risk_model_version": "transparent_4_factor_v2",
+            "anomaly_reference_source": anomaly_reference_source,
             "active_factors": ",".join(available.keys()),
         }
         for name, value in factor_values.items():
