@@ -58,6 +58,8 @@ def test_missing_graph_is_not_treated_as_zero_graph_evidence(tmp_path):
     result = calculate_incident_risks(events_path, None, output_path)
     assert pd.isna(result.loc[0, "host_involvement_factor"])
     assert pd.isna(result.loc[0, "temporal_correlation_factor"])
+    assert pd.isna(result.loc[0, "in_degree"])
+    assert pd.isna(result.loc[0, "out_degree"])
     assert pd.isna(result.loc[0, "risk_score"])
     assert result.loc[0, "risk_level"] == "UNASSESSED"
     assert result.loc[0, "risk_score_semantics"] == "heuristic_triage_score_not_probability"
@@ -113,3 +115,34 @@ def test_missing_flow_count_is_not_treated_as_zero_evidence(tmp_path):
     result = calculate_incident_risks(events_path, graph_path, output_path)
     assert result["frequency_factor"].isna().all()
     assert result["risk_score"].notna().all()
+
+
+
+def test_one_positive_risk_weight_cannot_create_a_score(tmp_path):
+    events_path = tmp_path / "attack_events.csv"
+    graph_path = tmp_path / "attack_graph.gexf"
+    summary_path = tmp_path / "pipeline_summary.json"
+    output_path = tmp_path / "event_risk_scores.csv"
+    pd.DataFrame([
+        {"event_id": "E1", "src_ip": "A", "dst_ip": "B",
+         "flow_count": 5, "mean_anomaly_score": -0.2},
+        {"event_id": "E2", "src_ip": "C", "dst_ip": "D",
+         "flow_count": 8, "mean_anomaly_score": 0.1},
+    ]).to_csv(events_path, index=False)
+    summary_path.write_text(json.dumps({
+        "calibration_score_quantiles": {
+            "0.0": -0.5, "0.5": 0.0, "1.0": 0.5
+        }
+    }), encoding="utf-8")
+
+    weights = {
+        "anomaly_severity": 1.0,
+        "event_volume": 0.0,
+        "host_involvement": 0.0,
+        "temporal_correlation": 0.0,
+    }
+    result = calculate_incident_risks(
+        events_path, None, output_path, weights=weights
+    )
+    assert result["risk_score"].isna().all()
+    assert set(result["risk_level"]) == {"UNASSESSED"}
