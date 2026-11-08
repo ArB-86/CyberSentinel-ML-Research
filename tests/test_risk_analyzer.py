@@ -146,3 +146,18 @@ def test_one_positive_risk_weight_cannot_create_a_score(tmp_path):
     )
     assert result["risk_score"].isna().all()
     assert set(result["risk_level"]) == {"UNASSESSED"}
+
+
+def test_empty_events_write_empty_event_and_incident_risk_outputs(tmp_path):
+    events_path = tmp_path / "attack_events.csv"
+    output_path = tmp_path / "event_risk_scores.csv"
+    pd.DataFrame(columns=["event_id", "flow_count"]).to_csv(events_path, index=False)
+
+    result = calculate_incident_risks(events_path, None, output_path)
+    assert result.empty
+    assert output_path.exists()
+    incident_path = tmp_path / "incident_risk_scores.csv"
+    assert incident_path.exists()
+    incident_result = pd.read_csv(incident_path)
+    assert incident_result.empty
+    assert "incident_id" in incident_result.columns
