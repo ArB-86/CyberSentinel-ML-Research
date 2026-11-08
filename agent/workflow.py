@@ -6,7 +6,7 @@ import time
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode
 
@@ -257,7 +257,7 @@ def finalize_investigation(state: InvestigationState):
             ],
             "final_assessment": "Insufficient validated evidence for an automated incident verdict.",
         }
-        response.content = json.dumps(payload, ensure_ascii=False)
+        response = AIMessage(content=json.dumps(payload, ensure_ascii=False))
 
     return {
         "messages": [response],
