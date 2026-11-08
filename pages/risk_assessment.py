@@ -2,6 +2,7 @@ from pathlib import Path
 import pandas as pd
 
 from attack_graph.output_contracts import safe_artifact_stem
+from utils.cache_keys import file_cache_signature
 import json
 import streamlit as st
 from langchain_core.messages import HumanMessage
@@ -160,41 +161,49 @@ st.markdown(
 # DATA LOADERS
 # ============================================================
 
-@st.cache_data
-def load_risk_data():
-    risk_csv = Path("outputs/event_risk_scores.csv")
-    if not risk_csv.exists():
-        risk_csv = Path("attack_graph_output/event_risk_scores.csv")
-    if risk_csv.exists():
-        return pd.read_csv(risk_csv)
-    return pd.DataFrame()
+def _first_existing_output(name: str) -> Path:
+    for candidate in (Path("outputs") / name, Path("attack_graph_output") / name):
+        if candidate.exists():
+            return candidate
+    return Path("outputs") / name
+
 
 @st.cache_data
-def load_incident_risk_data():
-    risk_csv = Path("outputs/incident_risk_scores.csv")
-    if not risk_csv.exists():
-        risk_csv = Path("attack_graph_output/incident_risk_scores.csv")
-    if risk_csv.exists():
-        return pd.read_csv(risk_csv)
+def load_risk_data(path: Path, cache_signature):
+    if path.exists():
+        return pd.read_csv(path)
     return pd.DataFrame()
 
 
 @st.cache_data
-def get_total_flows():
-    flows_path = Path("outputs/suspicious_flows_with_metadata.csv")
-    if not flows_path.exists():
-        flows_path = Path("attack_graph_output/suspicious_flows_with_metadata.csv")
-    if flows_path.exists():
+def load_incident_risk_data(path: Path, cache_signature):
+    if path.exists():
+        return pd.read_csv(path)
+    return pd.DataFrame()
+
+
+@st.cache_data
+def get_total_flows(path: Path, cache_signature):
+    if path.exists():
         try:
-            df = pd.read_csv(flows_path, usecols=[0])
+            df = pd.read_csv(path, usecols=[0])
             return len(df)
         except Exception:
             return None
     return None
 
-df_risks = load_risk_data()
-df_incident_risks = load_incident_risk_data()
-total_flows = get_total_flows()
+
+event_risk_path = _first_existing_output("event_risk_scores.csv")
+incident_risk_path = _first_existing_output("incident_risk_scores.csv")
+suspicious_flows_path = _first_existing_output("suspicious_flows_with_metadata.csv")
+
+df_risks = load_risk_data(event_risk_path, file_cache_signature(event_risk_path))
+df_incident_risks = load_incident_risk_data(
+    incident_risk_path, file_cache_signature(incident_risk_path)
+)
+total_flows = get_total_flows(
+    suspicious_flows_path, file_cache_signature(suspicious_flows_path)
+)
 
 # ============================================================
 # SIDEBAR
