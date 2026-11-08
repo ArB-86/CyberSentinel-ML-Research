@@ -1,6 +1,8 @@
 from pathlib import Path
 from html import escape as escape_html
 
+from attack_graph.output_contracts import format_event_id
+
 import pandas as pd
 import streamlit as st
 
@@ -691,7 +693,7 @@ else:
             )
 
             # Your file currently stores IDs like 0001.
-            event_id = f"EVT-{raw_id.zfill(5)}"
+            event_id = format_event_id(raw_id)
 
         else:
 
@@ -861,7 +863,7 @@ with left:
 
                     st.metric(
                         "Event ID",
-                        f"EVT-{selected_raw_id.zfill(5)}",
+                        format_event_id(selected_raw_id),
                     )
 
                     st.metric(
