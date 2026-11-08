@@ -97,7 +97,9 @@ The research study evaluates three unsupervised approaches:
 
 Random Forest is reported separately as a supervised reference because it is trained using labelled attack examples.
 
-### Three-seed pilot results
+### Historical three-seed pilot results
+
+**Historical pre-hardening metrics — not yet re-run under the current feature-schema and train-only imputation code.** Treat the numerical ranking below as provisional; see [the results report](research/EXPERIMENT_RESULTS.md) for the exact limitation.
 
 Mean ± sample standard deviation across seeds 42, 43 and 44:
 
@@ -153,6 +155,7 @@ A paired sensitivity study has completed on `research/extended-validation`. It e
 - [Research evidence and model-selection rationale](research/RESEARCH_EVIDENCE_AND_MODEL_SELECTION.md)
 - [Deep viva Q&A](research/DEEP_VIVA_QA.md)
 - [Extended experiment runner](experiments/compare_model_scales.py)
+- [Event/incident sensitivity runner](experiments/event_correlation_sensitivity.py)
 
 ## Project hardening
 
@@ -160,7 +163,7 @@ A separate engineering pass addresses data leakage, held-out detection evaluatio
 
 - [Project hardening report](research/PROJECT_HARDENING_REPORT.md) — fixes, tests and remaining research limitations.
 - [Output workflows](outputs/README.md) — benchmark training, artifact creation, unlabeled inference, graph and risk-triage commands.
-- [Regression tests](tests/) — 32 unit/integration checks, plus compile and CLI smoke tests in GitHub Actions.
+- [Regression tests](tests/) — 33 unit/integration checks, plus compile and CLI smoke tests in GitHub Actions.
 
 Hardening changes are isolated to the `research/project-hardening` branch. The application still uses Isolation Forest; a calibrated artifact can now be applied to unlabeled flow exports in inference mode.
 
