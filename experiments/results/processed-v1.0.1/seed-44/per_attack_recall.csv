@@ -1,0 +1,45 @@
+model,attack_type,test_support,detected,detection_recall
+IsolationForest,Bot,16,1,0.0625
+LOF_novelty,Bot,16,0,0.0
+RBF_OneClassSVM,Bot,16,1,0.0625
+RandomForest_supervised_reference,Bot,16,16,1.0
+IsolationForest,DDoS,853,320,0.37514654161781946
+LOF_novelty,DDoS,853,589,0.690504103165299
+RBF_OneClassSVM,DDoS,853,533,0.6248534583821805
+RandomForest_supervised_reference,DDoS,853,853,1.0
+IsolationForest,DoS GoldenEye,74,24,0.32432432432432434
+LOF_novelty,DoS GoldenEye,74,25,0.33783783783783783
+RBF_OneClassSVM,DoS GoldenEye,74,54,0.7297297297297297
+RandomForest_supervised_reference,DoS GoldenEye,74,74,1.0
+IsolationForest,DoS Hulk,1162,963,0.8287435456110155
+LOF_novelty,DoS Hulk,1162,488,0.4199655765920826
+RBF_OneClassSVM,DoS Hulk,1162,1035,0.8907056798623064
+RandomForest_supervised_reference,DoS Hulk,1162,1162,1.0
+IsolationForest,DoS Slowhttptest,37,10,0.2702702702702703
+LOF_novelty,DoS Slowhttptest,37,13,0.35135135135135137
+RBF_OneClassSVM,DoS Slowhttptest,37,33,0.8918918918918919
+RandomForest_supervised_reference,DoS Slowhttptest,37,37,1.0
+IsolationForest,DoS slowloris,42,26,0.6190476190476191
+LOF_novelty,DoS slowloris,42,10,0.23809523809523808
+RBF_OneClassSVM,DoS slowloris,42,27,0.6428571428571429
+RandomForest_supervised_reference,DoS slowloris,42,42,1.0
+IsolationForest,FTP-Patator,45,0,0.0
+LOF_novelty,FTP-Patator,45,0,0.0
+RBF_OneClassSVM,FTP-Patator,45,0,0.0
+RandomForest_supervised_reference,FTP-Patator,45,45,1.0
+IsolationForest,PortScan,10,0,0.0
+LOF_novelty,PortScan,10,0,0.0
+RBF_OneClassSVM,PortScan,10,2,0.2
+RandomForest_supervised_reference,PortScan,10,10,1.0
+IsolationForest,SSH-Patator,15,0,0.0
+LOF_novelty,SSH-Patator,15,0,0.0
+RBF_OneClassSVM,SSH-Patator,15,0,0.0
+RandomForest_supervised_reference,SSH-Patator,15,15,1.0
+IsolationForest,Web Attack - Brute Force,6,0,0.0
+LOF_novelty,Web Attack - Brute Force,6,0,0.0
+RBF_OneClassSVM,Web Attack - Brute Force,6,0,0.0
+RandomForest_supervised_reference,Web Attack - Brute Force,6,6,1.0
+IsolationForest,Web Attack - XSS,3,0,0.0
+LOF_novelty,Web Attack - XSS,3,0,0.0
+RBF_OneClassSVM,Web Attack - XSS,3,0,0.0
+RandomForest_supervised_reference,Web Attack - XSS,3,3,1.0

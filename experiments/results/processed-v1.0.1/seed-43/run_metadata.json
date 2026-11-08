@@ -1,0 +1,62 @@
+{
+  "dataset": "data/cleaned_cicids2017.parquet",
+  "rows_after_label_filter": 2228970,
+  "numeric_features": 69,
+  "label_distribution": {
+    "Benign": 1892671,
+    "DoS Hulk": 172688,
+    "DDoS": 127995,
+    "DoS GoldenEye": 10281,
+    "FTP-Patator": 5927,
+    "DoS slowloris": 5385,
+    "DoS Slowhttptest": 5228,
+    "SSH-Patator": 3217,
+    "PortScan": 1956,
+    "Web Attack - Brute Force": 1470,
+    "Bot": 1437,
+    "Web Attack - XSS": 652,
+    "Infiltration": 35,
+    "Web Attack - SQL Injection": 21,
+    "Heartbleed": 7
+  },
+  "binary_distribution": {
+    "benign": 1892671,
+    "attack": 336299
+  },
+  "split": "StratifiedGroupKFold on exact numeric-feature hashes; fold 0 validation, fold 1 test",
+  "folds": 7,
+  "seed": 43,
+  "train_rows_all_classes": 1592120,
+  "train_benign_rows_used_by_unsupervised_models": 5000,
+  "validation_fold_rows": 318425,
+  "benign_calibration_rows": 5000,
+  "test_fold_rows": 318425,
+  "shared_test_evaluation_rows": 15000,
+  "unique_feature_hash_groups": 2228700,
+  "exact_duplicate_hash_overlap_between_splits": 0,
+  "threshold_rule": "upper 5.0% tail of held-out benign calibration scores",
+  "warning": "This split prevents exact numeric-feature duplicates crossing splits; it does not group by five-tuple because the cleaned Parquet has no connection identifiers.",
+  "software": {
+    "python": "3.11.18",
+    "pandas": "3.1.1",
+    "numpy": "2.4.6",
+    "scikit_learn": "1.9.1"
+  },
+  "arguments": {
+    "data": "data/cleaned_cicids2017.parquet",
+    "outdir": "experiments/results/processed-v1.0.1/seed-43",
+    "seed": 43,
+    "folds": 7,
+    "train_benign": 5000,
+    "calibration_rows": 5000,
+    "evaluation_rows": 15000,
+    "target_fpr": 0.05,
+    "trees": 200,
+    "lof_neighbors": 35,
+    "svm_nu": 0.05,
+    "svm_cache_mb": 512,
+    "rf_train_rows": 50000,
+    "rf_trees": 200,
+    "skip_supervised": false
+  }
+}
