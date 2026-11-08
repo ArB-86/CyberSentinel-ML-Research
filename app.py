@@ -528,7 +528,7 @@ has_detection = pipeline_summary.get("isolation_forest_threshold") is not None
 has_events = EVENTS_PATH.exists() and events_df is not None and not events_df.empty
 has_incidents = INCIDENTS_PATH.exists() and count_csv_rows(INCIDENTS_PATH) > 0
 has_graph = graph_path.exists() and graph_path.stat().st_size > 0
-has_risk = risk_path.exists()
+has_risk = risk_path.exists() and count_csv_rows(risk_path) > 0
 agent_reports = list(agent_report_dir.glob("report_*.md")) if agent_report_dir.exists() else []
 
 status_data = [
