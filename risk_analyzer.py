@@ -225,7 +225,9 @@ def calculate_incident_risks(
             if pd.notna(series.loc[index])
         }
         active_weight = sum(weight_map[name] for name in available)
-        if active_weight <= 0:
+        # Do not issue a triage score from a single weak signal. At least two
+        # independent evidence factors must be present; otherwise show UNASSESSED.
+        if active_weight <= 0 or len(available) < 2:
             risk_score = float("nan")
         else:
             risk_score = sum(
