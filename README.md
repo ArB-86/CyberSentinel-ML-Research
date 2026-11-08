@@ -144,6 +144,15 @@ The experiment guide documents repeated-seed runs and the evaluation protocol.
 - `research/` — literature review, experiment protocol, evaluation and viva preparation.
 - `outputs/` — representative investigation reports and risk assessment outputs.
 
+## Extended training-size validation
+
+A separate sensitivity study is running on `research/extended-validation`. It evaluates Isolation Forest, LOF and exact RBF One-Class SVM at 5,000, 25,000 and 50,000 benign training rows. All configurations share one fixed duplicate-grouped split, one benign calibration sample and one held-out test sample; training subsets are nested within each repetition.
+
+- [Scaling validation protocol](research/SCALING_VALIDATION_PROTOCOL.md)
+- [Extended experiment runner](experiments/compare_model_scales.py)
+
+Results will be added here only after the completed run has produced verified outputs.
+
 ## Research documentation
 
 - [Literature review](research/LITERATURE_REVIEW.md)
