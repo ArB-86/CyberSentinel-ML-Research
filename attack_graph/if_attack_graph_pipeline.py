@@ -14,6 +14,7 @@ from sklearn.model_selection import GroupShuffleSplit
 
 from .event_builder import EventConfig, build_attack_events, normalize_columns
 from .graph_builder import add_sequence_edges, build_attack_graph, write_attack_graph_gexf
+from .incident_builder import build_potential_incidents
 
 
 LABEL_MAP = {
@@ -215,7 +216,17 @@ def run(
         anomalous_only=True,
         config=EventConfig(time_window_seconds=time_window_seconds),
     )
+
+    # First construct the event graph and temporal correlations. Then group
+    # multi-event connected components into *potential* incidents. Rebuild the
+    # graph with incident membership nodes while preserving temporal edges.
+    correlation_graph = build_attack_graph(events)
+    correlation_graph = add_sequence_edges(
+        correlation_graph, events, max_gap_seconds=max_sequence_gap_seconds
+    )
+    events, incidents = build_potential_incidents(events, correlation_graph)
     events.to_csv(output / "attack_events.csv", index=False)
+    incidents.to_csv(output / "incident_groups.csv", index=False)
 
     graph = build_attack_graph(events)
     graph = add_sequence_edges(
@@ -290,6 +301,9 @@ def run(
         "sampled_prefix_per_file": nrows if nrows > 0 else None,
         "suspicious_flows": int(len(suspicious)),
         "attack_events": int(len(events)),
+        "potential_incidents": int(len(incidents)),
+        "standalone_events": int(events["incident_id"].isna().sum()) if "incident_id" in events.columns else int(len(events)),
+        "incident_confirmation_status": "potential_correlation_requires_analyst_validation",
         "graph_nodes": int(graph.number_of_nodes()),
         "graph_edges": int(graph.number_of_edges()),
         "sequence_edge_semantics": "chronological shared-host correlation; not causation",
@@ -303,6 +317,7 @@ def run(
             "Exact duplicate feature vectors are separated between benign fitting and calibration; this run does not establish cross-day or external-network generalisation.",
             "Attack type remains Unclassified unless a separate trained classifier supplies predicted_attack_type.",
             "Temporal graph edges denote observed correlation/order, not causal proof.",
+            "Potential incident groups are weakly connected components of observed shared-host temporal edges; they are candidate groupings, not confirmed incidents.",
         ],
     }
     (output / "pipeline_summary.json").write_text(
