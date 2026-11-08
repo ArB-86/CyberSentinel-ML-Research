@@ -158,10 +158,10 @@ def calculate_incident_risks(
         event_id = str(row["event_id"])
         event_node = f"event:{event_id}"
         if graph is None or event_node not in graph:
-            host_degree = 0
+            host_degree = np.nan
             in_degree = 0
             out_degree = 0
-            temporal_count = 0
+            temporal_count = np.nan
         else:
             event_graph_degree = graph.degree(event_node)
             in_degree = graph.in_degree(event_node)
