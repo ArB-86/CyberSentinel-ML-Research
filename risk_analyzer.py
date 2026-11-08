@@ -286,7 +286,12 @@ def calculate_incident_risks(
                 "causal_claim": False,
                 "risk_model_version": "transparent_4_factor_v2",
             })
-        incident_output = pd.DataFrame(incident_rows)
+        incident_output = pd.DataFrame(incident_rows, columns=[
+            "incident_id", "event_count", "event_ids", "flow_count",
+            "risk_score", "risk_level", "risk_score_semantics",
+            "aggregation_rule", "confirmation_status", "causal_claim",
+            "risk_model_version",
+        ])
         incident_output.to_csv(output_path.parent / "incident_risk_scores.csv", index=False)
 
     return result
