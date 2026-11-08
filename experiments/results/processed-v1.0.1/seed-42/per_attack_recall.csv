@@ -1,0 +1,49 @@
+model,attack_type,test_support,detected,detection_recall
+IsolationForest,Bot,9,0,0.0
+LOF_novelty,Bot,9,0,0.0
+RBF_OneClassSVM,Bot,9,0,0.0
+RandomForest_supervised_reference,Bot,9,9,1.0
+IsolationForest,DDoS,839,393,0.4684147794994041
+LOF_novelty,DDoS,839,443,0.5280095351609059
+RBF_OneClassSVM,DDoS,839,537,0.6400476758045291
+RandomForest_supervised_reference,DDoS,839,839,1.0
+IsolationForest,DoS GoldenEye,55,16,0.2909090909090909
+LOF_novelty,DoS GoldenEye,55,16,0.2909090909090909
+RBF_OneClassSVM,DoS GoldenEye,55,43,0.7818181818181819
+RandomForest_supervised_reference,DoS GoldenEye,55,55,1.0
+IsolationForest,DoS Hulk,1199,1010,0.8423686405337781
+LOF_novelty,DoS Hulk,1199,712,0.5938281901584654
+RBF_OneClassSVM,DoS Hulk,1199,1073,0.8949124270225187
+RandomForest_supervised_reference,DoS Hulk,1199,1199,1.0
+IsolationForest,DoS Slowhttptest,36,24,0.6666666666666666
+LOF_novelty,DoS Slowhttptest,36,18,0.5
+RBF_OneClassSVM,DoS Slowhttptest,36,35,0.9722222222222222
+RandomForest_supervised_reference,DoS Slowhttptest,36,36,1.0
+IsolationForest,DoS slowloris,37,21,0.5675675675675675
+LOF_novelty,DoS slowloris,37,2,0.05405405405405406
+RBF_OneClassSVM,DoS slowloris,37,22,0.5945945945945946
+RandomForest_supervised_reference,DoS slowloris,37,37,1.0
+IsolationForest,FTP-Patator,46,0,0.0
+LOF_novelty,FTP-Patator,46,0,0.0
+RBF_OneClassSVM,FTP-Patator,46,0,0.0
+RandomForest_supervised_reference,FTP-Patator,46,46,1.0
+IsolationForest,Infiltration,1,1,1.0
+LOF_novelty,Infiltration,1,0,0.0
+RBF_OneClassSVM,Infiltration,1,1,1.0
+RandomForest_supervised_reference,Infiltration,1,1,1.0
+IsolationForest,PortScan,9,0,0.0
+LOF_novelty,PortScan,9,0,0.0
+RBF_OneClassSVM,PortScan,9,0,0.0
+RandomForest_supervised_reference,PortScan,9,9,1.0
+IsolationForest,SSH-Patator,16,0,0.0
+LOF_novelty,SSH-Patator,16,0,0.0
+RBF_OneClassSVM,SSH-Patator,16,0,0.0
+RandomForest_supervised_reference,SSH-Patator,16,16,1.0
+IsolationForest,Web Attack - Brute Force,9,0,0.0
+LOF_novelty,Web Attack - Brute Force,9,0,0.0
+RBF_OneClassSVM,Web Attack - Brute Force,9,0,0.0
+RandomForest_supervised_reference,Web Attack - Brute Force,9,9,1.0
+IsolationForest,Web Attack - XSS,7,0,0.0
+LOF_novelty,Web Attack - XSS,7,0,0.0
+RBF_OneClassSVM,Web Attack - XSS,7,0,0.0
+RandomForest_supervised_reference,Web Attack - XSS,7,7,1.0
