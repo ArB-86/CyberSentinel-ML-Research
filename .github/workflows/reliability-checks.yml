@@ -40,5 +40,10 @@ jobs:
       - name: Compile project modules
         run: python -m compileall -q agent attack_graph pages app.py risk_analyzer.py
 
+      - name: Smoke-test documented command-line entry points
+        run: |
+          python attack_graph/if_attack_graph_pipeline.py --help
+          python risk_analyzer.py --help
+
       - name: Run regression tests
         run: pytest -q
