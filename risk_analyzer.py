@@ -179,8 +179,8 @@ def calculate_incident_risks(
         event_node = f"event:{event_id}"
         if graph is None or event_node not in graph:
             host_degree = np.nan
-            in_degree = 0
-            out_degree = 0
+            in_degree = np.nan
+            out_degree = np.nan
             temporal_count = np.nan
         else:
             event_graph_degree = graph.degree(event_node)
@@ -232,14 +232,17 @@ def calculate_incident_risks(
             for name, series in factor_values.items()
             if pd.notna(series.loc[index])
         }
-        active_weight = sum(weight_map[name] for name in available)
-        # Do not issue a triage score from a single weak signal. At least two
-        # independent evidence factors must be present; otherwise show UNASSESSED.
-        if active_weight <= 0 or len(available) < 2:
+        weighted_available = [
+            name for name in available if weight_map[name] > 0
+        ]
+        active_weight = sum(weight_map[name] for name in weighted_available)
+        # Do not issue a triage score from fewer than two positively weighted
+        # evidence factors. Zero-weight factors do not count as independent support.
+        if active_weight <= 0 or len(weighted_available) < 2:
             risk_score = float("nan")
         else:
             risk_score = sum(
-                weight_map[name] * value for name, value in available.items()
+                weight_map[name] * available[name] for name in weighted_available
             ) / active_weight
         record = {
             "event_id": str(row["event_id"]),
@@ -252,8 +255,8 @@ def calculate_incident_risks(
             "risk_score": round(float(risk_score), 2),
             "risk_level": _risk_level(float(risk_score)),
             "flow_count": int(flow_count.loc[index]) if pd.notna(flow_count.loc[index]) else None,
-            "in_degree": int(in_degrees[index]),
-            "out_degree": int(out_degrees[index]),
+            "in_degree": int(in_degrees[index]) if pd.notna(in_degrees[index]) else None,
+            "out_degree": int(out_degrees[index]) if pd.notna(out_degrees[index]) else None,
             "risk_score_semantics": "heuristic_triage_score_not_probability",
             "normalization_references": "event_flow_count<=5000; host_degree<=10; temporal_links<=5",
             "risk_model_version": "transparent_4_factor_v2",
