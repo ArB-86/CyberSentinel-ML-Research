@@ -21,7 +21,7 @@ Random Forest is not presented as an equivalent unsupervised model.
 
 ## Q4. Did you train the models or only compare papers?
 
-The research branch contains an executable experiment harness. The reported results must come from running that harness on the verified CICIDS2017 Parquet. The initial repository's Isolation Forest numbers are historical notebook results; they are not results of the new experiment. Do not claim a new training run until the result files exist.
+We trained Isolation Forest, LOF and RBF One-Class SVM under a shared benign-only protocol on verified CICIDS2017 data across three seeds. The measured outputs are documented in EXPERIMENT_RESULTS.md. The earlier Isolation Forest notebook metrics are historical results under a different split and threshold-selection protocol, so they are reported separately.
 
 ## Q5. How did you avoid using attack labels to train unsupervised models?
 
@@ -61,4 +61,4 @@ The repository notebook reports a held-out test ROC-AUC of 0.8862, PR-AUC of 0.6
 
 ## One-minute summary
 
-"We selected Isolation Forest initially because it is an efficient unsupervised method suitable for large flow datasets. The panel correctly asked whether that choice had been compared with alternatives. We addressed this by designing an algorithm-level study with LOF and One-Class SVM, which model local density and normal-data boundaries, respectively. We fit all unsupervised models on benign traffic only, keep exact duplicate feature vectors within one split, calibrate thresholds on held-out benign validation data to a common false-positive target, and report PR-AUC, attack recall, F1, false-positive rate, per-attack coverage and runtime. Random Forest is presented separately as a supervised reference. We will claim a best model only after the reproducible runs are completed."
+"We selected Isolation Forest initially because it is an efficient unsupervised method suitable for large flow datasets. The panel correctly asked whether that choice had been compared with alternatives. We addressed this by designing an algorithm-level study with LOF and One-Class SVM, which model local density and normal-data boundaries, respectively. We fit all unsupervised models on benign traffic only, keep exact duplicate feature vectors within one split, calibrate thresholds on held-out benign validation data to a common false-positive target, and report PR-AUC, attack recall, F1, false-positive rate, per-attack coverage and runtime. Random Forest is presented separately as a supervised reference. In the three-seed pilot, RBF One-Class SVM achieved the strongest mean PR-AUC and F1 among the unsupervised models. We describe it as the strongest candidate in this bounded pilot, not as a proven production winner."
