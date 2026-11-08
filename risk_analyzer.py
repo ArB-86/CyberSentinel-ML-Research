@@ -118,13 +118,19 @@ def calculate_incident_risks(
         output = Path(output_csv_path)
         output.parent.mkdir(parents=True, exist_ok=True)
         empty = pd.DataFrame(columns=[
-            "event_id", "attack_type", "risk_score", "risk_level",
+            "event_id", "incident_id", "attack_type", "risk_score", "risk_level",
             "anomaly_severity_factor", "frequency_factor",
             "host_involvement_factor", "temporal_correlation_factor",
             "in_degree", "out_degree", "flow_count",
             "risk_score_semantics", "risk_model_version",
         ])
         empty.to_csv(output, index=False)
+        pd.DataFrame(columns=[
+            "incident_id", "event_count", "event_ids", "flow_count",
+            "risk_score", "risk_level", "risk_score_semantics",
+            "aggregation_rule", "confirmation_status", "causal_claim",
+            "risk_model_version",
+        ]).to_csv(output.parent / "incident_risk_scores.csv", index=False)
         return empty
 
     weight_map = dict(DEFAULT_WEIGHTS if weights is None else weights)
