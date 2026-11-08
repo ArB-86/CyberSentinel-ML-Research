@@ -164,6 +164,7 @@ DATA_PATH = ROOT / "data" / "cleaned_cicids2017.parquet"
 OUTPUT_DIR = ROOT / "outputs"
 
 EVENTS_PATH = OUTPUT_DIR / "attack_events.csv"
+INCIDENTS_PATH = OUTPUT_DIR / "incident_groups.csv"
 SUSPICIOUS_PATH = OUTPUT_DIR / "suspicious_flows_with_metadata.csv"
 SUMMARY_PATH = OUTPUT_DIR / "pipeline_summary.json"
 
@@ -524,7 +525,8 @@ graph_path = OUTPUT_DIR / "attack_graph.gexf"
 risk_path = OUTPUT_DIR / "event_risk_scores.csv"
 agent_report_dir = OUTPUT_DIR / "agentic_investigation_output"
 has_detection = pipeline_summary.get("isolation_forest_threshold") is not None
-has_events = EVENTS_PATH.exists() and events_df is not None
+has_events = EVENTS_PATH.exists() and events_df is not None and not events_df.empty
+has_incidents = INCIDENTS_PATH.exists() and count_csv_rows(INCIDENTS_PATH) > 0
 has_graph = graph_path.exists() and graph_path.stat().st_size > 0
 has_risk = risk_path.exists()
 agent_reports = list(agent_report_dir.glob("report_*.md")) if agent_report_dir.exists() else []
@@ -679,9 +681,11 @@ with pipeline_col:
         ("01", "Detection", "Isolation Forest scores and calibrated threshold", has_detection),
         ("02", "Suspicious Flow Extraction", "Detector-flagged flow records", SUSPICIOUS_PATH.exists()),
         ("03", "Event Formation", "Label-independent time/connection grouping", has_events),
-        ("04", "Graph Reconstruction", "Host/event graph with temporal correlation edges", has_graph),
-        ("05", "Risk Assessment", "Transparent four-factor triage score", has_risk),
-        ("06", "Agentic Investigation", "Evidence-grounded report generated on demand", bool(agent_reports)),
+        ("04", "Temporal Correlation", "Shared-host event ordering; correlation is not causation", has_graph),
+        ("05", "Potential Incident Grouping", "Multi-event connected components requiring analyst review", has_incidents),
+        ("06", "Attack Graph", "Host/event/incident relationships in GEXF", has_graph),
+        ("07", "Risk Triage", "Transparent heuristic index from available evidence", has_risk),
+        ("08", "Agentic Investigation", "Evidence-grounded review generated on demand", bool(agent_reports)),
     ]
 
 
