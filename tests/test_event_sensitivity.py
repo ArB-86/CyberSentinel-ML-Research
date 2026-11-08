@@ -41,6 +41,17 @@ def test_sensitivity_sweep_reports_structure_without_ground_truth(tmp_path):
     narrow = result[result["event_window_seconds"] == 30]["event_count"].iloc[0]
     wide = result[result["event_window_seconds"] == 60]["event_count"].iloc[0]
     assert narrow > wide
+    for window in (30, 60):
+        rows_for_window = result[result["event_window_seconds"] == window]
+        incidents_at_30s = rows_for_window.loc[
+            rows_for_window["max_sequence_gap_seconds"] == 30,
+            "candidate_incident_count",
+        ].iloc[0]
+        incidents_at_60s = rows_for_window.loc[
+            rows_for_window["max_sequence_gap_seconds"] == 60,
+            "candidate_incident_count",
+        ].iloc[0]
+        assert incidents_at_60s > incidents_at_30s
 
     metadata = json.loads(
         (output_dir / "event_correlation_sensitivity_metadata.json").read_text()
