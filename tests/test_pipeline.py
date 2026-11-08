@@ -1,6 +1,8 @@
+import json
+
 import pandas as pd
 
-from attack_graph.if_attack_graph_pipeline import prepare_features, run
+from attack_graph.if_attack_graph_pipeline import prepare_features, run, run_inference
 
 
 def test_prepare_features_preserves_missing_values_for_train_only_imputation():
@@ -62,3 +64,30 @@ def test_metadata_pipeline_runs_with_train_only_imputation(tmp_path):
     assert (output_dir / "attack_graph.gexf").exists()
     events = pd.read_csv(output_dir / "attack_events.csv")
     assert "incident_id" in events.columns
+    model_artifact = output_dir / "isolation_forest_model.joblib"
+    assert model_artifact.exists()
+
+    # A separate production-style CSV without Label must be scoreable with the
+    # persisted model, imputer, feature order and benign-calibrated threshold.
+    inference_dir = tmp_path / "unlabeled"
+    inference_dir.mkdir()
+    unlabeled = pd.read_csv(data_dir / "flows.csv").drop(columns=["Label"])
+    unlabeled.to_csv(inference_dir / "unlabeled_flows.csv", index=False)
+    inference_output = tmp_path / "inference-output"
+    run_inference(
+        str(inference_dir),
+        str(model_artifact),
+        str(inference_output),
+        nrows=0,
+        time_window_seconds=60,
+        max_sequence_gap_seconds=300,
+    )
+    inference_summary = json.loads(
+        (inference_output / "pipeline_summary.json").read_text(encoding="utf-8")
+    )
+    assert inference_summary["mode"] == "unlabeled_inference"
+    assert inference_summary["ground_truth_labels_required"] is False
+    assert inference_summary["ground_truth_labels_used"] is False
+    suspicious = pd.read_csv(inference_output / "suspicious_flows_with_metadata.csv")
+    assert "Label" not in suspicious.columns
+    assert "predicted_anomaly" in suspicious.columns
