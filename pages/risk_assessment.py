@@ -177,8 +177,8 @@ def get_total_flows():
             df = pd.read_csv(flows_path, usecols=[0])
             return len(df)
         except Exception:
-            return 243222
-    return 243222
+            return None
+    return None
 
 df_risks = load_risk_data()
 total_flows = get_total_flows()
@@ -215,10 +215,10 @@ with st.sidebar:
         f"""
         <div class="card" style="min-height:0;padding:13px">
             <div class="green" style="font-weight:800;font-size:.76rem">
-                ● SYSTEM ONLINE
+                ● {"RISK DATA AVAILABLE" if not df_risks.empty else "RISK DATA NOT AVAILABLE"}
             </div>
             <div style="color:#718196;font-size:.7rem;margin-top:6px;">
-                CICIDS2017 · {total_flows:,} flows
+                {"Suspicious flows · {:,}".format(total_flows) if total_flows is not None else "Flow data not generated"}
             </div>
         </div>
         """
@@ -229,7 +229,7 @@ with st.sidebar:
 # ============================================================
 
 st.markdown('<div class="smallcaps">SOC EVENT REVIEW WORKSPACE</div>', unsafe_allow_html=True)
-st.title("Event Triage, Triage Analysis & AI Investigation")
+st.title("Event Triage, Risk Analysis & AI Investigation")
 st.markdown('<div class="subtitle">Review heuristic triage indicators, inspect event/graph evidence, and generate an analyst-reviewable investigation summary.</div>', unsafe_allow_html=True)
 
 if not df_risks.empty:
