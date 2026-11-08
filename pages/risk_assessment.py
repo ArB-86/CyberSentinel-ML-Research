@@ -317,9 +317,12 @@ st.divider()
 score = selected_row['risk_score']
 level = selected_row['risk_level']
 attack_type = selected_row['attack_type']
-flow_count = selected_row.get('flow_count', 1)
-in_deg = selected_row.get('in_degree', 0)
-out_deg = selected_row.get('out_degree', 0)
+flow_count_value = selected_row.get("flow_count", float("nan"))
+flow_count = int(flow_count_value) if pd.notna(flow_count_value) else "N/A"
+in_degree_value = selected_row.get("in_degree", float("nan"))
+out_degree_value = selected_row.get("out_degree", float("nan"))
+in_deg = int(in_degree_value) if pd.notna(in_degree_value) else "N/A"
+out_deg = int(out_degree_value) if pd.notna(out_degree_value) else "N/A"
 
 factor_a = selected_row.get('anomaly_severity_factor', float('nan'))
 factor_b = selected_row.get('frequency_factor', float('nan'))
