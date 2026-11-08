@@ -155,8 +155,8 @@ def should_continue(state: InvestigationState):
     tool_calls = getattr(last_message, "tool_calls", [])
 
     if not tool_calls:
-        print("[Router] No more tool calls. Ending investigation.")
-        return END
+        print("[Router] No more tool calls. Finalizing structured investigation.")
+        return "finalize"
 
     previous_steps = state.get("investigation_steps", [])
 
