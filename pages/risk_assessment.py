@@ -210,7 +210,7 @@ with st.sidebar:
     st.page_link("pages/attack_detection.py", label="Attack Detection")
 
     st.markdown('<div class="smallcaps" style="margin-top:18px">Investigation</div>', unsafe_allow_html=True)
-    st.page_link("pages/incident_investigation.py", label="Incident Investigation")
+    st.page_link("pages/incident_investigation.py", label="Event Investigation")
     st.page_link("pages/attack_graph.py", label="Attack Graph")
 
     st.markdown(
