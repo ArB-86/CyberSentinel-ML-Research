@@ -1,6 +1,6 @@
 # CICIDS2017 model-comparison results — pilot v1
 
-**Execution status:** completed successfully. The repeated-seed model training ran in GitHub Actions run [42507646357](https://github.com/ArB-86/ML-Based-Cyber-Attack-Detection-and-Incident-Investigation-using-Agentic-AI-Research/actions/runs/42507646357). The result artifact was then recovered and committed by publisher run [42511189956](https://github.com/ArB-86/ML-Based-Cyber-Attack-Detection-and-Incident-Investigation-using-Agentic-AI-Research/actions/runs/42511189956). No model training was repeated during artifact publishing.
+**Execution status:** completed successfully. Three independent seeds were trained and evaluated in GitHub Actions. All metrics, predictions, per-attack recall, metadata, and plots are stored in this repository under `experiments/results/processed-v1.0.1/`.
 
 **Dataset:** processed CICIDS2017 Parquet release v1.0.1, SHA-256 verified by the training workflow. The 2,228,970 rows contain 69 numeric flow features. Binary distribution: 1,892,671 benign and 336,299 attacks.
 
@@ -105,4 +105,4 @@ Raw outputs are committed in this branch:
 - [Seed 44 metrics](../experiments/results/processed-v1.0.1/seed-44/metrics.csv)
 - Each seed directory also includes `per_attack_recall.csv`, `predictions.csv`, `run_metadata.json` and `roc_pr_curves.png`.
 
-Training workflow: [run 42507646357](https://github.com/ArB-86/ML-Based-Cyber-Attack-Detection-and-Incident-Investigation-using-Agentic-AI-Research/actions/runs/42507646357). Artifact publication workflow: [run 42511189956](https://github.com/ArB-86/ML-Based-Cyber-Attack-Detection-and-Incident-Investigation-using-Agentic-AI-Research/actions/runs/42511189956).
+All three seed directories contain the raw evaluation metrics and the metadata needed to inspect each run.
