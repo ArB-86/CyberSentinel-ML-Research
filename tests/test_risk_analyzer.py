@@ -14,9 +14,9 @@ def test_risk_uses_benign_calibration_distribution_and_no_attack_label_weight(tm
 
     pd.DataFrame([
         {"event_id": "E1", "src_ip": "A", "dst_ip": "B", "flow_count": 5,
-         "mean_anomaly_score": 0.02, "attack_type": "DoS"},
+         "mean_anomaly_score": 0.02, "attack_type": "Unclassified", "incident_id": "INC-00001"},
         {"event_id": "E2", "src_ip": "C", "dst_ip": "D", "flow_count": 50,
-         "mean_anomaly_score": 0.20, "attack_type": "Benign"},
+         "mean_anomaly_score": 0.20, "attack_type": "Unclassified", "incident_id": "INC-00001"},
     ]).to_csv(events_path, index=False)
 
     summary_path.write_text(json.dumps({
@@ -40,6 +40,12 @@ def test_risk_uses_benign_calibration_distribution_and_no_attack_label_weight(tm
     assert result.loc[0, "anomaly_severity_factor"] > result.loc[1, "anomaly_severity_factor"]
     assert set(result["risk_score_semantics"]) == {"heuristic_triage_score_not_probability"}
     assert set(result["anomaly_reference_source"]) == {"benign_calibration_distribution"}
+    incident_output = pd.read_csv(tmp_path / "incident_risk_scores.csv")
+    assert len(incident_output) == 1
+    assert incident_output.loc[0, "incident_id"] == "INC-00001"
+    assert incident_output.loc[0, "event_count"] == 2
+    assert incident_output.loc[0, "confirmation_status"] == "potential_correlation_requires_analyst_validation"
+    assert bool(incident_output.loc[0, "causal_claim"]) is False
 
 
 def test_missing_graph_is_not_treated_as_zero_graph_evidence(tmp_path):
