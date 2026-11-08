@@ -60,7 +60,9 @@ Detection/graph outputs:
 - `attack_graph.png` — deterministic visual sample if the graph is too large for one layout.
 - `pipeline_summary.json` — split, threshold, model, detection, event and graph metadata.
 
-Risk triage is a separate step:
+Both benchmark and unlabeled inference modes automatically run the risk-triage stage after graph generation. They create `event_risk_scores.csv` and `incident_risk_scores.csv` and record output counts in `pipeline_summary.json`.
+
+If event/graph files are edited manually and triage outputs need to be refreshed, the risk engine can also be run independently:
 
 ```bash
 python risk_analyzer.py \
