@@ -85,21 +85,25 @@ def load_dataset(path: Path) -> tuple[pd.DataFrame, pd.Series, pd.Series]:
     labels = labels.loc[keep].reset_index(drop=True)
 
     binary = labels.str.casefold().ne("benign").astype(np.int8)
-    excluded = {str(label_col).strip().casefold(), "is_attack"}
+    excluded = {
+        str(label_col).strip().casefold(),
+        "is_attack", "flow id", "flow_id", "event_id", "event id",
+        "incident_id", "incident id", "_id", "src_ip", "dst_ip",
+        "source ip", "destination ip", "timestamp", "start_time",
+        "end_time", "predicted_anomaly", "predicted_attack_type",
+        "anomaly_score", "attack_type",
+    }
     feature_frame = frame.drop(
         columns=[c for c in frame.columns if str(c).strip().casefold() in excluded],
         errors="ignore",
     )
     features = feature_frame.select_dtypes(include=[np.number]).copy()
     if features.empty:
-        raise ValueError("No numeric model features found after excluding label columns.")
+        raise ValueError("No numeric model features found after excluding identifiers and labels.")
 
+    # Preserve the numeric schema until fit-time preprocessing. Full-dataset
+    # missingness/variance filtering would inspect held-out feature distributions.
     features = features.replace([np.inf, -np.inf], np.nan)
-    features = features.dropna(axis=1, how="all")
-    non_constant = features.nunique(dropna=False) > 1
-    features = features.loc[:, non_constant]
-    if features.empty:
-        raise ValueError("No usable numeric features remain after cleaning.")
 
     # Labels are never included in this hash. Identical feature vectors are
     # kept in a single split to reduce exact-duplicate train/test leakage.
@@ -173,7 +177,7 @@ def make_unsupervised_models(args: argparse.Namespace, n_train: int) -> dict[str
     n_neighbors = min(args.lof_neighbors, max(2, n_train - 1))
     return {
         "IsolationForest": Pipeline([
-            ("imputer", SimpleImputer(strategy="median")),
+            ("imputer", SimpleImputer(strategy="median", keep_empty_features=True)),
             ("detector", IsolationForest(
                 n_estimators=args.trees,
                 max_samples=min(1024, n_train),
@@ -183,7 +187,7 @@ def make_unsupervised_models(args: argparse.Namespace, n_train: int) -> dict[str
             )),
         ]),
         "LOF_novelty": Pipeline([
-            ("imputer", SimpleImputer(strategy="median")),
+            ("imputer", SimpleImputer(strategy="median", keep_empty_features=True)),
             ("scaler", StandardScaler()),
             ("detector", LocalOutlierFactor(
                 n_neighbors=n_neighbors,
@@ -193,7 +197,7 @@ def make_unsupervised_models(args: argparse.Namespace, n_train: int) -> dict[str
             )),
         ]),
         "RBF_OneClassSVM": Pipeline([
-            ("imputer", SimpleImputer(strategy="median")),
+            ("imputer", SimpleImputer(strategy="median", keep_empty_features=True)),
             ("scaler", StandardScaler()),
             ("detector", OneClassSVM(
                 kernel="rbf",
@@ -337,7 +341,7 @@ def main() -> None:
             train_idx, y, args.rf_train_rows, args.seed + 4
         )
         rf = Pipeline([
-            ("imputer", SimpleImputer(strategy="median")),
+            ("imputer", SimpleImputer(strategy="median", keep_empty_features=True)),
             ("model", RandomForestClassifier(
                 n_estimators=args.rf_trees,
                 class_weight="balanced_subsample",
