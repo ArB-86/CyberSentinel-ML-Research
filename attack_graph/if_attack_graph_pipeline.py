@@ -255,18 +255,26 @@ def run(
         rng.choice(unique_calibration_pool, size=calibration_n, replace=False)
     )
 
-    forbidden_hashes = np.unique(np.concatenate([
+    fit_calibration_hashes = np.unique(np.concatenate([
         hashes[train_pool_positions],
         hashes[calibration_pool_positions],
     ]))
     attack_positions = np.flatnonzero(binary == 1)
     attack_hashes = hashes[attack_positions]
-    nonoverlap_attack_positions = attack_positions[
-        ~np.isin(attack_hashes, forbidden_hashes)
-    ]
-    excluded_attack_duplicates = int(
-        len(attack_positions) - len(nonoverlap_attack_positions)
+
+    overlaps_fit_or_calibration = np.isin(attack_hashes, fit_calibration_hashes)
+    nonoverlap_attack_positions = attack_positions[~overlaps_fit_or_calibration]
+    excluded_attack_duplicates = int(overlaps_fit_or_calibration.sum())
+
+    # Do not put identical numeric feature vectors with contradictory benign
+    # and attack labels into the same test sample. This is an ambiguous-label
+    # data-quality case, not a detector error.
+    benign_test_hashes = np.unique(hashes[benign_test_positions])
+    overlaps_benign_test = np.isin(
+        hashes[nonoverlap_attack_positions], benign_test_hashes
     )
+    conflicting_test_attack_rows = int(overlaps_benign_test.sum())
+    nonoverlap_attack_positions = nonoverlap_attack_positions[~overlaps_benign_test]
 
     evaluation_candidates = np.sort(np.concatenate([
         benign_test_positions,
@@ -478,6 +486,7 @@ def run(
         "held_out_benign_test_pool_rows": int(len(benign_test_positions)),
         "attack_evaluation_rows_after_duplicate_purge": int(len(nonoverlap_attack_positions)),
         "attack_rows_excluded_for_fit_or_calibration_duplicate_hash": excluded_attack_duplicates,
+        "attack_rows_excluded_for_conflicting_benign_test_hash": conflicting_test_attack_rows,
         "evaluation_rows": int(len(evaluation_positions)),
         "evaluation_metrics": detection_metrics,
         "exact_duplicate_overlap_fit_calibration_evaluation": int(duplicate_overlap),
@@ -510,7 +519,7 @@ def run(
         "elapsed_seconds": round(elapsed, 2),
         "limitations": [
             "Labels are used to select benign fit/calibration pools and for final evaluation only. They are never numeric model features, predictions, event-group keys, graph classifications, or risk weights.",
-            "The held-out evaluation set excludes attack rows whose exact numeric feature hash occurs in benign fit/calibration partitions.",
+            "The held-out evaluation set excludes attack rows whose exact numeric feature hash occurs in benign fit/calibration partitions and excludes same-test conflicting attack rows matching a benign test hash.",
             "Exact duplicate feature vectors are separated across fit/calibration/evaluation. This run does not establish cross-day or external-network generalisation.",
             "The cleaned and metadata-rich files may omit connection identifiers or timestamps depending on the source; this pipeline requires timestamp and source/destination metadata for event/graph stages.",
             "Attack type remains Unclassified unless a separate trained classifier supplies predicted_attack_type.",
