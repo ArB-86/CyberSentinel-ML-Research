@@ -21,4 +21,6 @@ def format_event_id(value: object) -> str:
     raw = str(value).strip()
     if raw.upper().startswith("EVT-"):
         return raw
-    return f"EVT-{raw.zfill(5)}"
+    if raw.isdigit():
+        return f"EVT-{raw.zfill(5)}"
+    return raw
