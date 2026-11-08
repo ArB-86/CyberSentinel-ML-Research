@@ -4,6 +4,7 @@ import argparse
 import json
 import time
 import joblib
+import sys
 from pathlib import Path
 
 import networkx as nx
@@ -21,9 +22,18 @@ from sklearn.metrics import (
 )
 from sklearn.model_selection import GroupShuffleSplit, train_test_split
 
-from .event_builder import EventConfig, build_attack_events, normalize_columns
-from .graph_builder import add_sequence_edges, build_attack_graph, write_attack_graph_gexf
-from .incident_builder import build_potential_incidents
+if __package__ in (None, ""):
+    # Support the documented direct-script invocation from the repository root.
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    from attack_graph.event_builder import EventConfig, build_attack_events, normalize_columns
+    from attack_graph.graph_builder import (
+        add_sequence_edges, build_attack_graph, write_attack_graph_gexf,
+    )
+    from attack_graph.incident_builder import build_potential_incidents
+else:
+    from .event_builder import EventConfig, build_attack_events, normalize_columns
+    from .graph_builder import add_sequence_edges, build_attack_graph, write_attack_graph_gexf
+    from .incident_builder import build_potential_incidents
 
 
 LABEL_MAP = {
