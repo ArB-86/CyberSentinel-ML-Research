@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
 import networkx as nx
@@ -135,7 +136,7 @@ def calculate_incident_risks(
     calibration_quantiles = None
     if summary_path.exists():
         try:
-            summary = __import__("json").loads(summary_path.read_text(encoding="utf-8"))
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
             calibration_quantiles = summary.get("calibration_score_quantiles")
         except (OSError, ValueError, TypeError):
             calibration_quantiles = None
