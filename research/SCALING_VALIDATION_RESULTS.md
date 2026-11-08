@@ -2,7 +2,7 @@
 
 ## Execution status
 
-**Completed successfully.** The paired, larger-sample experiment ran on the SHA-256-verified processed CICIDS2017 Parquet release. All outputs are committed in this branch under `experiments/results/scaling-validation-v1/`.
+**Status: historical pre-hardening pilot; not yet re-run under the current feature-preprocessing code.** The archived paired experiment completed on the SHA-256-verified processed CICIDS2017 Parquet, but its metrics were produced before the comparison script stopped filtering columns using full-dataset missingness/variance statistics. The current script preserves the numeric feature schema, excludes numeric identifiers and uses a training-fitted imputer with `keep_empty_features=True`. Feature count and measured rankings may change. Treat the tables below as historical pilot results until a fresh run is generated from the exact same Parquet using the current script.
 
 The training job completed model fitting, evaluation, plots and artifact upload. Its first Git push was rejected because the remote branch had advanced while the job was running. The uploaded artifact was published by a separate workflow, without repeating the model training.
 
