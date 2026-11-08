@@ -75,3 +75,24 @@ The script creates:
 6. Run multiple seeds and report mean ± standard deviation before making a final research claim. A single run is an exploratory result, not strong statistical evidence.
 
 The default training/evaluation caps are intentionally modest because LOF and RBF One-Class SVM are much more computationally expensive than Isolation Forest. Increase caps only after the first run completes and document the exact configuration. Never silently compare results from different test rows or thresholds.
+
+
+## Event and candidate-incident sensitivity
+
+The event builder uses a 60-second default grouping window and the temporal graph uses a 300-second default maximum gap. These are configurable engineering parameters, not validated universal settings. To measure how the structure changes on a detector-flagged metadata-rich flow export, run:
+
+```bash
+python experiments/event_correlation_sensitivity.py \
+  --input outputs/suspicious_flows_with_metadata.csv \
+  --output-dir experiments/results/event-sensitivity \
+  --time-windows 30,60,120 \
+  --sequence-gaps 60,180,300,600
+```
+
+The input must contain `predicted_anomaly`, timestamps, source/destination addresses and protocol. When both port columns are present they are included in the event key. Ground-truth labels are excluded before grouping.
+
+Outputs:
+- `event_correlation_sensitivity.csv` — one row per parameter combination, including event counts, flows per event, event durations, temporal edges, candidate-incident counts and event coverage.
+- `event_correlation_sensitivity_metadata.json` — input SHA-256, data time range, parameter grid and interpretation limits.
+
+This is a **structural sensitivity** experiment only. Without analyst-labelled incident/stage ground truth it does not measure event precision/recall, causal reconstruction or which setting is correct. Run on the full detector-flagged metadata-rich export; do not treat a prefix-limited smoke-test file as representative.
