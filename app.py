@@ -243,66 +243,20 @@ events_df = load_attack_events()
 # ============================================================
 
 if labels_df is not None and "Label" in labels_df.columns:
-
     labels = labels_df["Label"].astype(str).str.strip()
-
-    total_flows = len(labels)
-
-    benign_flows = int(
-        (labels.str.lower() == "benign").sum()
-    )
-
+    total_flows = int(len(labels))
+    benign_flows = int((labels.str.casefold() == "benign").sum())
     attack_flows = total_flows - benign_flows
-
     attack_distribution = (
-        labels[
-            labels.str.lower() != "benign"
-        ]
+        labels[labels.str.casefold() != "benign"]
         .value_counts()
-        .reset_index()
+        .rename_axis("Attack Type")
+        .reset_index(name="Flows")
     )
-
-    attack_distribution.columns = [
-        "Attack Type",
-        "Flows",
-    ]
-
 else:
-
-    # Fallback values from the project's actual cleaned dataset.
-
-    total_flows = 2_228_970
-    benign_flows = 1_892_671
-    attack_flows = 336_299
-
-    attack_distribution = pd.DataFrame(
-        {
-            "Attack Type": [
-                "DoS Hulk",
-                "DDoS",
-                "DoS GoldenEye",
-                "FTP-Patator",
-                "DoS slowloris",
-                "DoS Slowhttptest",
-                "SSH-Patator",
-                "PortScan",
-                "Web Attack - Brute Force",
-                "Bot",
-            ],
-            "Flows": [
-                172688,
-                127995,
-                10281,
-                5927,
-                5385,
-                5228,
-                3217,
-                1956,
-                1470,
-                1437,
-            ],
-        }
-    )
+    # Do not display stale hard-coded dataset counts when the input is absent.
+    total_flows = benign_flows = attack_flows = None
+    attack_distribution = pd.DataFrame(columns=["Attack Type", "Flows"])
 
 
 # ============================================================
@@ -409,7 +363,7 @@ with st.sidebar:
 
             <div class="green"
                  style="font-weight:800;font-size:.76rem">
-                ● SYSTEM ONLINE
+                ● {"DATA READY" if labels_df is not None else "WAITING FOR DATA"}
             </div>
 
             <div style="
@@ -417,7 +371,7 @@ with st.sidebar:
                 font-size:.7rem;
                 margin-top:6px;
             ">
-                CICIDS2017 · {total_flows:,} flows
+                {"CICIDS2017 · {:,} flows".format(total_flows) if total_flows is not None else "CICIDS2017 dataset not loaded"}
             </div>
 
         </div>
@@ -507,26 +461,14 @@ st.markdown(
 cols = st.columns(4)
 
 metric_data = [
-    (
-        "Network Flows",
-        f"{total_flows:,}",
-        "Cleaned CICIDS2017 records",
-    ),
-    (
-        "Benign Flows",
-        f"{benign_flows:,}",
-        "Normal-class traffic",
-    ),
-    (
-        "Attack Flows",
-        f"{attack_flows:,}",
-        "Ground-truth attack traffic",
-    ),
-    (
-        "Attack Rate",
-        f"{attack_flows / total_flows * 100:.2f}%",
-        "Share of total traffic",
-    ),
+    ("Network Flows", f"{total_flows:,}" if total_flows is not None else "Not loaded",
+     "Cleaned CICIDS2017 records"),
+    ("Benign Flows", f"{benign_flows:,}" if benign_flows is not None else "Not loaded",
+     "Normal-class traffic"),
+    ("Attack Flows", f"{attack_flows:,}" if attack_flows is not None else "Not loaded",
+     "Ground-truth benchmark labels"),
+    ("Attack Rate", f"{attack_flows / total_flows * 100:.2f}%" if total_flows else "N/A",
+     "Share of benchmark traffic"),
 ]
 
 
@@ -578,43 +520,28 @@ st.header("Detection & Reconstruction Status")
 
 status_cols = st.columns(4)
 
+graph_path = OUTPUT_DIR / "attack_graph.gexf"
+risk_path = OUTPUT_DIR / "event_risk_scores.csv"
+agent_report_dir = OUTPUT_DIR / "agentic_investigation_output"
+has_detection = pipeline_summary.get("isolation_forest_threshold") is not None
+has_events = EVENTS_PATH.exists() and events_df is not None
+has_graph = graph_path.exists() and graph_path.stat().st_size > 0
+has_risk = risk_path.exists()
+agent_reports = list(agent_report_dir.glob("report_*.md")) if agent_report_dir.exists() else []
+
 status_data = [
-    (
-        "Isolation Forest",
-        "Completed",
-        "Anomaly detection model",
-    ),
-    (
-        "Suspicious Flows",
-        (
-            f"{suspicious_flows:,} extracted"
-            if suspicious_flows is not None
-            else "Output available"
-        ),
-        "ML-flagged traffic",
-    ),
-    (
-        "Attack Events",
-        (
-            f"{attack_events:,} generated"
-            if attack_events is not None
-            else "Output available"
-        ),
-        "Correlated suspicious flows",
-    ),
-    (
-        "Attack Graph",
-        (
-            f"{graph_nodes:,} nodes"
-            if graph_nodes is not None
-            else "Generated"
-        ),
-        (
-            f"{graph_edges:,} edges"
-            if graph_edges is not None
-            else "NetworkX graph"
-        ),
-    ),
+    ("Isolation Forest",
+     "Threshold calibrated" if has_detection else "Not run",
+     "Metadata-rich detection pipeline"),
+    ("Suspicious Flows",
+     f"{suspicious_flows:,} extracted" if suspicious_flows is not None else "Not generated",
+     "Detector-flagged traffic"),
+    ("Attack Events",
+     f"{attack_events:,} generated" if attack_events is not None else "Not generated",
+     "Label-independent event groups"),
+    ("Attack Graph",
+     f"{graph_nodes:,} nodes / {graph_edges or 0:,} edges" if has_graph and graph_nodes is not None else "Not generated",
+     "Full graph available as GEXF"),
 ]
 
 
@@ -636,7 +563,7 @@ for col, (title, value, description) in zip(
                         font-weight:800;
                         letter-spacing:.08em;
                      ">
-                    ● IMPLEMENTED
+                    ● {"AVAILABLE" if value not in {"Not run", "Not generated"} else "NOT RUN"}
                 </div>
 
                 <div style="
@@ -749,42 +676,12 @@ with pipeline_col:
     )
 
     steps = [
-        (
-            "01",
-            "Detection",
-            "Isolation Forest → anomaly scores",
-            True,
-        ),
-        (
-            "02",
-            "Suspicious Flow Extraction",
-            "Anomaly scores → suspicious flows",
-            True,
-        ),
-        (
-            "03",
-            "Event Formation",
-            "Related suspicious flows → attack events",
-            True,
-        ),
-        (
-            "04",
-            "Graph Reconstruction",
-            "Events → source/event/target relationships",
-            True,
-        ),
-        (
-            "05",
-            "Risk Assessment",
-            "Incident → risk assessment",
-            True,
-        ),
-        (
-            "06",
-            "Agentic Investigation",
-            "Evidence → investigation findings",
-            True,
-        ),
+        ("01", "Detection", "Isolation Forest scores and calibrated threshold", has_detection),
+        ("02", "Suspicious Flow Extraction", "Detector-flagged flow records", SUSPICIOUS_PATH.exists()),
+        ("03", "Event Formation", "Label-independent time/connection grouping", has_events),
+        ("04", "Graph Reconstruction", "Host/event graph with temporal correlation edges", has_graph),
+        ("05", "Risk Assessment", "Transparent four-factor triage score", has_risk),
+        ("06", "Agentic Investigation", "Evidence-grounded report generated on demand", bool(agent_reports)),
     ]
 
 
@@ -796,10 +693,10 @@ with pipeline_col:
     ) in steps:
 
         if implemented:
-            status = "● IMPLEMENTED"
+            status = "● AVAILABLE"
             status_class = "green"
         else:
-            status = "○ NEXT PHASE"
+            status = "○ NOT RUN"
             status_class = "amber"
 
 
