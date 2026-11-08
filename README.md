@@ -154,6 +154,16 @@ A paired sensitivity study has completed on `research/extended-validation`. It e
 - [Deep viva Q&A](research/DEEP_VIVA_QA.md)
 - [Extended experiment runner](experiments/compare_model_scales.py)
 
+## Project hardening
+
+A separate engineering pass addresses data leakage, held-out detection evaluation, label-free inference, event grouping, graph chronology, candidate incident formation, risk triage and evidence-grounded reporting.
+
+- [Project hardening report](research/PROJECT_HARDENING_REPORT.md) — fixes, tests and remaining research limitations.
+- [Output workflows](outputs/README.md) — benchmark training, artifact creation, unlabeled inference, graph and risk-triage commands.
+- [Regression tests](tests/) — 17 unit/integration checks.
+
+Hardening changes are isolated to the `research/project-hardening` branch. The application still uses Isolation Forest; a calibrated artifact can now be applied to unlabeled flow exports in inference mode.
+
 ## Research documentation
 
 - [Literature review](research/LITERATURE_REVIEW.md)
