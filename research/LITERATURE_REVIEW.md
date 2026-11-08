@@ -46,7 +46,7 @@ This is the dataset paper to cite when describing CICIDS2017's capture environme
 
 The paper compares MLP, 1D CNN, One-Class SVM and LOF on CICIDS2017 under known-attack and unseen-attack scenarios. Its abstract reports that supervised models perform very strongly on familiar attacks but lose recall on novel threats; LOF reports high recall on unknown attacks at the cost of more false alarms, while OCSVM offers a different precision/recall trade-off.
 
-**Relevance to CyberSentinel:** this is direct precedent for comparing LOF and OCSVM on CICIDS2017, and for discussing unseen-attack generalisation rather than relying exclusively on random in-distribution test metrics. Its numerical results must not be copied into this project's result table; datasets, splits, preprocessing and parameters must be checked before any quantitative comparison.
+**Relevance to CyberSentinel:** this is direct precedent for comparing LOF and OCSVM on CICIDS2017, and for discussing unseen-attack generalisation rather than relying exclusively on random in-distribution test metrics. Its numerical results must be kept separate from this project's measurements; datasets, splits, preprocessing and parameters must be checked before any quantitative comparison.
 
 ## 7. Dataset duplication and split design (2026)
 
