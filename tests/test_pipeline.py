@@ -74,6 +74,12 @@ def test_metadata_pipeline_runs_with_train_only_imputation(tmp_path):
     assert "label" not in {str(column).casefold() for column in benchmark_suspicious.columns}
     events = pd.read_csv(output_dir / "attack_events.csv")
     assert "incident_id" in events.columns
+    benchmark_suspicious = pd.read_csv(
+        output_dir / "suspicious_flows_with_metadata.csv"
+    )
+    assert "Label" not in benchmark_suspicious.columns
+    assert "label" not in benchmark_suspicious.columns
+
     model_artifact = output_dir / "isolation_forest_model.joblib"
     assert model_artifact.exists()
 
