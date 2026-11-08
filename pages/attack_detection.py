@@ -1222,8 +1222,8 @@ with explanation_cols[0]:
             <div class="method-text">
 
                 The Isolation Forest assigns an anomaly
-                score to each flow. Flows below the calibrated
-                prototype threshold are marked as
+                score to each flow. Flows below the threshold calibrated on benign
+                validation traffic are marked as
                 <b>predicted_anomaly = True</b> and passed
                 forward as suspicious flows.
 
