@@ -175,6 +175,20 @@ def _one_row_per_hash(positions: np.ndarray, hashes: np.ndarray) -> np.ndarray:
     return positions[np.sort(first_indices)]
 
 
+def _generate_risk_outputs(output_dir: Path) -> tuple[int, int]:
+    """Create event and candidate-incident triage outputs from saved evidence."""
+    from risk_analyzer import calculate_incident_risks
+
+    event_risks = calculate_incident_risks(
+        output_dir / "attack_events.csv",
+        output_dir / "attack_graph.gexf",
+        output_dir / "event_risk_scores.csv",
+    )
+    incident_path = output_dir / "incident_risk_scores.csv"
+    incident_risks = pd.read_csv(incident_path) if incident_path.exists() else pd.DataFrame()
+    return int(len(event_risks)), int(len(incident_risks))
+
+
 def run(
     data_dir: str,
     output_dir: str,
@@ -529,6 +543,14 @@ def run(
     (output / "pipeline_summary.json").write_text(
         json.dumps(summary, indent=2, default=str), encoding="utf-8"
     )
+    risk_event_rows, risk_incident_rows = _generate_risk_outputs(output)
+    summary["risk_triage_event_rows"] = risk_event_rows
+    summary["risk_triage_candidate_incidents"] = risk_incident_rows
+    summary["risk_score_semantics"] = "heuristic_triage_index_not_probability"
+    summary["elapsed_seconds"] = round(time.perf_counter() - start_time, 2)
+    (output / "pipeline_summary.json").write_text(
+        json.dumps(summary, indent=2, default=str), encoding="utf-8"
+    )
 
     print(json.dumps(summary, indent=2, default=str))
 
@@ -633,6 +655,14 @@ def run_inference(
             "The feature schema and threshold must match the environment/data source for which the model artifact was validated.",
         ],
     }
+    (output / "pipeline_summary.json").write_text(
+        json.dumps(summary, indent=2, default=str), encoding="utf-8"
+    )
+    risk_event_rows, risk_incident_rows = _generate_risk_outputs(output)
+    summary["risk_triage_event_rows"] = risk_event_rows
+    summary["risk_triage_candidate_incidents"] = risk_incident_rows
+    summary["risk_score_semantics"] = "heuristic_triage_index_not_probability"
+    summary["elapsed_seconds"] = round(time.perf_counter() - start_time, 2)
     (output / "pipeline_summary.json").write_text(
         json.dumps(summary, indent=2, default=str), encoding="utf-8"
     )
