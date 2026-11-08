@@ -6,6 +6,8 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
+from utils.cache_keys import file_cache_signature
+
 
 # ============================================================
 # PATHS
@@ -128,12 +130,12 @@ st.markdown(
 # ============================================================
 
 @st.cache_resource
-def load_graph(path):
+def load_graph(path, cache_signature):
     return nx.read_gexf(path)
 
 
 @st.cache_data
-def load_events(path):
+def load_events(path, cache_signature):
     return pd.read_csv(path, low_memory=False)
 
 
@@ -150,7 +152,7 @@ if not EVENTS_PATH.exists():
     events = pd.DataFrame()
 else:
     try:
-        events = load_events(EVENTS_PATH)
+        events = load_events(EVENTS_PATH, file_cache_signature(EVENTS_PATH))
     except Exception:
         events = pd.DataFrame()
 
@@ -228,7 +230,7 @@ with st.sidebar:
 # ============================================================
 
 try:
-    G = load_graph(GEXF_PATH)
+    G = load_graph(GEXF_PATH, file_cache_signature(GEXF_PATH))
 except Exception as e:
     st.error(f"Could not load the attack graph: {e}")
     st.stop()
