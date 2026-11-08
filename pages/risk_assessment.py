@@ -225,18 +225,18 @@ with st.sidebar:
     )
 
 # ============================================================
-# HEADER & INCIDENT SELECTOR
+# HEADER & EVENT SELECTOR
 # ============================================================
 
-st.markdown('<div class="smallcaps">ENTERPRISE SOAR COMMAND CENTER</div>', unsafe_allow_html=True)
-st.title("Event Triage, Risk Analysis & AI Investigation")
-st.markdown('<div class="subtitle">Inspect deterministic risk scores, trigger autonomous multi-step AI investigations, execute SOAR playbooks, and export SOC reports from a single console.</div>', unsafe_allow_html=True)
+st.markdown('<div class="smallcaps">SOC EVENT REVIEW WORKSPACE</div>', unsafe_allow_html=True)
+st.title("Event Triage, Triage Analysis & AI Investigation")
+st.markdown('<div class="subtitle">Review heuristic triage indicators, inspect event/graph evidence, and generate an analyst-reviewable investigation summary.</div>', unsafe_allow_html=True)
 
 if not df_risks.empty:
     col_sel1, col_sel2 = st.columns([3, 1])
     with col_sel1:
         event_options = [
-            f"{row['event_id']} — {row['attack_type']} (Risk Score: {row['risk_score']} [{row['risk_level']}])"
+            f"{row['event_id']} — {row['attack_type']} (Triage: {row['risk_score']} [{row['risk_level']}])"
             for _, row in df_risks.iterrows()
         ]
         selected_str = st.selectbox("Select Event for Triage & Investigation", event_options)
@@ -254,7 +254,7 @@ else:
 st.divider()
 
 # ============================================================
-# INCIDENT METRICS
+# EVENT TRIAGE METRICS
 # ============================================================
 
 score = selected_row['risk_score']
@@ -264,10 +264,10 @@ flow_count = selected_row.get('flow_count', 1)
 in_deg = selected_row.get('in_degree', 0)
 out_deg = selected_row.get('out_degree', 0)
 
-factor_a = selected_row.get('anomaly_severity_factor', 50.0)
-factor_b = selected_row.get('frequency_factor', 30.0)
-factor_h = selected_row.get('host_involvement_factor', 40.0)
-factor_t = selected_row.get('temporal_correlation_factor', 0.0)
+factor_a = selected_row.get('anomaly_severity_factor', float('nan'))
+factor_b = selected_row.get('frequency_factor', float('nan'))
+factor_h = selected_row.get('host_involvement_factor', float('nan'))
+factor_t = selected_row.get('temporal_correlation_factor', float('nan'))
 
 # Check if Markdown report file exists in outputs folder
 report_file_path = Path(f"outputs/agentic_investigation_output/report_{selected_event_id}.md")
@@ -285,7 +285,7 @@ if report_file_path.exists():
 tab1, tab2, tab3 = st.tabs([
     "AI Investigator",
     "Risk Analysis",
-    "Analyst Response Checklist"
+    "Analyst Verification Checklist"
 ])
 
 with tab1:
@@ -311,7 +311,7 @@ with tab1:
                     else:
                         investigation_json_str = "{}"
 
-                    # 3. Generate professional Markdown report using Groq / GPT-OSS
+                    # 3. Render the evidence summary as Markdown without another LLM call
                     report_content = generate_report_from_json(investigation_json_str)
 
                     # 4. Save into outputs/agentic_investigation_output/
@@ -363,7 +363,7 @@ with tab1:
         st.info("Click **'Generate Evidence Review'** above to inspect retrieved evidence and view the structured report.")
 
 with tab2:
-    st.markdown("### Four-Factor Evidence-Based Triage Score")
+    st.markdown("### Four-Factor Evidence-Based Triage Index")
     st.markdown(
         "This is a transparent heuristic priority score (0–100), not a calibrated "
         "probability, verified incident severity, or an automatic response decision."
@@ -375,7 +375,7 @@ with tab2:
         st.markdown(
             f"""
             <div class="card" style="padding: 20px; min-height: unset; text-align: center;">
-                <div style="font-size:0.75rem; color:#8190a3; font-weight:800; text-transform:uppercase; letter-spacing:.13em;">Composite Risk Score</div>
+                <div style="font-size:0.75rem; color:#8190a3; font-weight:800; text-transform:uppercase; letter-spacing:.13em;">Triage Priority Index</div>
                 <div style="font-size: 3.5rem; font-weight: 900; color: #49a8ff; margin: 10px 0;">{"Unassessed" if pd.isna(score) else f"{float(score):.1f}"}</div>
                 <div style="font-size: 0.9rem; color: #cbd5e1;">{"Insufficient reference evidence" if pd.isna(score) else f"Heuristic triage band: {level}"}</div>
             </div>
