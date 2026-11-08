@@ -265,34 +265,37 @@ def calculate_incident_risks(
     result.to_csv(output_path, index=False)
 
     # Aggregate event-level heuristic triage indices for candidate incident
-    # groups. The maximum event score is retained as a conservative queue
-    # ordering signal; it is not a calibrated incident probability.
+    # groups. Always write a schema-valid CSV, even when there are no groups.
+    # The maximum event score is a queue-ordering signal, not a probability.
     if "incident_id" in result.columns:
         linked = result[result["incident_id"].notna()].copy()
-        incident_rows = []
-        for incident_id, group in linked.groupby("incident_id", sort=True):
-            scores = pd.to_numeric(group["risk_score"], errors="coerce").dropna()
-            incident_score = float(scores.max()) if not scores.empty else float("nan")
-            incident_rows.append({
-                "incident_id": str(incident_id),
-                "event_count": int(group["event_id"].nunique()),
-                "event_ids": group["event_id"].astype(str).tolist(),
-                "flow_count": int(pd.to_numeric(group["flow_count"], errors="coerce").fillna(0).sum()),
-                "risk_score": round(incident_score, 2) if np.isfinite(incident_score) else np.nan,
-                "risk_level": _risk_level(incident_score),
-                "risk_score_semantics": "max_event_heuristic_triage_index_not_probability",
-                "aggregation_rule": "maximum_available_event_triage_score",
-                "confirmation_status": "potential_correlation_requires_analyst_validation",
-                "causal_claim": False,
-                "risk_model_version": "transparent_4_factor_v2",
-            })
-        incident_output = pd.DataFrame(incident_rows, columns=[
-            "incident_id", "event_count", "event_ids", "flow_count",
-            "risk_score", "risk_level", "risk_score_semantics",
-            "aggregation_rule", "confirmation_status", "causal_claim",
-            "risk_model_version",
-        ])
-        incident_output.to_csv(output_path.parent / "incident_risk_scores.csv", index=False)
+    else:
+        linked = pd.DataFrame(columns=result.columns)
+
+    incident_rows = []
+    for incident_id, group in linked.groupby("incident_id", sort=True):
+        scores = pd.to_numeric(group["risk_score"], errors="coerce").dropna()
+        incident_score = float(scores.max()) if not scores.empty else float("nan")
+        incident_rows.append({
+            "incident_id": str(incident_id),
+            "event_count": int(group["event_id"].nunique()),
+            "event_ids": group["event_id"].astype(str).tolist(),
+            "flow_count": int(pd.to_numeric(group["flow_count"], errors="coerce").fillna(0).sum()),
+            "risk_score": round(incident_score, 2) if np.isfinite(incident_score) else np.nan,
+            "risk_level": _risk_level(incident_score),
+            "risk_score_semantics": "max_event_heuristic_triage_index_not_probability",
+            "aggregation_rule": "maximum_available_event_triage_score",
+            "confirmation_status": "potential_correlation_requires_analyst_validation",
+            "causal_claim": False,
+            "risk_model_version": "transparent_4_factor_v2",
+        })
+    incident_output = pd.DataFrame(incident_rows, columns=[
+        "incident_id", "event_count", "event_ids", "flow_count",
+        "risk_score", "risk_level", "risk_score_semantics",
+        "aggregation_rule", "confirmation_status", "causal_claim",
+        "risk_model_version",
+    ])
+    incident_output.to_csv(output_path.parent / "incident_risk_scores.csv", index=False)
 
     return result
 
