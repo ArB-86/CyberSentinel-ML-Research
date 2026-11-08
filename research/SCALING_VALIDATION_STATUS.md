@@ -1,21 +1,24 @@
 # Extended validation status
 
-**Status: running**
+**Completed successfully.** The larger-sample CICIDS2017 validation ran with three fixed repetitions and all three training sizes.
 
-The paired larger-sample CICIDS2017 validation is running in GitHub Actions:
+## Final configuration
 
-[View validation run](https://github.com/ArB-86/CyberSentinel-ML-Research/actions/runs/42521225029)
-
-## Configurations
-
-- Detectors: Isolation Forest, LOF (novelty mode), exact RBF One-Class SVM.
+- Detectors: Isolation Forest, LOF (novelty mode), RBF One-Class SVM.
 - Benign training sizes: 5,000; 25,000; 50,000.
 - Repetition seeds: 42, 43, 44.
-- One fixed duplicate-grouped train/validation/test split.
+- One fixed duplicate-grouped train/validation/test partition.
 - One fixed benign-only calibration sample of 5,000 rows.
-- One fixed shared test sample of 15,000 rows.
-- The training subsets are nested within each repetition seed.
+- One shared held-out test sample of 15,000 rows.
+- Nested training subsets within each repetition.
 
-The dataset download, SHA-256 verification and dependency installation have passed. The model-training/evaluation step is currently running.
+The dataset's SHA-256 verification passed. Model fitting, evaluation and artifact upload all completed. The first results push was rejected because the branch advanced while the job was running; the already-uploaded artifact was published successfully by a separate workflow. No model retraining was required for publication.
 
-No extended-validation metric is reported until the workflow finishes and the output files are committed. See [SCALING_VALIDATION_PROTOCOL.md](SCALING_VALIDATION_PROTOCOL.md) for the design and interpretation rules.
+## Results
+
+- [Scaling validation results](SCALING_VALIDATION_RESULTS.md) — mean ± standard deviation, metric and runtime analysis.
+- [Research evidence and model-selection rationale](RESEARCH_EVIDENCE_AND_MODEL_SELECTION.md) — source-by-source evidence mapping and design justifications.
+- [Deep viva Q&A](DEEP_VIVA_QA.md) — technical questions and evidence-backed answers.
+- [Scaling validation protocol](SCALING_VALIDATION_PROTOCOL.md) — split design and interpretation rules.
+
+Raw outputs are committed under `experiments/results/scaling-validation-v1/`.
