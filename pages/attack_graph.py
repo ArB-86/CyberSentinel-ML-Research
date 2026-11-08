@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import networkx as nx
+from html import escape as escape_html
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
@@ -567,10 +568,12 @@ for node_type in [
         node_x.append(x)
         node_y.append(y)
 
+        # Graph labels originate in CSV/GEXF data. Escape them before using
+        # Plotly's HTML-capable hover template to prevent markup injection.
         node_text.append(
-            f"<b>{label}</b><br>"
-            f"Type: {node_type}<br>"
-            f"Node ID: {node}"
+            f"<b>{escape_html(label, quote=True)}</b><br>"
+            f"Type: {escape_html(node_type, quote=True)}<br>"
+            f"Node ID: {escape_html(str(node), quote=True)}"
         )
 
         node_customdata.append([
