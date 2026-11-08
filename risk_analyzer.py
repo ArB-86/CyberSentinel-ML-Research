@@ -235,6 +235,11 @@ def calculate_incident_risks(
             ) / active_weight
         record = {
             "event_id": str(row["event_id"]),
+            "incident_id": (
+                str(row["incident_id"])
+                if "incident_id" in events.columns and pd.notna(row.get("incident_id"))
+                else None
+            ),
             "attack_type": str(row.get("attack_type", "Unclassified")),
             "risk_score": round(float(risk_score), 2),
             "risk_level": _risk_level(float(risk_score)),
@@ -258,6 +263,32 @@ def calculate_incident_risks(
     output_path = Path(output_csv_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     result.to_csv(output_path, index=False)
+
+    # Aggregate event-level heuristic triage indices for candidate incident
+    # groups. The maximum event score is retained as a conservative queue
+    # ordering signal; it is not a calibrated incident probability.
+    if "incident_id" in result.columns:
+        linked = result[result["incident_id"].notna()].copy()
+        incident_rows = []
+        for incident_id, group in linked.groupby("incident_id", sort=True):
+            scores = pd.to_numeric(group["risk_score"], errors="coerce").dropna()
+            incident_score = float(scores.max()) if not scores.empty else float("nan")
+            incident_rows.append({
+                "incident_id": str(incident_id),
+                "event_count": int(group["event_id"].nunique()),
+                "event_ids": group["event_id"].astype(str).tolist(),
+                "flow_count": int(pd.to_numeric(group["flow_count"], errors="coerce").fillna(0).sum()),
+                "risk_score": round(incident_score, 2) if np.isfinite(incident_score) else np.nan,
+                "risk_level": _risk_level(incident_score),
+                "risk_score_semantics": "max_event_heuristic_triage_index_not_probability",
+                "aggregation_rule": "maximum_available_event_triage_score",
+                "confirmation_status": "potential_correlation_requires_analyst_validation",
+                "causal_claim": False,
+                "risk_model_version": "transparent_4_factor_v2",
+            })
+        incident_output = pd.DataFrame(incident_rows)
+        incident_output.to_csv(output_path.parent / "incident_risk_scores.csv", index=False)
+
     return result
 
 
