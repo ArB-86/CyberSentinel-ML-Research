@@ -1174,7 +1174,7 @@ if detection_metrics:
     st.caption(
         "These metrics are computed from the held-out benchmark evaluation set. "
         "They are not calculated from the suspicious-flow preview. In inference mode, "
-        "ground-truth evaluation metrics are not available."
+        "ground-truth evaluation metrics are available only for benchmark runs; unlabeled inference does not produce these metrics."
     )
 else:
     st.info(
