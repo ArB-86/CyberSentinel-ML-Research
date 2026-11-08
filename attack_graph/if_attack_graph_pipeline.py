@@ -321,6 +321,9 @@ def run(
     start_time = time.perf_counter()
     output = Path(output_dir)
     output.mkdir(parents=True, exist_ok=True)
+    stale_graph_png = output / "attack_graph.png"
+    if stale_graph_png.exists():
+        stale_graph_png.unlink()
 
     df = load_metadata_sample(Path(data_dir), nrows=nrows)
     work, x_raw, feature_columns = prepare_features(df)
