@@ -24,6 +24,10 @@ def find_temporal_paths(
     """
 
     try:
+        if max_hops < 1 or max_hops > 10:
+            return "Error: max_hops must be between 1 and 10."
+        if max_nodes < 1 or max_nodes > 100:
+            return "Error: max_nodes must be between 1 and 100."
         if not GRAPH_PATH.exists():
             return f"Error: Attack graph not found at {GRAPH_PATH}."
 
@@ -46,15 +50,18 @@ def find_temporal_paths(
         event_graph.add_nodes_from(event_nodes)
 
         for source, destination, attributes in graph.edges(data=True):
-            if (
-                str(source).startswith("event:") and
-                str(destination).startswith("event:")
+            # Only explicit non-causal temporal precedence links may become
+            # event-to-event paths. Shared-host, incident-membership or
+            # manually added relationships are not chronological transitions.
+            if not (
+                str(source).startswith("event:")
+                and str(destination).startswith("event:")
+                and attributes.get("relation") == "precedes"
+                and attributes.get("temporal_correlation") is True
+                and attributes.get("causal_claim") is False
             ):
-                event_graph.add_edge(
-                    source,
-                    destination,
-                    **attributes
-                )
+                continue
+            event_graph.add_edge(source, destination, **attributes)
 
         def explore(start, direction):
             queue = deque([(start, [start], 0)])
