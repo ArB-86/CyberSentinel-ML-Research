@@ -137,7 +137,6 @@ def get_flow_evidence(event_id: str, max_flows: int = 5) -> str:
         lines = [
             f"Event ID: {event_id}",
             f"Matching flows: {len(matched)}",
-            f"Label counts: {label_counts}",
             f"Displaying the {len(shown)} most anomalous flow(s).",
             note,
             "",
