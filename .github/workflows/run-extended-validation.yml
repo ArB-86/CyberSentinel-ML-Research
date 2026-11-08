@@ -1,0 +1,93 @@
+name: Extended CICIDS2017 model validation
+
+on:
+  push:
+    branches:
+      - research/extended-validation
+    paths:
+      - "experiments/compare_model_scales.py"
+      - "experiments/requirements.txt"
+      - ".github/workflows/run-extended-validation.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cicids2017-extended-validation
+  cancel-in-progress: false
+
+jobs:
+  scale-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      PYTHONUNBUFFERED: "1"
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - name: Check out validation branch
+        uses: actions/checkout@v4
+        with:
+          ref: research/extended-validation
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: experiments/requirements.txt
+
+      - name: Download and verify processed CICIDS2017
+        shell: bash
+        run: |
+          mkdir -p data
+          curl --fail --location --retry 3 --retry-delay 5 \
+            "https://github.com/ShireenKachroo/CyberSentinel/releases/download/v1.0.1/cleaned_cicids2017.parquet" \
+            --output data/cleaned_cicids2017.parquet
+          echo "9401495356b1b6f360d6aebf0ad7ddc18a39cbf02c02f7461338dea02a747146  data/cleaned_cicids2017.parquet" \
+            | sha256sum --check -
+
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip && python -m pip install -r experiments/requirements.txt
+
+      - name: Run paired nested-sample validation
+        run: |
+          python experiments/compare_model_scales.py \
+            --data data/cleaned_cicids2017.parquet \
+            --outdir experiments/results/scaling-validation-v1 \
+            --seeds 42,43,44 \
+            --train-sizes 5000,25000,50000 \
+            --folds 7 \
+            --split-seed 42 \
+            --calibration-rows 5000 \
+            --evaluation-rows 15000 \
+            --target-fpr 0.05 \
+            --trees 200 \
+            --max-samples 1024 \
+            --lof-neighbors 35 \
+            --svm-nu 0.05 \
+            --svm-cache-mb 512
+
+      - name: Upload validation results
+        uses: actions/upload-artifact@v4
+        with:
+          name: cicids2017-extended-validation
+          path: experiments/results/scaling-validation-v1/
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Commit measured outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add experiments/results/scaling-validation-v1/
+          if git diff --cached --quiet; then
+            echo "No new outputs to commit."
+          else
+            git commit -m "Add extended model validation results"
+            git push origin HEAD:research/extended-validation
+          fi
