@@ -10,6 +10,10 @@ on:
       - research/extended-validation
       - research/project-hardening
 
+concurrency:
+  group: project-hardening-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
