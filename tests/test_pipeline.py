@@ -108,3 +108,45 @@ def test_missing_benchmark_labels_remain_missing_not_attack_labels():
     cleaned = clean_labels(frame)
     assert cleaned["label"].iloc[0] == "BENIGN"
     assert cleaned["label"].iloc[1:].isna().all()
+
+
+
+def test_chronological_split_holds_out_later_days_and_duplicate_hashes():
+    timestamps = pd.Series([
+        "2026-01-01T00:00:00Z", "2026-01-01T01:00:00Z",
+        "2026-01-02T00:00:00Z", "2026-01-02T01:00:00Z",
+        "2026-01-03T00:00:00Z", "2026-01-03T01:00:00Z",
+    ])
+    positions = pd.Series(range(6)).to_numpy()
+    hashes = pd.Series([10, 11, 10, 12, 13, 14]).to_numpy(dtype="uint64")
+
+    result = _chronological_benign_split(positions, hashes, timestamps)
+    assert result is not None
+    train = result["train_positions"]
+    calibration = result["calibration_positions"]
+    evaluation = result["benign_test_positions"]
+
+    assert result["strategy"] == "chronological_calendar_day_holdout"
+    assert pd.to_datetime(timestamps.iloc[train], utc=True).max() < pd.to_datetime(
+        timestamps.iloc[calibration], utc=True
+    ).min()
+    assert pd.to_datetime(timestamps.iloc[calibration], utc=True).max() < pd.to_datetime(
+        timestamps.iloc[evaluation], utc=True
+    ).min()
+    assert not (set(hashes[train]) & set(hashes[calibration]))
+    assert not (set(hashes[train]) & set(hashes[evaluation]))
+    assert not (set(hashes[calibration]) & set(hashes[evaluation]))
+    assert result["benign_calibration_rows_excluded_for_earlier_duplicate_hash"] == 1
+
+
+def test_chronological_split_uses_explicit_fallback_for_single_day():
+    timestamps = pd.Series([
+        "2026-01-01T00:00:00Z", "2026-01-01T01:00:00Z",
+        "2026-01-01T02:00:00Z",
+    ])
+    result = _chronological_benign_split(
+        pd.Series([0, 1, 2]).to_numpy(),
+        pd.Series([1, 2, 3]).to_numpy(dtype="uint64"),
+        timestamps,
+    )
+    assert result is None
