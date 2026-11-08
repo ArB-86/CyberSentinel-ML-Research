@@ -534,16 +534,16 @@ agent_reports = list(agent_report_dir.glob("report_*.md")) if agent_report_dir.e
 status_data = [
     ("Isolation Forest",
      "Threshold calibrated" if has_detection else "Not run",
-     "Metadata-rich detection pipeline"),
+     "Held-out metadata-rich detection pipeline"),
     ("Suspicious Flows",
      f"{suspicious_flows:,} extracted" if suspicious_flows is not None else "Not generated",
-     "Detector-flagged traffic"),
-    ("Attack Events",
-     f"{attack_events:,} generated" if attack_events is not None else "Not generated",
-     "Label-independent event groups"),
+     "Held-out detector-flagged flow records"),
+    ("Potential Incidents",
+     f"{count_csv_rows(INCIDENTS_PATH):,} groups" if has_incidents else "None generated",
+     "Multi-event temporal correlations requiring analyst validation"),
     ("Attack Graph",
      f"{graph_nodes:,} nodes / {graph_edges or 0:,} edges" if has_graph and graph_nodes is not None else "Not generated",
-     "Full graph available as GEXF"),
+     "Full host/event/incident graph available as GEXF"),
 ]
 
 
