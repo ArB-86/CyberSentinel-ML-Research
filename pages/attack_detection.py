@@ -5,6 +5,8 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 
+from attack_graph.output_contracts import benchmark_metrics_available
+
 
 # ============================================================
 # PAGE CONFIG
@@ -277,8 +279,14 @@ def load_per_attack_evaluation():
 
 
 pipeline_summary = load_pipeline_summary()
-detection_metrics = load_detection_metrics()
-per_attack_evaluation = load_per_attack_evaluation()
+has_benchmark_evaluation = benchmark_metrics_available(pipeline_summary)
+if has_benchmark_evaluation:
+    detection_metrics = load_detection_metrics()
+    per_attack_evaluation = load_per_attack_evaluation()
+else:
+    # Do not reuse benchmark metrics left in outputs/ after an inference run.
+    detection_metrics = {}
+    per_attack_evaluation = pd.DataFrame()
 
 suspicious_df, suspicious_file = (
     load_suspicious_flows()
