@@ -15,6 +15,7 @@ This is a paired, nested-sample sensitivity study.
 - One fixed binary-stratified test sample (15,000 rows) is used for every model, training size and repetition.
 - For each repetition seed, the 5k training set is nested inside the 25k set, which is nested inside the 50k set.
 - The three unsupervised models are fitted on benign rows only: Isolation Forest, LOF in novelty mode, and exact RBF One-Class SVM.
+- Numeric identifiers/labels are excluded by column name; constant/all-missing numeric feature columns are retained in the schema and handled by a median imputer fitted only on each training subset.
 - Each model's threshold is calibrated on the same held-out benign calibration rows to target 5% nominal FPR. Test labels are used only for final scoring.
 
 This design differs from the initial pilot, where each seed generated a different split and test sample. Here the holdout is deliberately fixed so that training-set size and model stochasticity can be examined without changing test observations.
@@ -46,6 +47,8 @@ The summary table reports mean and sample standard deviation across three repeti
 ## Reproduction
 
 The dedicated runner is `experiments/compare_model_scales.py`. The workflow uses the SHA-256-verified processed CICIDS2017 Parquet and writes outputs to `experiments/results/scaling-validation-v1/`.
+
+**Preprocessing note:** the archived results were generated before the current comparison loader was changed to preserve the numeric schema and remove global missingness/variance filtering. Re-run the experiment after this change before quoting the old table as current evidence.
 
 The generated files are:
 
