@@ -145,6 +145,7 @@ The experiment guide documents repeated-seed runs and the evaluation protocol.
 - `experiments/` — comparison harness, metrics, predictions and plots.
 - `research/` — literature review, experiment protocol, evaluation and viva preparation.
 - `outputs/` — representative investigation reports and risk assessment outputs.
+- `utils/` — shared file-cache signatures and application support utilities.
 
 ## Extended training-size validation
 
@@ -164,7 +165,7 @@ A separate engineering pass addresses data leakage, held-out detection evaluatio
 
 - [Project hardening report](research/PROJECT_HARDENING_REPORT.md) — fixes, tests and remaining research limitations.
 - [Output workflows](outputs/README.md) — benchmark training, artifact creation, unlabeled inference, graph and risk-triage commands.
-- [Regression tests](tests/) — 35 unit/integration checks, plus compile and CLI smoke tests in GitHub Actions.
+- [Regression tests](tests/) — 39 unit/integration checks, plus compile and CLI smoke tests in GitHub Actions.
 
 Hardening changes are isolated to the `research/project-hardening` branch. The application still uses Isolation Forest; a calibrated artifact can now be applied to unlabeled flow exports in inference mode.
 
