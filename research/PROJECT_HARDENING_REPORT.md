@@ -156,23 +156,18 @@ No ground-truth `Label` column is required. The input must contain the same nume
 
 ### Event and incident risk triage
 
-```bash
-python risk_analyzer.py \
-  --events outputs/attack_events.csv \
-  --graph outputs/attack_graph.gexf \
-  --output outputs/event_risk_scores.csv
-```
+Both benchmark and unlabeled inference modes automatically run the risk-triage stage after graph generation. They write `event_risk_scores.csv` and `incident_risk_scores.csv`, and record the generated counts in `pipeline_summary.json`.
 
-Risk scoring is a separate, transparent heuristic stage; it is not a calibrated incident-probability model.
+The risk engine uses observed anomaly scores relative to the benign calibration distribution, event volume, host involvement and temporal links where available. Missing factors are omitted and remaining configured weights are renormalised. At least two factors are required; otherwise the result is `UNASSESSED`. Current weights, normalization caps and triage bands are engineering heuristics, not statistically learned or validated risk probabilities.
 
+The standalone `python risk_analyzer.py` command remains available to refresh triage outputs after events/graphs have been manually edited.
 ## 4. Automated regression checks
 
 GitHub Actions workflow: `.github/workflows/reliability-checks.yml`.
 
 Latest completed validation:
 - Python module compile check: passed.
-- Pytest: **17 passed**.
-- Run: [42528658592](https://github.com/ArB-86/CyberSentinel-ML-Research/actions/runs/42528658592).
+- The latest completed green run before automatic risk-stage integration: 17 passed. The risk-stage integration and empty-incident output have additional checks; final count is recorded by the current branch CI run.
 
 The tests cover label-independent event creation, detector-output requirements, interleaved host timelines, non-overlapping temporal links, GEXF null handling, candidate incident grouping, risk-score missing evidence semantics, train-only preprocessing, benchmark-to-artifact-to-unlabeled-inference flow, and deterministic report rendering.
 
