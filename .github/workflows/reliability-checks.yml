@@ -38,7 +38,7 @@ jobs:
           python -m pip install -r requirements-dev.txt
 
       - name: Compile project modules
-        run: python -m compileall -q agent attack_graph pages experiments app.py risk_analyzer.py
+        run: python -m compileall -q agent attack_graph pages experiments utils app.py risk_analyzer.py
 
       - name: Smoke-test documented command-line entry points
         run: |
