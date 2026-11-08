@@ -313,7 +313,7 @@ selected_event_id = "All"
 
 if not events.empty:
     attack_column = None
-    for candidate in ["attack_type", "label", "Label"]:
+    for candidate in ["attack_type"]:
         if candidate in events.columns:
             attack_column = candidate
             break
