@@ -284,6 +284,30 @@ else:
     st.warning("No risk scores found. Make sure `event_risk_scores.csv` is generated in your outputs folder.")
     st.stop()
 
+if not df_incident_risks.empty:
+    st.markdown("### Potential incident triage")
+    incident_display_columns = [
+        column for column in [
+            "incident_id", "event_count", "flow_count", "risk_score",
+            "risk_level", "confirmation_status",
+        ]
+        if column in df_incident_risks.columns
+    ]
+    st.dataframe(
+        df_incident_risks[incident_display_columns],
+        use_container_width=True,
+        hide_index=True,
+    )
+    st.caption(
+        "Incident-level priority is the maximum available event heuristic score. "
+        "These groups remain unconfirmed temporal correlations, not validated incidents."
+    )
+else:
+    st.info(
+        "No candidate incident triage records are available. This may mean no "
+        "multi-event temporal groups were formed; it does not mean no attack activity occurred."
+    )
+
 st.divider()
 
 # ============================================================
