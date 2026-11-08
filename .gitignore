@@ -10,3 +10,18 @@ __pycache__/
 data/
 *.log
 .DS_Store
+
+# Runtime model artifacts and generated detection outputs
+outputs/*.joblib
+outputs/suspicious_flows_with_metadata.csv
+outputs/attack_events.csv
+outputs/incident_groups.csv
+outputs/attack_graph.gexf
+outputs/attack_graph.png
+outputs/detection_metrics.json
+outputs/per_attack_detection_evaluation.csv
+outputs/pipeline_summary.json
+outputs/event_risk_scores.csv
+outputs/incident_risk_scores.csv
+outputs/agentic_investigation_output/investigation_*.json
+outputs/agentic_investigation_output/report_*.md
