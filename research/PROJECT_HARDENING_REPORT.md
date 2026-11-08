@@ -169,7 +169,7 @@ Latest completed validation:
 - Python module compile check: passed.
 - The latest completed green run before automatic risk-stage integration: 17 passed. The risk-stage integration and empty-incident output have additional checks; final count is recorded by the current branch CI run.
 
-The tests cover label-independent event creation, detector-output requirements, interleaved host timelines, non-overlapping temporal links, GEXF null handling, candidate incident grouping, risk-score missing evidence semantics, train-only preprocessing, benchmark-to-artifact-to-unlabeled-inference flow, and deterministic report rendering.
+The tests cover label-independent event creation, detector-output requirements, interleaved host timelines, non-overlapping temporal links, GEXF null handling, candidate incident grouping, risk-score missing evidence semantics, valid empty incident outputs, train-only preprocessing, benchmark-to-artifact-to-unlabeled-inference flow, ground-truth-label separation from downstream artefacts, missing-label handling, and deterministic report rendering.
 
 These are unit/integration tests on synthetic fixtures. They do not constitute a full-scale end-to-end evaluation on all metadata-rich CICIDS2017 files or a live enterprise network.
 
