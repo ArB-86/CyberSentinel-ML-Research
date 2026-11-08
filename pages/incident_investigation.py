@@ -6,6 +6,8 @@ from attack_graph.output_contracts import format_event_id
 import pandas as pd
 import streamlit as st
 
+from utils.cache_keys import file_cache_signature
+
 
 # ============================================================
 # PAGE CONFIG
@@ -248,14 +250,14 @@ st.markdown(
 # ============================================================
 
 @st.cache_data
-def load_events(path):
+def load_events(path, cache_signature):
     return pd.read_csv(
         path,
         low_memory=False,
     )
 
 @st.cache_data
-def load_potential_incidents(path):
+def load_potential_incidents(path, cache_signature):
     if not Path(path).exists():
         return pd.DataFrame()
     try:
@@ -284,8 +286,8 @@ if not EVENTS_PATH.exists():
 
 
 try:
-    events = load_events(EVENTS_PATH)
-    potential_incidents = load_potential_incidents(INCIDENTS_PATH)
+    events = load_events(EVENTS_PATH, file_cache_signature(EVENTS_PATH))
+    potential_incidents = load_potential_incidents(INCIDENTS_PATH, file_cache_signature(INCIDENTS_PATH))
 
 except Exception as e:
 
