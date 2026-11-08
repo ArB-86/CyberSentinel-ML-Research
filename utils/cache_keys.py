@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Iterable
 
 
-def file_cache_signature(path: str | Path) -> tuple[int, int, int, int] | None:
+def file_cache_signature(path: str | Path | None) -> tuple[int, int, int, int] | None:
     """Return a cheap cache key that changes when a file is replaced or rewritten.
 
     Streamlit hashes ordinary function arguments, not the contents of a file
@@ -12,6 +12,8 @@ def file_cache_signature(path: str | Path) -> tuple[int, int, int, int] | None:
     cached file loader so rerunning the detection pipeline invalidates stale UI
     data without disabling caching entirely.
     """
+    if path is None:
+        return None
     try:
         stat = Path(path).stat()
     except (FileNotFoundError, NotADirectoryError, PermissionError, OSError):
@@ -25,10 +27,10 @@ def file_cache_signature(path: str | Path) -> tuple[int, int, int, int] | None:
 
 
 def file_set_cache_signature(
-    paths: Iterable[str | Path],
+    paths: Iterable[str | Path | None],
 ) -> tuple[tuple[str, tuple[int, int, int, int] | None], ...]:
     """Signature for ordered candidate-path lists used by fallback loaders."""
     return tuple(
-        (str(Path(path)), file_cache_signature(path))
+        (str(Path(path)) if path is not None else "<none>", file_cache_signature(path))
         for path in paths
     )
