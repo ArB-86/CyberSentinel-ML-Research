@@ -127,6 +127,7 @@ The manual response checklist no longer claims to execute SOAR, firewall blocks,
 - Missing risk/graph data is shown as unavailable rather than “system online”.
 - CSV/GEXF-derived text is HTML-escaped before rendering inside event cards and graph hover tooltips.
 - Risk pages call the score a heuristic triage index and state when it is unassessed.
+- Streamlit file loaders receive a cache signature (mtime, ctime, size and inode), so rewriting an output file at the same path invalidates cached dashboard, detection, graph, event and risk data.
 - Generated-output instructions now distinguish benchmark training from unlabeled inference and document the separate risk-analysis command.
 
 ### 2.9 Research comparison preprocessing
