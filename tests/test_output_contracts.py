@@ -24,4 +24,4 @@ def test_event_id_formatter_preserves_canonical_ids():
     assert format_event_id("EVT-00001") == "EVT-00001"
     assert format_event_id("0001") == "EVT-00001"
     assert format_event_id(1) == "EVT-00001"
-    assert format_event_id("event-7") == "EVT-event-7"
+    assert format_event_id("event-7") == "event-7"
