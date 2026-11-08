@@ -14,7 +14,7 @@ def test_prepare_features_preserves_missing_values_for_train_only_imputation():
         "Destination Port": [80, 81, 82],
         "Protocol": [6, 17, 6],
         "Flow Duration": [10.0, None, 20.0],
-        "Entirely Missing Feature": [None, None, None],
+        "Entirely Missing Feature": [float("nan"), float("nan"), float("nan")],
         "Label": ["BENIGN", "DoS", "DDoS"],
     })
     _, x, _ = prepare_features(frame)
