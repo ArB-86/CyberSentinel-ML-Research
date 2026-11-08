@@ -411,7 +411,7 @@ st.markdown(
 
 # FIXED: st.html
 st.html(
-    """
+    f"""
     <div class="hero">
 
         <div class="smallcaps">
@@ -440,7 +440,7 @@ st.html(
 
             <span class="badge">
                 <span class="green">●</span>
-                DETECTION PIPELINE ACTIVE
+                {"DETECTION PIPELINE READY" if pipeline_summary.get("isolation_forest_threshold") is not None else "DETECTION PIPELINE NOT RUN"}
             </span>
 
         </div>
