@@ -2,7 +2,13 @@ import json
 
 import pandas as pd
 
-from attack_graph.if_attack_graph_pipeline import clean_labels, prepare_features, run, run_inference
+from attack_graph.if_attack_graph_pipeline import (
+    _chronological_benign_split,
+    clean_labels,
+    prepare_features,
+    run,
+    run_inference,
+)
 
 
 def test_prepare_features_preserves_missing_values_for_train_only_imputation():
