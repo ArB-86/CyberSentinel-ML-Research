@@ -61,3 +61,20 @@ def test_missing_graph_is_not_treated_as_zero_graph_evidence(tmp_path):
     assert pd.isna(result.loc[0, "risk_score"])
     assert result.loc[0, "risk_level"] == "UNASSESSED"
     assert result.loc[0, "risk_score_semantics"] == "heuristic_triage_score_not_probability"
+
+
+
+def test_no_candidate_incidents_writes_readable_empty_incident_file(tmp_path):
+    events_path = tmp_path / "attack_events.csv"
+    output_path = tmp_path / "event_risk_scores.csv"
+    pd.DataFrame([
+        {"event_id": "E1", "incident_id": None, "flow_count": 10,
+         "mean_anomaly_score": -0.1, "attack_type": "Unclassified"}
+    ]).to_csv(events_path, index=False)
+
+    calculate_incident_risks(events_path, None, output_path)
+    incident_path = tmp_path / "incident_risk_scores.csv"
+    assert incident_path.exists()
+    incident_scores = pd.read_csv(incident_path)
+    assert incident_scores.empty
+    assert "incident_id" in incident_scores.columns
