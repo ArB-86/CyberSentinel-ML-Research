@@ -18,10 +18,17 @@ DEFAULT_WEIGHTS = {
 
 
 def _normalize_log(values: pd.Series, reference_q95: float | None = None) -> pd.Series:
-    numeric = pd.to_numeric(values, errors="coerce").fillna(0).clip(lower=0)
-    q95 = reference_q95 if reference_q95 is not None else float(numeric.quantile(0.95))
+    numeric = pd.to_numeric(values, errors="coerce").clip(lower=0)
+    if reference_q95 is None:
+        # A single observed event cannot establish a meaningful relative scale.
+        if numeric.notna().sum() < 2:
+            return pd.Series(np.nan, index=values.index, dtype=float)
+        q95 = float(numeric.quantile(0.95))
+    else:
+        q95 = float(reference_q95)
     if not np.isfinite(q95) or q95 <= 0:
-        return pd.Series(0.0, index=values.index)
+        return pd.Series(np.nan, index=values.index, dtype=float)
+    numeric = numeric.fillna(0)
     denominator = np.log1p(q95)
     if denominator <= 0:
         return pd.Series(0.0, index=values.index)
@@ -75,6 +82,8 @@ def _anomaly_severity(
 
 def _risk_level(score: float) -> str:
     # These are transparent triage bands, not calibrated probabilities.
+    if not np.isfinite(score):
+        return "UNASSESSED"
     if score >= 80:
         return "CRITICAL"
     if score >= 60:
@@ -141,8 +150,10 @@ def calculate_incident_risks(
         except (OSError, ValueError, TypeError):
             calibration_quantiles = None
 
-    flow_count = pd.to_numeric(events["flow_count"], errors="coerce").fillna(0).clip(lower=0)
-    frequency = _normalize_log(flow_count)
+    flow_count = pd.to_numeric(events["flow_count"], errors="coerce").clip(lower=0)
+    # Fixed reference scales make scores comparable across runs; these are
+    # explicit engineering caps, not empirically calibrated risk thresholds.
+    frequency = _normalize_log(flow_count, reference_q95=5000.0)
     if "mean_anomaly_score" in events.columns:
         anomaly, anomaly_reference_source = _anomaly_severity(
             events["mean_anomaly_score"], calibration_quantiles
@@ -188,7 +199,7 @@ def calculate_incident_risks(
 
     host_series = pd.Series(host_values, index=events.index, dtype=float)
     temporal_series = pd.Series(temporal_values, index=events.index, dtype=float)
-    host_factor = _normalize_log(host_series).where(host_series.notna())
+    host_factor = _normalize_log(host_series, reference_q95=10.0).where(host_series.notna())
     temporal_factor = _normalize_log(
         temporal_series, reference_q95=5.0
     ).where(temporal_series.notna())
@@ -215,7 +226,7 @@ def calculate_incident_risks(
         }
         active_weight = sum(weight_map[name] for name in available)
         if active_weight <= 0:
-            risk_score = 0.0
+            risk_score = float("nan")
         else:
             risk_score = sum(
                 weight_map[name] * value for name, value in available.items()
@@ -225,10 +236,11 @@ def calculate_incident_risks(
             "attack_type": str(row.get("attack_type", "Unclassified")),
             "risk_score": round(float(risk_score), 2),
             "risk_level": _risk_level(float(risk_score)),
-            "flow_count": int(flow_count.loc[index]),
+            "flow_count": int(flow_count.loc[index]) if pd.notna(flow_count.loc[index]) else None,
             "in_degree": int(in_degrees[index]),
             "out_degree": int(out_degrees[index]),
             "risk_score_semantics": "heuristic_triage_score_not_probability",
+            "normalization_references": "event_flow_count<=5000; host_degree<=10; temporal_links<=5",
             "risk_model_version": "transparent_4_factor_v2",
             "anomaly_reference_source": anomaly_reference_source,
             "active_factors": ",".join(available.keys()),
