@@ -62,6 +62,8 @@ def test_metadata_pipeline_runs_with_train_only_imputation(tmp_path):
     assert (output_dir / "attack_events.csv").exists()
     assert (output_dir / "incident_groups.csv").exists()
     assert (output_dir / "attack_graph.gexf").exists()
+    assert (output_dir / "event_risk_scores.csv").exists()
+    assert (output_dir / "incident_risk_scores.csv").exists()
     events = pd.read_csv(output_dir / "attack_events.csv")
     assert "incident_id" in events.columns
     model_artifact = output_dir / "isolation_forest_model.joblib"
@@ -88,6 +90,8 @@ def test_metadata_pipeline_runs_with_train_only_imputation(tmp_path):
     assert inference_summary["mode"] == "unlabeled_inference"
     assert inference_summary["ground_truth_labels_required"] is False
     assert inference_summary["ground_truth_labels_used"] is False
+    assert (inference_output / "event_risk_scores.csv").exists()
+    assert (inference_output / "incident_risk_scores.csv").exists()
     suspicious = pd.read_csv(inference_output / "suspicious_flows_with_metadata.csv")
     assert "Label" not in suspicious.columns
     assert "predicted_anomaly" in suspicious.columns
