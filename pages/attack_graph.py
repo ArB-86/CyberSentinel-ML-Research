@@ -191,7 +191,7 @@ with st.sidebar:
     st.page_link("pages/attack_detection.py", label="Attack Detection")
 
     st.markdown('<div class="smallcaps" style="margin-top:18px">Investigation</div>', unsafe_allow_html=True)
-    st.page_link("pages/incident_investigation.py", label="Incident Investigation")
+    st.page_link("pages/incident_investigation.py", label="Event Investigation")
     st.page_link("pages/attack_graph.py", label="Attack Graph")
 
     st.markdown('<div class="smallcaps" style="margin-top:18px">Agentic Investigation & Risk Assessment</div>', unsafe_allow_html=True)
@@ -256,7 +256,7 @@ for _, data in G.nodes(data=True):
 event_nodes = node_types.get("event", 0)
 source_nodes = node_types.get("source", 0)
 target_nodes = node_types.get("target", 0)
-attack_type_nodes = node_types.get("attack_type", 0)
+attack_type_nodes = node_types.get("predicted_attack_type", 0)
 
 
 # ============================================================
@@ -520,6 +520,7 @@ NODE_COLORS = {
     "target": "#32d296",
     "event": "#a78bfa",
     "attack_type": "#f0a35a",
+    "predicted_attack_type": "#f0a35a",
     "incident": "#f472b6",
     "unknown": "#94a3b8",
 }
@@ -529,6 +530,7 @@ NODE_SIZES = {
     "target": 18,
     "event": 24,
     "attack_type": 21,
+    "predicted_attack_type": 21,
     "incident": 27,
     "unknown": 16,
 }
@@ -595,6 +597,7 @@ for node_type in [
             "target": "Target Host",
             "event": "Attack Event",
             "attack_type": "Attack Type",
+            "predicted_attack_type": "Predicted Attack Type",
             "incident": "Incident",
             "unknown": "Other",
         }.get(node_type, "Other"),
@@ -766,11 +769,13 @@ st.html(
 )
 st.markdown(
     """
-    Suspicious network flows are grouped into attack events
-    using source IP, destination IP, protocol, attack label
-    and temporal proximity. The resulting events are
-    represented as a NetworkX attack graph connecting
-    source hosts, attack events, attack types and target
-    hosts.
+    Suspicious network flows are grouped into events using
+    source IP, destination IP, protocol and temporal proximity.
+    Ground-truth labels are not used as production predictions.
+    Attack-type nodes appear only when a separate classifier provides
+    predicted_attack_type. Temporal precedes edges show observed
+    ordering/correlation and do not prove causation. Events connected
+    by shared-host temporal edges can be grouped into candidate incidents,
+    which require analyst validation.
     """
 )
