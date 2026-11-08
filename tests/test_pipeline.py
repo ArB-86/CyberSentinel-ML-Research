@@ -55,4 +55,7 @@ def test_metadata_pipeline_runs_with_train_only_imputation(tmp_path):
     assert (output_dir / "pipeline_summary.json").exists()
     assert (output_dir / "suspicious_flows_with_metadata.csv").exists()
     assert (output_dir / "attack_events.csv").exists()
+    assert (output_dir / "incident_groups.csv").exists()
     assert (output_dir / "attack_graph.gexf").exists()
+    events = pd.read_csv(output_dir / "attack_events.csv")
+    assert "incident_id" in events.columns
