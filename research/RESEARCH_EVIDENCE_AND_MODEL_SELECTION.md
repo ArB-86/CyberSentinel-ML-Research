@@ -217,6 +217,8 @@ This is a focused study, **not an exhaustive survey of all anomaly-detection alg
 
 ## 11. The model-selection decision for this project
 
+**Evidence status:** the linked pilot result tables were produced before the current hardening change to feature-schema handling in the comparison scripts. They are useful historical context, but their numerical ranking is not yet a result of the current hardened scripts. Re-run both comparison commands against the SHA-256-verified Parquet before quoting the exact AP/F1/ROC-AUC values as the current study result.
+
 Do not replace Isolation Forest just because One-Class SVM scored higher in one table.
 
 The measured paired 5k/25k/50k study shows:
