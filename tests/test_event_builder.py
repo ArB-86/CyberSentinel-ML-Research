@@ -87,3 +87,15 @@ def test_port_aware_grouping_keeps_distinct_services_separate():
     )
     assert len(events) == 2
     assert sorted(events["flow_count"].tolist()) == [1, 1]
+
+
+
+def test_numeric_float_prediction_flags_are_supported():
+    frame = _flows(with_label=False)
+    frame["predicted_anomaly"] = [1.0, 0.0, 1.0, 0.0]
+    events = build_attack_events(
+        frame,
+        config=EventConfig(time_window_seconds=60),
+    )
+    assert events["flow_count"].sum() == 2
+    assert set(events["src_ip"]) == {"10.0.0.1"}
