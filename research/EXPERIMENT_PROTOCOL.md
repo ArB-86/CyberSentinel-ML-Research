@@ -16,6 +16,8 @@ The experiment predicts a binary outcome: `Benign` versus any non-benign label. 
 
 The script computes a hash from numeric modelling features only (no label) and uses `StratifiedGroupKFold`:
 
+Before splitting, the loader excludes identifiers and labels by column name but preserves the numeric feature schema. It does not drop columns based on missingness or variance measured across the entire dataset. Each model's median imputer is fitted only on that model's training subset, with `keep_empty_features=True`, and then applied unchanged to calibration/test rows. This avoids using held-out feature distributions to decide which numeric features exist.
+
 - Fold 0: validation, used only to obtain benign calibration observations.
 - Fold 1: held-out test.
 - Remaining folds: training.
