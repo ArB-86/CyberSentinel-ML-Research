@@ -395,7 +395,7 @@ def choose_subgraph(
         matching_events = []
         if not events_df.empty:
             attack_column = None
-            for candidate in ["attack_type", "label", "Label"]:
+            for candidate in ["attack_type"]:
                 if candidate in events_df.columns:
                     attack_column = candidate
                     break
