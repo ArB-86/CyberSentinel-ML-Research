@@ -18,17 +18,19 @@ The default `main` branch and the other research branches were not changed by th
 **Now:**
 - Numeric feature schema is retained; columns are not dropped because of statistics calculated across the complete file.
 - The median imputer is fitted on the selected benign training sample only.
-- Benign rows are split into disjoint fit, calibration and held-out benign test pools using exact numeric-feature hashes.
+- When at least three distinct UTC calendar dates are present, benign data is split chronologically: earlier dates for fitting, middle dates for threshold calibration, and the latest dates for held-out evaluation.
+- When fewer than three distinct dates exist, the pipeline falls back to a random exact-feature-hash group split and records that cross-day generalisation was not established.
+- Exact numeric feature hashes are kept disjoint across fit, calibration and evaluation; later partitions drop hashes already assigned to earlier partitions.
+- Attack rows are selected from the held-out calendar-day range when chronological splitting is available. Attack rows whose exact feature hash appears in fit/calibration or conflicts with a benign evaluation hash are excluded and counted.
 - Training and calibration samples are deduplicated by exact feature hash.
-- Attack rows with a feature hash appearing in fit/calibration are excluded from evaluation.
-- Attack rows whose exact feature hash conflicts with a benign test row are also excluded from the evaluation sample and counted separately.
-- The held-out threshold is calculated from benign calibration scores only.
+- The median imputer and Isolation Forest are fitted on the selected benign training sample only.
+- The threshold is calculated from benign calibration scores only.
 - Detection metrics are calculated on held-out evaluation rows; suspicious-flow, event and graph outputs are constructed only from held-out evaluation flows.
-- The benchmark output includes confusion counts, ROC-AUC, Average Precision, precision, recall, F1, FPR/FNR and per-attack support/recall.
+- The benchmark output includes confusion counts, ROC-AUC, Average Precision, precision, recall, F1, FPR/FNR, per-attack support/recall, split date ranges and duplicate exclusions.
 
-**What this establishes:** the benchmark pipeline has an explicit, auditable fit/calibration/evaluation boundary and exact feature-hash duplicate separation.
+**What this establishes:** for multi-day metadata-rich datasets, the pipeline evaluates on later calendar days than the model-fit and threshold-calibration periods, while keeping exact numeric feature hashes disjoint.
 
-**What it does not establish:** exact-hash grouping is not a temporal or five-tuple connection split. The cleaned modelling Parquet does not contain the identifiers required for those stronger tests.
+**What it does not establish:** this is not a host/subnet/attack-scenario holdout, and it does not establish generalisation to an independent organisation or network. Exact-feature-hash separation is not equivalent to a full five-tuple connection-group split. The cleaned modelling Parquet lacks the timestamps and endpoint metadata required for calendar-day/event analysis; the metadata-rich CSV export is required.
 
 ### 2.2 Separate benchmark training from production-style inference
 
@@ -50,7 +52,7 @@ The inference mode requires the same numeric feature schema and the metadata req
 **Now:**
 - Event selection requires the detector-produced `predicted_anomaly` flag or an explicitly supplied anomaly-score threshold.
 - Ground-truth `Label` is never a detector fallback or event-group key.
-- Events are grouped using source, destination and protocol, with an optional port-aware key.
+- The pipeline groups events by source, destination, protocol and—when both are available—source/destination ports. It falls back to the three-field key only when port metadata is absent.
 - Attack type remains `Unclassified` unless a separate model provides `predicted_attack_type`.
 - A model-predicted type is tagged with its source; a dataset label is not represented as a production prediction.
 
@@ -91,8 +93,8 @@ An actual candidate incident grouping stage is now present:
 - If calibration metadata is unavailable, relative batch rank is used only when multiple events exist; it is explicitly identified as relative.
 - No ground-truth attack category is used as a production risk weight.
 - Event volume, host involvement and temporal-link factors are explicit, configurable heuristic inputs.
-- Missing evidence factors are omitted and the remaining weights are renormalised.
-- At least two evidence factors are required; otherwise the result is `UNASSESSED`.
+- Missing evidence factors are omitted and the remaining weights are renormalised. Missing flow counts and missing graph degrees remain unavailable rather than becoming zero.
+- At least two positively weighted evidence factors are required; zero-weight factors do not count as independent support. Otherwise the result is `UNASSESSED`.
 - Risk outputs explicitly state `heuristic_triage_score_not_probability`.
 - Candidate incident priority is aggregated from available event triage scores using the maximum event score and remains marked as an unconfirmed correlation.
 
@@ -118,6 +120,7 @@ The manual response checklist no longer claims to execute SOAR, firewall blocks,
 - Application pipeline status is derived from actual artefacts/summary values.
 - Event and potential-incident stages are displayed separately.
 - Missing risk/graph data is shown as unavailable rather than “system online”.
+- CSV/GEXF-derived text is HTML-escaped before rendering inside event cards and graph hover tooltips.
 - Risk pages call the score a heuristic triage index and state when it is unassessed.
 - Generated-output instructions now distinguish benchmark training from unlabeled inference and document the separate risk-analysis command.
 
@@ -156,7 +159,7 @@ No ground-truth `Label` column is required. The input must contain the same nume
 
 ### Event and incident risk triage
 
-Both benchmark and unlabeled inference modes automatically run the risk-triage stage after graph generation. They write `event_risk_scores.csv` and `incident_risk_scores.csv`, and record the generated counts in `pipeline_summary.json`.
+Both benchmark and unlabeled inference modes automatically run the risk-triage stage after graph generation. They write `event_risk_scores.csv` and `incident_risk_scores.csv`, and record the generated counts in `pipeline_summary.json`. The CLI supports both the documented direct-script invocation and package-module invocation.
 
 The risk engine uses observed anomaly scores relative to the benign calibration distribution, event volume, host involvement and temporal links where available. Missing factors are omitted and remaining configured weights are renormalised. At least two factors are required; otherwise the result is `UNASSESSED`. Current weights, normalization caps and triage bands are engineering heuristics, not statistically learned or validated risk probabilities.
 
@@ -165,18 +168,19 @@ The standalone `python risk_analyzer.py` command remains available to refresh tr
 
 GitHub Actions workflow: `.github/workflows/reliability-checks.yml`.
 
-Latest completed validation:
+Latest completed green validation on the working branch:
 - Python module compile check: passed.
-- The latest completed green run before automatic risk-stage integration: 17 passed. The risk-stage integration and empty-incident output have additional checks; final count is recorded by the current branch CI run.
+- Direct CLI smoke tests for `python attack_graph/if_attack_graph_pipeline.py --help` and `python risk_analyzer.py --help`: passed.
+- Pytest: **24 passed**.
 
-The tests cover label-independent event creation, detector-output requirements, interleaved host timelines, non-overlapping temporal links, GEXF null handling, candidate incident grouping, risk-score missing evidence semantics, valid empty incident outputs, train-only preprocessing, benchmark-to-artifact-to-unlabeled-inference flow, ground-truth-label separation from downstream artefacts, missing-label handling, and deterministic report rendering.
+The tests cover label-independent and port-aware event creation, detector-output requirements, interleaved host timelines, non-overlapping temporal links, GEXF null handling, candidate incident grouping, chronological day holdout and single-day fallback, risk-score missing evidence semantics, unknown graph degrees, zero-weight risk factors, valid empty incident outputs, train-only preprocessing, benchmark-to-artifact-to-unlabeled-inference flow, ground-truth-label separation from downstream artefacts, missing-label handling, and deterministic report rendering.
 
 These are unit/integration tests on synthetic fixtures. They do not constitute a full-scale end-to-end evaluation on all metadata-rich CICIDS2017 files or a live enterprise network.
 
 ## 5. Limitations that remain open (not claimed as solved)
 
 1. **Attack-family classification:** the current detector is binary anomaly detection. Event attack type remains `Unclassified` unless a separately trained and evaluated multiclass classifier supplies `predicted_attack_type`. Ground-truth labels are not substituted for predictions.
-2. **Temporal/connection-level generalisation:** exact numeric feature hashes are separated, but the cleaned 69-feature Parquet lacks five-tuple identifiers and timestamps. Strong connection-level/temporal holdout requires the metadata-rich original traffic exports.
+2. **Temporal/connection-level generalisation:** chronological calendar-day holdout is now used when at least three dates exist; one-day/single-day exports use an explicitly labelled random duplicate-group fallback. The current split does not hold out by host, subnet or attack scenario, and exact feature hashes are not the same as connection-group IDs. The cleaned 69-feature Parquet lacks timestamps/endpoints; the metadata-rich original traffic export is required for temporal and event-level analysis.
 3. **Event window/gap sensitivity:** the 60-second event grouping window and 300-second temporal edge gap are configurable engineering heuristics. A sensitivity study (for example 30/60/120-second grouping and 60/180/300/600-second edge gaps) with event fragmentation/merging metrics is still required.
 4. **Incident correlation validity:** connected components represent candidate shared-host temporal correlations. They are not confirmed incidents, causal chains or multi-stage attack ground truth. A labelled incident/stage benchmark and analyst adjudication are needed.
 5. **Risk-score calibration:** current factor weights, normalization references and bands are heuristic. They need calibration/validation against analyst-confirmed incident severity and operational outcomes before they can be used as severity estimates.
