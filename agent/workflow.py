@@ -203,59 +203,65 @@ def finalize_investigation(state: InvestigationState):
 # Separate Utility: Convert JSON to Markdown Report using GROQ
 # -----------------------------
 
+def _as_markdown_items(value):
+    if value is None:
+        return ["- Not available in the retrieved evidence."]
+    if isinstance(value, list):
+        return [f"- {item}" for item in value] or ["- None recorded."]
+    if isinstance(value, dict):
+        return [f"- **{key}:** {item}" for key, item in value.items()] or ["- None recorded."]
+    return [str(value)]
+
+
 def generate_report_from_json(investigation_json_str: str) -> str:
+    """Render investigation JSON deterministically without a second LLM.
+
+    This prevents the report-formatting stage from inventing impact metrics,
+    signatures, timestamps, or remediation actions absent from the evidence.
     """
-    Takes the structured JSON from the investigation and uses Groq (Llama-3) 
-    to format it into a professional Markdown SOC incident investigation report.
-    """
-    groq_api_key = os.getenv("GROQ_API_KEY")
-    if not groq_api_key:
-        raise ValueError("GROQ_API_KEY environment variable is not set.")
+    try:
+        payload = json.loads(investigation_json_str)
+    except (TypeError, json.JSONDecodeError) as exc:
+        raise ValueError("Investigation output is not valid JSON; report was not generated.") from exc
+    if not isinstance(payload, dict):
+        raise ValueError("Investigation output must be a JSON object.")
 
-    model = ChatGroq(
-        model="openai/gpt-oss-20b",
-        temperature=0.2,
-        groq_api_key=groq_api_key
-    )
-    
-    prompt = f"""
-    You are an elite, senior Tier-3 Security Operations Center (SOC) Incident Responder and Threat Hunter.
-    Your task is to convert the following structured agent investigation JSON into a comprehensive, 
-    highly detailed, professional Markdown incident investigation report suitable for CISO and forensic review.
-    
-    The report structure must strictly follow the gold-standard format of advanced threat intelligence reports (such as detailed volumetric impact metrics, campaign timelines, and technical breakdowns), ensuring maximum readability and professional rigor.
+    sections = [
+        ("Executive summary", "executive_summary"),
+        ("Incident overview", "incident_overview"),
+        ("Observed network evidence", "observed_network_evidence"),
+        ("Anomaly analysis", "anomaly_analysis"),
+        ("Related events", "related_events_summary"),
+        ("Risk assessment", "risk_assessment"),
+        ("Limitations and unknowns", "investigation_limitations"),
+        ("Recommended SOC actions", "recommended_soc_actions"),
+        ("Final assessment", "final_assessment"),
+    ]
 
-    Investigation JSON Payload:
-    {investigation_json_str}
+    lines = [
+        f"# Security investigation: {payload.get('event_id', 'Unknown event')}",
+        "",
+        "**Report type:** Evidence-based investigation summary",
+        "",
+        "> This report is a rendering of the retrieved investigation output. "
+        "It is not a cryptographic signature, a verified incident verdict, or "
+        "proof of successful compromise. Unknown fields remain unknown.",
+        "",
+    ]
+    for heading, key in sections:
+        lines.extend([f"## {heading}", ""])
+        lines.extend(_as_markdown_items(payload.get(key)))
+        lines.append("")
 
-    CRITICAL FORMATTING INSTRUCTIONS:
-    - In the header, set "Prepared by: CyberSentinel AI Investigator" (Do not use placeholders like [Your Name]).
-    - Include proper cryptographic signature block at the end.
-    - Use clear markdown tables, bold headers, and rich security terminology throughout the document.
-
-    CRITICAL SECTIONS TO INCLUDE IN THE MARKDOWN REPORT:
-    1. Executive Summary: High-level overview of the incident, impact, scope, and final disposition.
-    2. Technical Findings & Traffic Analysis: Detailed evaluation of event logs, protocol metrics, flow volumes, anomaly scores, and behavioral indicators.
-    3. Attack Chain & Campaign Flow: Precise timestamps, sequence of actions, temporal path analysis, and related historical events.
-    4. Impact Assessment: Quantifiable impact on CPU, memory, network throughput, response time, and service availability.
-    5. Recommended Remediation & Mitigation: Immediate containment steps, short-term actions, and strategic infrastructure hardening.
-    6. Operational Insights & Improvement Roadmap (Post-Incident Retrospective): Key takeaways, detection engineering gaps, and preventive strategies to avoid recurrence.
-
-    Output clean, professional Markdown matching the rigorous depth of a Senior SOC Incident Response report.
-    """
-
-    response = model.invoke([HumanMessage(content=prompt)])
-    content = response.content
-
-    if isinstance(content, list):
-        markdown_text = "".join([
-            str(item.get("text", item)) if isinstance(item, dict) else str(item) 
-            for item in content
-        ])
-    else:
-        markdown_text = str(content)
-
-    return markdown_text
+    lines.extend([
+        "## Review status",
+        "",
+        "- Analyst review is required before containment, eradication, or recovery actions.",
+        "- Dataset labels and anomaly scores are indicators; they do not prove authentication outcome, compromise, data loss, or service impact.",
+        "- Quantitative impact metrics are omitted unless present in the retrieved evidence.",
+        "",
+    ])
+    return "\n".join(lines)
 
 
 # -----------------------------
