@@ -76,6 +76,7 @@ def build_attack_graph(events: pd.DataFrame) -> nx.DiGraph:
             end_time=_gexf_safe(event["end_time"]),
             flow_count=int(event["flow_count"]),
             mean_anomaly_score=_gexf_safe(event.get("mean_anomaly_score")),
+            ports_observed=_gexf_safe(event.get("ports_observed", [])),
             attack_type=attack_type,
             attack_type_source=type_source,
         )
