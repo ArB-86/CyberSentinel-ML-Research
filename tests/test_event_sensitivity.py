@@ -18,6 +18,7 @@ def test_sensitivity_sweep_reports_structure_without_ground_truth(tmp_path):
         "timestamp", "src_ip", "dst_ip", "src_port", "dst_port",
         "predicted_anomaly", "anomaly_score", "Label",
     ])
+    flows["protocol"] = 6
     flows.to_csv(input_path, index=False)
 
     output_dir = tmp_path / "sensitivity"
