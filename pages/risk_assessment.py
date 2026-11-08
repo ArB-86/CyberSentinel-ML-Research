@@ -229,24 +229,24 @@ with st.sidebar:
 # ============================================================
 
 st.markdown('<div class="smallcaps">ENTERPRISE SOAR COMMAND CENTER</div>', unsafe_allow_html=True)
-st.title("Incident Triage, Risk Analysis & AI Investigation")
+st.title("Event Triage, Risk Analysis & AI Investigation")
 st.markdown('<div class="subtitle">Inspect deterministic risk scores, trigger autonomous multi-step AI investigations, execute SOAR playbooks, and export SOC reports from a single console.</div>', unsafe_allow_html=True)
 
 if not df_risks.empty:
     col_sel1, col_sel2 = st.columns([3, 1])
     with col_sel1:
-        incident_options = [
+        event_options = [
             f"{row['event_id']} — {row['attack_type']} (Risk Score: {row['risk_score']} [{row['risk_level']}])"
             for _, row in df_risks.iterrows()
         ]
-        selected_str = st.selectbox("Select Active Incident for Triage & Investigation", incident_options)
+        selected_str = st.selectbox("Select Event for Triage & Investigation", event_options)
         selected_event_id = selected_str.split(" — ")[0]
         selected_row = df_risks[df_risks['event_id'].astype(str) == selected_event_id].iloc[0]
     
     with col_sel2:
         st.markdown("<br>", unsafe_allow_html=True)
         level_class = f"badge-{selected_row['risk_level'].lower()}"
-        st.markdown(f"**Severity Band:** <span class='{level_class}'>{selected_row['risk_level']}</span>", unsafe_allow_html=True)
+        st.markdown(f"**Priority Band:** <span class='{level_class}'>{selected_row['risk_level']}</span>", unsafe_allow_html=True)
 else:
     st.warning("No risk scores found. Make sure `event_risk_scores.csv` is generated in your outputs folder.")
     st.stop()
@@ -289,13 +289,13 @@ tab1, tab2, tab3 = st.tabs([
 ])
 
 with tab1:
-    st.markdown(f"### Autonomous Investigation Report for `{selected_event_id}` ({attack_type})")
-    st.markdown("Generated dynamically by the LangGraph multi-step agent using Gemini API and specialized SOC tools, formatted into a professional Tier-3 SOC report.")
+    st.markdown(f"### Evidence Review for `{selected_event_id}` ({attack_type})")
+    st.markdown("The investigation is based on retrieved event, flow and graph evidence. Dataset labels and anomaly scores are indicators, not proof of compromise or impact.")
     
     col_run, col_status = st.columns([1, 2])
     with col_run:
-        if st.button(f"Trigger AI Investigation for {selected_event_id}", type="primary"):
-            with st.spinner(f"Agent running multi-step tool calls and generating SOC report for {selected_event_id}... Please wait."):
+        if st.button(f"Generate Evidence Review for {selected_event_id}", type="primary"):
+            with st.spinner(f"Investigator retrieving event and graph evidence for {selected_event_id}... Please wait."):
                 try:
                     # 1. Run agent investigation workflow
                     result = run_investigation(event_id=selected_event_id)
@@ -324,7 +324,7 @@ with tab1:
                     md_file_path = output_dir / f"report_{selected_event_id}.md"
                     md_file_path.write_text(report_content, encoding="utf-8")
 
-                    st.success("Investigation complete and professional report generated successfully!")
+                    st.success("Evidence review generated and saved.")
                     st.rerun()
                 except Exception as e:
                     st.error(f"Error running investigation agent: {e}")
@@ -360,7 +360,7 @@ with tab1:
                 mime="application/json"
             )
     else:
-        st.info("Click **'Trigger AI Investigation'** above to execute the agentic workflow and view the report.")
+        st.info("Click **'Generate Evidence Review'** above to inspect retrieved evidence and view the structured report.")
 
 with tab2:
     st.markdown("### Four-Factor Evidence-Based Triage Score")
@@ -376,8 +376,8 @@ with tab2:
             f"""
             <div class="card" style="padding: 20px; min-height: unset; text-align: center;">
                 <div style="font-size:0.75rem; color:#8190a3; font-weight:800; text-transform:uppercase; letter-spacing:.13em;">Composite Risk Score</div>
-                <div style="font-size: 3.5rem; font-weight: 900; color: #49a8ff; margin: 10px 0;">{score}</div>
-                <div style="font-size: 0.9rem; color: #cbd5e1;">Scale: 0 to 100 ({level})</div>
+                <div style="font-size: 3.5rem; font-weight: 900; color: #49a8ff; margin: 10px 0;">{"Unassessed" if pd.isna(score) else f"{float(score):.1f}"}</div>
+                <div style="font-size: 0.9rem; color: #cbd5e1;">{"Insufficient reference evidence" if pd.isna(score) else f"Heuristic triage band: {level}"}</div>
             </div>
             """,
             unsafe_allow_html=True
@@ -387,27 +387,22 @@ with tab2:
     with col_metrics:
         st.markdown("**Configured base weights: $R = 0.45A + 0.20F + 0.20H + 0.15T$**")
         st.caption(
-            "If a factor is unavailable, the risk engine renormalises the weights "
-            "over the available factors. Dataset ground-truth attack labels are not "
-            "used as a risk factor."
+            "Unavailable evidence factors are omitted and remaining weights are renormalised. This is a configurable heuristic, not a calibrated probability."
         )
-        
-        st.markdown(f"1. **Anomaly Severity ($A$ - Isolation Forest)**: `{factor_a:.1f} / 100`")
-        st.progress(min(1.0, factor_a / 100.0))
-        
-        st.markdown(f"2. **Event Frequency ($F$ - Flow Volume)**: `{factor_b:.1f} / 100`")
-        st.progress(min(1.0, factor_b / 100.0))
-        
-        st.markdown(f"3. **Host Topological Spread ($H$ - NetworkX Degrees)**: `{factor_h:.1f} / 100`")
-        st.progress(min(1.0, factor_h / 100.0))
-        
-        st.markdown(f"4. **Temporal Correlation ($T$ - 300s Window Cluster)**: `{factor_t:.1f} / 100`")
-        st.progress(min(1.0, factor_t / 100.0))
-        
-        st.info(
-            "Attack-category weighting is intentionally excluded. The event pipeline "
-            "does not use CICIDS ground-truth labels as production predictions."
-        )
+
+        for label, value in [
+            ("Anomaly severity", factor_a),
+            ("Event volume", factor_b),
+            ("Host involvement", factor_h),
+            ("Temporal correlation", factor_t),
+        ]:
+            if pd.isna(value):
+                st.markdown(f"**{label}:** Not assessed (reference evidence unavailable)")
+            else:
+                st.markdown(f"**{label}:** {float(value):.1f} / 100")
+                st.progress(min(1.0, max(0.0, float(value) / 100.0)))
+
+        st.info("Ground-truth attack labels are not used as production risk weights.")
 
 with tab3:
     st.markdown("### Analyst Response Checklist")
@@ -417,25 +412,13 @@ with tab3:
         "Verify the evidence and obtain the required operational approval first."
     )
     
-    if "ssh" in attack_type.lower():
-        steps = [
-            ("Block Source IP at Perimeter Firewall", "Add ingress drop rule for the malicious source IP in iptables / security groups."),
-            ("Disable Password Authentication", "Enforce strict public-key cryptography on the destination SSH daemon (`/etc/ssh/sshd_config`)."),
-            ("Deploy Fail2ban Defense", "Configure Fail2ban to temporarily ban IPs exceeding 3 failed login attempts on port 22."),
-            ("Audit System Auth Logs", "Inspect `/var/log/auth.log` around incident timestamp for successful unauthorized sessions.")
-        ]
-    elif "ftp" in attack_type.lower():
-        steps = [
-            ("Enforce Rate Limiting on Port 21", "Restrict FTP concurrent connection thresholds in vsftpd service config."),
-            ("Disable Anonymous FTP Access", "Verify anonymous login is completely disabled across FTP server instances."),
-            ("Isolate Destination Segment", "Move destination host to an isolated VLAN pending forensic memory dump.")
-        ]
-    else:
-        steps = [
-            ("Isolate Affected Host", "Quarantine destination IP from the core internal broadcast domain."),
-            ("Capture NetFlow Forensic Dump", "Export PCAP packets for the offending time window for offline analysis."),
-            ("Review Privilege Escalation Logs", "Audit recent sudo and su commands executed on the target server.")
-        ]
+    steps = [
+        ("Validate the flow evidence", "Review the underlying flow rows, timestamps, ports, protocol and detector scores for this event."),
+        ("Corroborate with independent telemetry", "Check firewall, endpoint, DNS, authentication and server logs for the same host and time window."),
+        ("Review related event context", "Inspect shared-host graph links and temporal relationships; treat them as correlation, not causation."),
+        ("Preserve relevant evidence", "Export the required flow and host records with timestamps and hashes under the organisation evidence-handling process."),
+        ("Obtain analyst approval", "Do not block, isolate, disable accounts or change production systems until evidence is independently reviewed and authorised."),
+    ]
 
     for idx, (title, desc) in enumerate(steps, 1):
         col_chk, col_desc = st.columns([0.05, 0.95])
