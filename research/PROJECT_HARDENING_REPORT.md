@@ -102,6 +102,11 @@ An actual candidate incident grouping stage is now present:
 
 ### 2.7 Investigation agent and report safety
 
+- Benchmark `Label`/`is_attack` fields are removed from the downstream suspicious-flow CSV before event, graph, risk or agent processing.
+- The shared agent flow loader excludes ground-truth label columns even if an older or manually prepared CSV still contains them.
+- The `get_flow_evidence` tool reports flow metadata, ports, timestamps, packet/flag counts and anomaly scores, but never returns ground-truth labels or label counts.
+- The tool matches the event's observed port pairs and exact event time interval; malformed port metadata fails closed instead of using a broad IP-only match.
+- Event IDs are normalized without double-prefixing; report filenames are sanitized and hash-suffixed before writing or download to prevent path traversal/collisions.
 - The agent system prompt separates observed facts from hypotheses and treats tool output as untrusted data, not instructions.
 - Dataset labels and anomaly scores are described as indicators, not proof of compromise, authentication success, data loss or service impact.
 - Temporal graph links are described as correlations, not causation.
@@ -171,9 +176,9 @@ GitHub Actions workflow: `.github/workflows/reliability-checks.yml`.
 Latest completed green validation on the working branch:
 - Python module compile check: passed.
 - Direct CLI smoke tests for `python attack_graph/if_attack_graph_pipeline.py --help` and `python risk_analyzer.py --help`: passed.
-- Pytest: **24 passed**.
+- Pytest: **29 passed**.
 
-The tests cover label-independent and port-aware event creation, detector-output requirements, interleaved host timelines, non-overlapping temporal links, GEXF null handling, candidate incident grouping, chronological day holdout and single-day fallback, risk-score missing evidence semantics, unknown graph degrees, zero-weight risk factors, valid empty incident outputs, train-only preprocessing, benchmark-to-artifact-to-unlabeled-inference flow, ground-truth-label separation from downstream artefacts, missing-label handling, and deterministic report rendering.
+The tests cover label-independent and port-aware event creation, detector-output requirements, interleaved host timelines, non-overlapping temporal links, GEXF null handling, candidate incident grouping, chronological day holdout and single-day fallback, risk-score missing evidence semantics, unknown graph degrees, zero-weight risk factors, valid empty incident outputs, train-only preprocessing, benchmark-to-artifact-to-unlabeled-inference flow, ground-truth-label separation from downstream artefacts and agent evidence, exact port/time flow matching, malformed metadata fail-closed behaviour, safe artifact filenames, event ID formatting, stale metric suppression, missing-label handling, and deterministic report rendering.
 
 These are unit/integration tests on synthetic fixtures. They do not constitute a full-scale end-to-end evaluation on all metadata-rich CICIDS2017 files or a live enterprise network.
 
