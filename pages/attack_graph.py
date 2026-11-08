@@ -254,9 +254,9 @@ for _, data in G.nodes(data=True):
     )
 
 event_nodes = node_types.get("event", 0)
-source_nodes = node_types.get("source", 0)
-target_nodes = node_types.get("target", 0)
-attack_type_nodes = node_types.get("predicted_attack_type", 0)
+host_nodes = node_types.get("host", 0)
+incident_nodes = node_types.get("incident", 0)
+predicted_attack_type_nodes = node_types.get("predicted_attack_type", 0)
 
 
 # ============================================================
@@ -270,11 +270,11 @@ with m1:
 with m2:
     st.metric("Graph Edges", f"{total_edges:,}")
 with m3:
-    st.metric("Attack Events", f"{event_nodes:,}")
+    st.metric("Grouped Events", f"{event_nodes:,}")
 with m4:
-    st.metric("Source Hosts", f"{source_nodes:,}")
+    st.metric("Host Nodes", f"{host_nodes:,}")
 with m5:
-    st.metric("Target Hosts", f"{target_nodes:,}")
+    st.metric("Potential Incidents", f"{incident_nodes:,}")
 
 st.markdown('<div style="height:10px"></div>', unsafe_allow_html=True)
 
