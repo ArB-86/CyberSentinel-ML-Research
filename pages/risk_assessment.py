@@ -245,33 +245,20 @@ st.markdown('<div class="smallcaps">SOC EVENT REVIEW WORKSPACE</div>', unsafe_al
 st.title("Event Triage, Risk Analysis & AI Investigation")
 st.markdown('<div class="subtitle">Review heuristic triage indicators, inspect event/graph evidence, and generate an analyst-reviewable investigation summary.</div>', unsafe_allow_html=True)
 
-if not df_incident_risks.empty:
-    st.markdown("### Potential Incident Priority")
-    st.caption(
-        "Candidate groups are based on shared-host temporal correlations. "
-        "The maximum available event triage index is shown; it is not a calibrated "
-        "incident probability or a confirmed incident verdict."
-    )
-    incident_columns = [
-        column for column in [
-            "incident_id", "event_count", "flow_count", "risk_score",
-            "risk_level", "confirmation_status", "causal_claim"
-        ]
-        if column in df_incident_risks.columns
-    ]
-    if incident_columns:
-        st.dataframe(
-            df_incident_risks[incident_columns],
-            use_container_width=True,
-            hide_index=True,
-        )
-    st.divider()
-
 if not df_risks.empty:
     col_sel1, col_sel2 = st.columns([3, 1])
     with col_sel1:
+        def _format_event_option(row):
+            score_value = pd.to_numeric(row.get("risk_score"), errors="coerce")
+            score_label = "Unassessed" if pd.isna(score_value) else f"{float(score_value):.1f}"
+            level_label = str(row.get("risk_level", "UNASSESSED"))
+            return (
+                f"{row['event_id']} — {row.get('attack_type', 'Unclassified')} "
+                f"(Triage: {score_label} [{level_label}])"
+            )
+
         event_options = [
-            f"{row['event_id']} — {row['attack_type']} (Triage: {row['risk_score']} [{row['risk_level']}])"
+            _format_event_option(row)
             for _, row in df_risks.iterrows()
         ]
         selected_str = st.selectbox("Select Event for Triage & Investigation", event_options)
@@ -280,8 +267,14 @@ if not df_risks.empty:
     
     with col_sel2:
         st.markdown("<br>", unsafe_allow_html=True)
-        level_class = f"badge-{selected_row['risk_level'].lower()}"
-        st.markdown(f"**Priority Band:** <span class='{level_class}'>{selected_row['risk_level']}</span>", unsafe_allow_html=True)
+        if str(selected_row["risk_level"]).upper() == "UNASSESSED":
+            st.markdown("**Priority Band:** UNASSESSED")
+        else:
+            level_class = f"badge-{str(selected_row['risk_level']).lower()}"
+            st.markdown(
+                f"**Priority Band:** <span class='{level_class}'>{selected_row['risk_level']}</span>",
+                unsafe_allow_html=True,
+            )
 else:
     st.warning("No risk scores found. Make sure `event_risk_scores.csv` is generated in your outputs folder.")
     st.stop()
