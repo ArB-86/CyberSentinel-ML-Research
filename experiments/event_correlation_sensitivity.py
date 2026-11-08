@@ -8,8 +8,6 @@ from datetime import datetime, timezone
 from itertools import product
 from pathlib import Path
 
-import networkx as nx
-import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -109,9 +107,16 @@ def run_sensitivity(
         raise ValueError("Source and destination port columns must either both exist or both be absent.")
     use_ports = port_columns.issubset(normalized.columns)
 
-    from attack_graph.event_builder import _truthy
-
-    flagged_mask = _truthy(normalized["predicted_anomaly"])
+    prediction_values = normalized["predicted_anomaly"]
+    if pd.api.types.is_bool_dtype(prediction_values):
+        flagged_mask = prediction_values.fillna(False)
+    else:
+        flagged_mask = (
+            prediction_values.astype("string")
+            .str.strip()
+            .str.casefold()
+            .isin({"1", "true", "yes", "y", "attack", "anomaly"})
+        )
     suspicious = normalized.loc[flagged_mask].copy()
     if suspicious.empty:
         raise ValueError(
