@@ -19,11 +19,11 @@ def test_risk_uses_benign_calibration_distribution_and_no_attack_label_weight(tm
          "mean_anomaly_score": 0.20, "attack_type": "Benign"},
     ]).to_csv(events_path, index=False)
 
-    pd.DataFrame({
+    summary_path.write_text(json.dumps({
         "calibration_score_quantiles": {
             "0.0": -0.1, "0.05": 0.0, "0.5": 0.2, "0.95": 0.8, "1.0": 1.0
         }
-    }, index=[0]).to_json(summary_path, orient="records")
+    }), encoding="utf-8")
 
     graph = nx.DiGraph()
     for node in ["host:A", "host:B", "event:E1", "host:C", "host:D", "event:E2"]:
