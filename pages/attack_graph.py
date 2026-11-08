@@ -591,12 +591,10 @@ for node_type in [
         y=node_y,
         mode="markers",
         name={
-            "source": "Source Host",
-            "target": "Target Host",
-            "event": "Attack Event",
-            "attack_type": "Attack Type",
+            "host": "Host",
+            "event": "Grouped Event",
             "predicted_attack_type": "Predicted Attack Type",
-            "incident": "Incident",
+            "incident": "Potential Incident",
             "unknown": "Other",
         }.get(node_type, "Other"),
         hovertemplate="%{text}<extra></extra>",
@@ -677,23 +675,19 @@ st.html(
     <div class="legend">
         <div class="legend-item">
             <span class="legend-dot blue-dot"></span>
-            Source Host
-        </div>
-        <div class="legend-item">
-            <span class="legend-dot green-dot"></span>
-            Target Host
+            Host
         </div>
         <div class="legend-item">
             <span class="legend-dot purple-dot"></span>
-            Attack Event
+            Grouped Event
+        </div>
+        <div class="legend-item">
+            <span class="legend-dot pink-dot"></span>
+            Potential Incident
         </div>
         <div class="legend-item">
             <span class="legend-dot orange-dot"></span>
-            Attack Type
-        </div>
-        <div class="legend-item">
-            <span class="legend-dot gray-dot"></span>
-            Other
+            Predicted Attack Type
         </div>
     </div>
     """
