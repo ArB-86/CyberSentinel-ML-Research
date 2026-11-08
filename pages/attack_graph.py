@@ -516,20 +516,16 @@ edge_trace = go.Scatter(
 # ============================================================
 
 NODE_COLORS = {
-    "source": "#49a8ff",
-    "target": "#32d296",
+    "host": "#49a8ff",
     "event": "#a78bfa",
-    "attack_type": "#f0a35a",
     "predicted_attack_type": "#f0a35a",
     "incident": "#f472b6",
     "unknown": "#94a3b8",
 }
 
 NODE_SIZES = {
-    "source": 18,
-    "target": 18,
+    "host": 18,
     "event": 24,
-    "attack_type": 21,
     "predicted_attack_type": 21,
     "incident": 27,
     "unknown": 16,
@@ -543,10 +539,9 @@ NODE_SIZES = {
 node_traces = []
 
 for node_type in [
-    "source",
-    "target",
+    "host",
     "event",
-    "attack_type",
+    "predicted_attack_type",
     "incident",
     "unknown",
 ]:
