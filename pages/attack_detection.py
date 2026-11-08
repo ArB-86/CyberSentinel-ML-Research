@@ -253,8 +253,32 @@ def count_csv_rows(path):
     except Exception:
         return None
 
+@st.cache_data
+def load_detection_metrics():
+    path = OUTPUT_DIR / "detection_metrics.json"
+    if not path.exists():
+        return {}
+    try:
+        import json
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        return {}
+
+
+@st.cache_data
+def load_per_attack_evaluation():
+    path = OUTPUT_DIR / "per_attack_detection_evaluation.csv"
+    if not path.exists():
+        return pd.DataFrame()
+    try:
+        return pd.read_csv(path)
+    except Exception:
+        return pd.DataFrame()
+
 
 pipeline_summary = load_pipeline_summary()
+detection_metrics = load_detection_metrics()
+per_attack_evaluation = load_per_attack_evaluation()
 
 suspicious_df, suspicious_file = (
     load_suspicious_flows()
@@ -964,9 +988,9 @@ st.markdown(
 st.header("Suspicious Network Flows")
 
 st.caption(
-    "Flows flagged as anomalous by the Isolation Forest "
-    "pipeline. Ground-truth labels are retained separately "
-    "for analysis."
+    "Flows flagged by the Isolation Forest on held-out evaluation data "
+    "or by the calibrated inference model. Ground-truth labels are deliberately "
+    "excluded from this artefact and remain in separate benchmark evaluation files."
 )
 
 
@@ -1023,7 +1047,7 @@ else:
     available_filters = [
         ("src_ip", "Source IP"),
         ("dst_ip", "Destination IP"),
-        ("label", "Ground-Truth Label"),
+        ("predicted_attack_type", "Model-Predicted Attack Type"),
     ]
 
 
@@ -1079,7 +1103,7 @@ else:
         "dst_ip",
         "dst_port",
         "protocol",
-        "label",
+        "predicted_attack_type",
         "anomaly_score",
         "predicted_anomaly",
     ]
@@ -1126,6 +1150,49 @@ st.markdown(
     '</div>',
     unsafe_allow_html=True,
 )
+
+st.header("Held-Out Benchmark Evaluation")
+
+if detection_metrics:
+    metric_specs = [
+        ("ROC-AUC", detection_metrics.get("roc_auc")),
+        ("PR-AUC / AP", detection_metrics.get("pr_auc_average_precision")),
+        ("Precision", detection_metrics.get("precision")),
+        ("Recall", detection_metrics.get("recall")),
+        ("F1", detection_metrics.get("f1")),
+        ("False Positive Rate", detection_metrics.get("false_positive_rate")),
+    ]
+    metric_cols = st.columns(3)
+    for index, (label, value) in enumerate(metric_specs):
+        with metric_cols[index % 3]:
+            display_value = (
+                f"{float(value):.4f}" if value is not None and pd.notna(value)
+                else "Not available"
+            )
+            st.metric(label, display_value)
+
+    st.caption(
+        "These metrics are computed from the held-out benchmark evaluation set. "
+        "They are not calculated from the suspicious-flow preview. In inference mode, "
+        "ground-truth evaluation metrics are not available."
+    )
+else:
+    st.info(
+        "No held-out detection_metrics.json is available. This is expected for "
+        "unlabeled inference runs; model predictions are shown above without "
+        "inventing ground-truth metrics."
+    )
+
+if not per_attack_evaluation.empty:
+    st.markdown("#### Per-Attack Evaluation (Held-Out Benchmark)")
+    st.dataframe(
+        per_attack_evaluation,
+        use_container_width=True,
+        hide_index=True,
+    )
+elif detection_metrics:
+    st.info("Per-attack evaluation file is not available for this run.")
+
 
 st.header("What the Detection Result Means")
 
@@ -1188,11 +1255,11 @@ with explanation_cols[1]:
 
             <div class="method-text">
 
-                CICIDS2017 provides the original
-                <b>Label</b> for each flow. This label is
-                used to evaluate the detector and is not the
-                same thing as the Isolation Forest's anomaly
-                prediction.
+                CICIDS2017 ground-truth labels are used only
+                in the separate held-out benchmark evaluation
+                artefacts. They are deliberately not passed to
+                the suspicious-flow, event, graph or agent
+                investigation pipeline.
 
             </div>
 
