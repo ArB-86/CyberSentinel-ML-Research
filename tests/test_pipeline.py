@@ -8,10 +8,10 @@ def test_prepare_features_preserves_missing_values_for_train_only_imputation():
         "Timestamp": ["2026-01-01 00:00:00", "2026-01-01 00:00:01"],
         "Source IP": ["A", "B"],
         "Destination IP": ["B", "C"],
-        "Source Port": [1000, 1001],
-        "Destination Port": [80, 80],
-        "Protocol": [6, 6],
-        "Flow Duration": [10.0, None],
+        "Source Port": [1000, 1001, 1002],
+        "Destination Port": [80, 81, 82],
+        "Protocol": [6, 17, 6],
+        "Flow Duration": [10.0, None, 20.0],
         "Label": ["BENIGN", "DoS"],
     })
     _, x, _ = prepare_features(frame)
