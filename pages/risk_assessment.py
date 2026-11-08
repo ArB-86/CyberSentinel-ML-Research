@@ -168,6 +168,16 @@ def load_risk_data():
     return pd.DataFrame()
 
 @st.cache_data
+def load_incident_risk_data():
+    risk_csv = Path("outputs/incident_risk_scores.csv")
+    if not risk_csv.exists():
+        risk_csv = Path("attack_graph_output/incident_risk_scores.csv")
+    if risk_csv.exists():
+        return pd.read_csv(risk_csv)
+    return pd.DataFrame()
+
+
+@st.cache_data
 def get_total_flows():
     flows_path = Path("outputs/suspicious_flows_with_metadata.csv")
     if not flows_path.exists():
@@ -181,6 +191,7 @@ def get_total_flows():
     return None
 
 df_risks = load_risk_data()
+df_incident_risks = load_incident_risk_data()
 total_flows = get_total_flows()
 
 # ============================================================
@@ -215,7 +226,7 @@ with st.sidebar:
         f"""
         <div class="card" style="min-height:0;padding:13px">
             <div class="green" style="font-weight:800;font-size:.76rem">
-                ● {"RISK DATA AVAILABLE" if not df_risks.empty else "RISK DATA NOT AVAILABLE"}
+                ● {"TRIAGE DATA AVAILABLE" if (not df_risks.empty or not df_incident_risks.empty) else "TRIAGE DATA NOT AVAILABLE"}
             </div>
             <div style="color:#718196;font-size:.7rem;margin-top:6px;">
                 {"Suspicious flows · {:,}".format(total_flows) if total_flows is not None else "Flow data not generated"}
@@ -231,6 +242,28 @@ with st.sidebar:
 st.markdown('<div class="smallcaps">SOC EVENT REVIEW WORKSPACE</div>', unsafe_allow_html=True)
 st.title("Event Triage, Risk Analysis & AI Investigation")
 st.markdown('<div class="subtitle">Review heuristic triage indicators, inspect event/graph evidence, and generate an analyst-reviewable investigation summary.</div>', unsafe_allow_html=True)
+
+if not df_incident_risks.empty:
+    st.markdown("### Potential Incident Priority")
+    st.caption(
+        "Candidate groups are based on shared-host temporal correlations. "
+        "The maximum available event triage index is shown; it is not a calibrated "
+        "incident probability or a confirmed incident verdict."
+    )
+    incident_columns = [
+        column for column in [
+            "incident_id", "event_count", "flow_count", "risk_score",
+            "risk_level", "confirmation_status", "causal_claim"
+        ]
+        if column in df_incident_risks.columns
+    ]
+    if incident_columns:
+        st.dataframe(
+            df_incident_risks[incident_columns],
+            use_container_width=True,
+            hide_index=True,
+        )
+    st.divider()
 
 if not df_risks.empty:
     col_sel1, col_sel2 = st.columns([3, 1])
