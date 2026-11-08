@@ -64,7 +64,7 @@ This makes event grouping usable on unlabeled inference traffic and prevents a b
 
 **Now:**
 - Each host has its own event timeline.
-- Candidate links are created between adjacent events in that host's timeline.
+- For each event, the nearest later event on that host whose start is at or after the earlier event's end is considered. Overlapping events are skipped without hiding a later valid successor.
 - A `precedes` edge requires the earlier event to finish before the later event starts and the configured gap to be within the limit.
 - Edges record shared host/link basis, gap, `temporal_correlation=True` and `causal_claim=False`.
 - Missing optional attributes are omitted from GEXF export instead of passing null values to NetworkX.
@@ -194,9 +194,9 @@ GitHub Actions workflow: `.github/workflows/reliability-checks.yml`.
 Latest completed green validation on the working branch:
 - Python module compile check: passed.
 - Direct CLI smoke tests for `python attack_graph/if_attack_graph_pipeline.py --help` and `python risk_analyzer.py --help`: passed.
-- Pytest: **33 passed**.
+- Pytest: **35 passed**.
 
-The tests cover label-independent and port-aware event creation, detector-output requirements, interleaved host timelines, non-overlapping temporal links, GEXF null handling, candidate incident grouping, chronological day holdout and single-day fallback, risk-score missing evidence semantics, unknown graph degrees, zero-weight risk factors, valid empty incident outputs, stale benchmark-output cleanup during inference, train-only preprocessing, benchmark-to-artifact-to-unlabeled-inference flow, ground-truth-label separation from downstream artefacts and agent evidence, exact port/time flow matching, malformed metadata fail-closed behaviour, safe artifact filenames, event ID formatting, structural event-window/temporal-gap sensitivity reporting, stale metric suppression, numeric identifier exclusion and all-missing feature handling in both comparison loaders, missing-label handling, and deterministic report rendering.
+The tests cover label-independent and port-aware event creation, detector-output requirements, interleaved host timelines, overlapping-event successor recovery, non-overlapping temporal links, GEXF null handling, candidate incident grouping, chronological day holdout and single-day fallback, risk-score missing evidence semantics, unknown graph degrees, zero-weight risk factors, valid empty incident outputs, stale benchmark-output cleanup during inference, train-only preprocessing, benchmark-to-artifact-to-unlabeled-inference flow, ground-truth-label separation from downstream artefacts and agent evidence, exact port/time flow matching, numeric float prediction flags, malformed metadata fail-closed behaviour, safe artifact filenames, event ID formatting, structural event-window/temporal-gap sensitivity reporting, stale metric suppression, numeric identifier exclusion and all-missing feature handling in both comparison loaders, missing-label handling, and deterministic report rendering.
 
 These are unit/integration tests on synthetic fixtures. They do not constitute a full-scale end-to-end evaluation on all metadata-rich CICIDS2017 files or a live enterprise network.
 
