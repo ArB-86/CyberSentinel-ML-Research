@@ -2,7 +2,7 @@ import json
 
 import pandas as pd
 
-from attack_graph.if_attack_graph_pipeline import prepare_features, run, run_inference
+from attack_graph.if_attack_graph_pipeline import clean_labels, prepare_features, run, run_inference
 
 
 def test_prepare_features_preserves_missing_values_for_train_only_imputation():
@@ -95,3 +95,14 @@ def test_metadata_pipeline_runs_with_train_only_imputation(tmp_path):
     suspicious = pd.read_csv(inference_output / "suspicious_flows_with_metadata.csv")
     assert "Label" not in suspicious.columns
     assert "predicted_anomaly" in suspicious.columns
+
+
+
+def test_missing_benchmark_labels_remain_missing_not_attack_labels():
+    frame = pd.DataFrame({
+        "Flow Duration": [1.0, 2.0, 3.0],
+        "Label": ["BENIGN", None, "  "],
+    })
+    cleaned = clean_labels(frame)
+    assert cleaned["label"].iloc[0] == "BENIGN"
+    assert cleaned["label"].iloc[1:].isna().all()
