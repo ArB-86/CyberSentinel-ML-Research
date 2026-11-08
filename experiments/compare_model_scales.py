@@ -76,16 +76,25 @@ def load_dataset(path: Path):
     frame = frame.loc[keep].reset_index(drop=True)
     labels = labels.loc[keep].reset_index(drop=True)
     y = labels.str.casefold().ne("benign").astype(np.int8).to_numpy()
+    excluded = {
+        str(label_col).strip().casefold(),
+        "is_attack", "flow id", "flow_id", "event_id", "event id",
+        "incident_id", "incident id", "_id", "src_ip", "dst_ip",
+        "source ip", "destination ip", "timestamp", "start_time",
+        "end_time", "predicted_anomaly", "predicted_attack_type",
+        "anomaly_score", "attack_type",
+    }
     feature_frame = frame.drop(
-        columns=[c for c in frame.columns if str(c).strip().casefold() in
-                 {str(label_col).strip().casefold(), "is_attack"}],
+        columns=[c for c in frame.columns if str(c).strip().casefold() in excluded],
         errors="ignore",
     )
     x = feature_frame.select_dtypes(include=[np.number]).copy()
-    x = x.replace([np.inf, -np.inf], np.nan).dropna(axis=1, how="all")
-    x = x.loc[:, x.nunique(dropna=False) > 1]
     if x.empty:
-        raise ValueError("No numeric modelling features remain.")
+        raise ValueError("No numeric modelling features remain after excluding identifiers and labels.")
+
+    # Keep the full numeric schema until fit-time preprocessing; do not use
+    # missingness or variance statistics from held-out rows to drop features.
+    x = x.replace([np.inf, -np.inf], np.nan)
     return x, labels, y
 
 
@@ -142,7 +151,7 @@ def score_metrics(y_true: np.ndarray, y_pred: np.ndarray, scores: np.ndarray) ->
 
 def fit_and_score(name: str, x_train: pd.DataFrame, x_cal: pd.DataFrame,
                   x_test: pd.DataFrame, args, seed: int):
-    imputer = SimpleImputer(strategy="median")
+    imputer = SimpleImputer(strategy="median", keep_empty_features=True)
     xtr = imputer.fit_transform(x_train)
     xcal = imputer.transform(x_cal)
     xtest = imputer.transform(x_test)
