@@ -18,7 +18,7 @@ The notebook reports:
 | Isolation Forest | 200 estimators; max_samples=1,024; max_features=1.0; random_state=42 |
 | Threshold | 0.032042 on the notebook's decision_function score convention |
 
-## Reported held-out test results (copied from notebook output)
+## Recorded held-out test results
 
 | Metric | Value |
 |---|---:|
