@@ -36,7 +36,8 @@ FLOW_COLUMNS = {
     "timestamp", "flow duration", "total fwd packets",
     "total backward packets", "fin flag count", "syn flag count",
     "rst flag count", "psh flag count", "ack flag count",
-    "label", "is_attack", "anomaly_score", "predicted_anomaly",
+    # Ground-truth labels and evaluation flags must never enter agent tools.
+    "anomaly_score", "predicted_anomaly",
 }
 
 
