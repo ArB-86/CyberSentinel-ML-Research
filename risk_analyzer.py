@@ -28,11 +28,13 @@ def _normalize_log(values: pd.Series, reference_q95: float | None = None) -> pd.
         q95 = float(reference_q95)
     if not np.isfinite(q95) or q95 <= 0:
         return pd.Series(np.nan, index=values.index, dtype=float)
+    valid = numeric.notna()
     numeric = numeric.fillna(0)
     denominator = np.log1p(q95)
     if denominator <= 0:
-        return pd.Series(0.0, index=values.index)
-    return (100.0 * np.log1p(numeric) / denominator).clip(0.0, 100.0)
+        return pd.Series(0.0, index=values.index).where(valid)
+    normalized = (100.0 * np.log1p(numeric) / denominator).clip(0.0, 100.0)
+    return normalized.where(valid)
 
 
 def _anomaly_severity(
