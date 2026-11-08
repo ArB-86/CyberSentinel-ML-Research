@@ -1,4 +1,5 @@
 from pathlib import Path
+from html import escape as escape_html
 
 import pandas as pd
 import streamlit as st
@@ -759,28 +760,28 @@ else:
 
             '<div style="flex:1;">'
 
-            f'<div class="event-id">{event_id}</div>'
+            f'<div class="event-id">{escape_html(event_id, quote=True)}</div>'
 
             f'<div class="event-title">'
-            f'{attack_type}'
+            f'{escape_html(attack_type, quote=True)}'
             f'</div>'
 
             f'<div class="event-meta">'
-            f'<b>Source:</b> {source}'
+            f'<b>Source:</b> {escape_html(source, quote=True)}'
             ' &nbsp;→&nbsp; '
-            f'<b>Target:</b> {target}'
+            f'<b>Target:</b> {escape_html(target, quote=True)}'
             '<br>'
-            f'<b>Protocol:</b> {protocol}'
+            f'<b>Protocol:</b> {escape_html(protocol, quote=True)}'
             ' &nbsp;·&nbsp; '
-            f'<b>Flows:</b> {flow_count}'
+            f'<b>Flows:</b> {escape_html(flow_count, quote=True)}'
             ' &nbsp;·&nbsp; '
-            f'<b>Duration:</b> {duration}s'
+            f'<b>Duration:</b> {escape_html(duration, quote=True)}s'
             '<br>'
-            f'<b>Start:</b> {start_time}'
+            f'<b>Start:</b> {escape_html(start_time, quote=True)}'
             ' &nbsp;·&nbsp; '
-            f'<b>End:</b> {end_time}'
+            f'<b>End:</b> {escape_html(end_time, quote=True)}'
             '<br>'
-            f'<b>Potential incident:</b> {incident_id}'
+            f'<b>Potential incident:</b> {escape_html(incident_id, quote=True)}'
             '</div>'
 
             '</div>'
