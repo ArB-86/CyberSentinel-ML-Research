@@ -96,8 +96,6 @@ def add_sequence_edges(
     events: pd.DataFrame,
     *,
     max_gap_seconds: int = 300,
-    require_shared_source: bool = False,
-    require_shared_target: bool = False,
 ) -> nx.DiGraph:
     """Link chronologically adjacent events that share a host.
 
@@ -139,9 +137,12 @@ def add_sequence_edges(
         for left, right in zip(items, items[1:]):
             if left["event_id"] == right["event_id"]:
                 continue
-            if right["start"] < left["start"]:
+            # A "precedes" edge requires the earlier event to finish before
+            # the later event starts. Overlapping events are correlated by host
+            # but are not asserted to be sequential.
+            if right["start"] < left["end"]:
                 continue
-            gap = max(0.0, float((right["start"] - left["end"]).total_seconds()))
+            gap = float((right["start"] - left["end"]).total_seconds())
             if gap > max_gap_seconds:
                 continue
 
