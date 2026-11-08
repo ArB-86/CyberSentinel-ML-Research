@@ -243,7 +243,17 @@ events_df = load_attack_events()
 # DATASET STATISTICS
 # ============================================================
 
-if labels_df is not None and "Label" in labels_df.columns:
+benchmark_evaluation_available = (
+    pipeline_summary.get("mode", "benchmark") == "benchmark"
+    and isinstance(pipeline_summary.get("evaluation_metrics"), dict)
+    and bool(pipeline_summary.get("evaluation_metrics"))
+)
+
+if (
+    benchmark_evaluation_available
+    and labels_df is not None
+    and "Label" in labels_df.columns
+):
     labels = labels_df["Label"].astype(str).str.strip()
     total_flows = int(len(labels))
     benign_flows = int((labels.str.casefold() == "benign").sum())
@@ -255,7 +265,7 @@ if labels_df is not None and "Label" in labels_df.columns:
         .reset_index(name="Flows")
     )
 else:
-    # Do not display stale hard-coded dataset counts when the input is absent.
+    # Benchmark labels do not describe the current unlabeled inference run.
     total_flows = benign_flows = attack_flows = None
     attack_distribution = pd.DataFrame(columns=["Attack Type", "Flows"])
 
@@ -462,14 +472,14 @@ st.markdown(
 cols = st.columns(4)
 
 metric_data = [
-    ("Network Flows", f"{total_flows:,}" if total_flows is not None else "Not loaded",
-     "Cleaned CICIDS2017 records"),
-    ("Benign Flows", f"{benign_flows:,}" if benign_flows is not None else "Not loaded",
-     "Normal-class traffic"),
-    ("Attack Flows", f"{attack_flows:,}" if attack_flows is not None else "Not loaded",
-     "Ground-truth benchmark labels"),
+    ("Network Flows", f"{total_flows:,}" if total_flows is not None else "N/A" if pipeline_summary.get("mode") == "unlabeled_inference" else "Not loaded",
+     "Current labelled benchmark rows; not shown for unlabeled inference"),
+    ("Benign Flows", f"{benign_flows:,}" if benign_flows is not None else "N/A" if pipeline_summary.get("mode") == "unlabeled_inference" else "Not loaded",
+     "Ground-truth benchmark labels only"),
+    ("Attack Flows", f"{attack_flows:,}" if attack_flows is not None else "N/A" if pipeline_summary.get("mode") == "unlabeled_inference" else "Not loaded",
+     "Ground-truth benchmark labels only"),
     ("Attack Rate", f"{attack_flows / total_flows * 100:.2f}%" if total_flows else "N/A",
-     "Share of benchmark traffic"),
+     "Benchmark label rate; unavailable during inference"),
 ]
 
 
