@@ -46,6 +46,7 @@ jobs:
           python risk_analyzer.py --help
           python experiments/compare_models.py --help
           python experiments/compare_model_scales.py --help
+          python experiments/event_correlation_sensitivity.py --help
 
       - name: Run regression tests
         run: pytest -q
