@@ -21,12 +21,16 @@ def test_prepare_features_preserves_missing_values_for_train_only_imputation():
         "Protocol": [6, 17, 6],
         "Flow Duration": [10.0, None, 20.0],
         "Entirely Missing Feature": [float("nan"), float("nan"), float("nan")],
+        "Event ID": [1, 2, 3],
+        "Incident ID": [11, 12, 13],
         "Label": ["BENIGN", "DoS", "DDoS"],
     })
     _, x, _ = prepare_features(frame)
     assert x["Flow Duration"].isna().sum() == 1
     assert "Label" not in x.columns
     assert "src_ip" not in x.columns
+    assert "Event ID" not in x.columns
+    assert "Incident ID" not in x.columns
     assert "Entirely Missing Feature" in x.columns
     assert x["Entirely Missing Feature"].isna().all()
 
