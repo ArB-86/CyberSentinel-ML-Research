@@ -737,6 +737,18 @@ def run_inference(
     if not artifact_path.exists():
         raise FileNotFoundError(f"Trained model artifact not found: {artifact_path}")
 
+    output = Path(output_dir)
+    output.mkdir(parents=True, exist_ok=True)
+    # Remove benchmark-only files before an inference run so a shared output
+    # directory cannot present stale ROC/PR metrics as current inference results.
+    for stale_name in ("detection_metrics.json", "per_attack_detection_evaluation.csv"):
+        stale_path = output / stale_name
+        if stale_path.exists():
+            stale_path.unlink()
+    stale_graph_png = output / "attack_graph.png"
+    if stale_graph_png.exists():
+        stale_graph_png.unlink()
+
     artifact = joblib.load(artifact_path)
     required_artifact = {
         "artifact_version", "model_name", "model", "imputer",
@@ -764,8 +776,6 @@ def run_inference(
     work["predicted_anomaly"] = scores < threshold
 
     suspicious = work.loc[work["predicted_anomaly"]].copy()
-    output = Path(output_dir)
-    output.mkdir(parents=True, exist_ok=True)
     suspicious.to_csv(output / "suspicious_flows_with_metadata.csv", index=False)
 
     event_use_ports = {"src_port", "dst_port"}.issubset(suspicious.columns)
