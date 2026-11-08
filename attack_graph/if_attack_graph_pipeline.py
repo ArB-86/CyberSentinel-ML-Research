@@ -191,6 +191,10 @@ def run(
     calibration_scores = model.score_samples(x_calibration)
     threshold = float(np.quantile(calibration_scores, calibration_quantile))
     measured_calibration_fpr = float(np.mean(calibration_scores < threshold))
+    calibration_quantiles = {
+        str(q): float(np.quantile(calibration_scores, q))
+        for q in (0.0, 0.01, 0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99, 1.0)
+    }
 
     score_started = time.perf_counter()
     scores = model.score_samples(x_all)
@@ -270,6 +274,7 @@ def run(
         "threshold_rule": f"lower {calibration_quantile:.1%} quantile of benign Isolation Forest score_samples",
         "isolation_forest_threshold": threshold,
         "calibration_quantile": calibration_quantile,
+        "calibration_score_quantiles": calibration_quantiles,
         "measured_calibration_fpr": measured_calibration_fpr,
         "score_direction": "lower score is more anomalous",
         "n_estimators": n_estimators,
