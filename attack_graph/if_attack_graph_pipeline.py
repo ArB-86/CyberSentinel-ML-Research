@@ -558,10 +558,14 @@ def run(
     suspicious = suspicious.drop(columns=["label"], errors="ignore")
     suspicious.to_csv(output / "suspicious_flows_with_metadata.csv", index=False)
 
+    event_use_ports = {"src_port", "dst_port"}.issubset(suspicious.columns)
     events = build_attack_events(
         suspicious,
         anomalous_only=True,
-        config=EventConfig(time_window_seconds=time_window_seconds),
+        config=EventConfig(
+            time_window_seconds=time_window_seconds,
+            use_ports_in_key=event_use_ports,
+        ),
     )
     correlation_graph = build_attack_graph(events)
     correlation_graph = add_sequence_edges(
@@ -664,6 +668,10 @@ def run(
         "graph_edges": int(graph.number_of_edges()),
         "sequence_edge_semantics": "strict non-overlapping shared-host temporal correlation; not causation",
         "time_window_seconds": time_window_seconds,
+        "event_grouping_key": (
+            ["src_ip", "dst_ip", "protocol", "src_port", "dst_port"]
+            if event_use_ports else ["src_ip", "dst_ip", "protocol"]
+        ),
         "max_sequence_gap_seconds": max_sequence_gap_seconds,
         "gexf_written": bool(gexf_written),
         "png_status": png_status,
@@ -743,10 +751,14 @@ def run_inference(
     output.mkdir(parents=True, exist_ok=True)
     suspicious.to_csv(output / "suspicious_flows_with_metadata.csv", index=False)
 
+    event_use_ports = {"src_port", "dst_port"}.issubset(suspicious.columns)
     events = build_attack_events(
         suspicious,
         anomalous_only=True,
-        config=EventConfig(time_window_seconds=time_window_seconds),
+        config=EventConfig(
+            time_window_seconds=time_window_seconds,
+            use_ports_in_key=event_use_ports,
+        ),
     )
     correlation_graph = build_attack_graph(events)
     correlation_graph = add_sequence_edges(
@@ -782,6 +794,10 @@ def run_inference(
         "graph_edges": int(graph.number_of_edges()),
         "sequence_edge_semantics": "shared-host temporal correlation; not causation",
         "time_window_seconds": time_window_seconds,
+        "event_grouping_key": (
+            ["src_ip", "dst_ip", "protocol", "src_port", "dst_port"]
+            if event_use_ports else ["src_ip", "dst_ip", "protocol"]
+        ),
         "max_sequence_gap_seconds": max_sequence_gap_seconds,
         "scoring_seconds": scoring_seconds,
         "elapsed_seconds": round(time.perf_counter() - start_time, 2),
