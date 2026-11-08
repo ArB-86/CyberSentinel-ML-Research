@@ -1,0 +1,325 @@
+model,seed,train_rows,attack_type,test_support,detected,detection_recall
+IsolationForest,42,5000,Bot,11,0,0.0
+IsolationForest,42,5000,FTP-Patator,42,0,0.0
+IsolationForest,42,5000,SSH-Patator,22,0,0.0
+IsolationForest,42,5000,DDoS,849,462,0.5441696113074205
+IsolationForest,42,5000,DoS slowloris,43,21,0.4883720930232558
+IsolationForest,42,5000,DoS Slowhttptest,38,29,0.7631578947368421
+IsolationForest,42,5000,DoS Hulk,1164,994,0.8539518900343642
+IsolationForest,42,5000,DoS GoldenEye,61,26,0.4262295081967213
+IsolationForest,42,5000,PortScan,17,2,0.11764705882352941
+IsolationForest,42,5000,Web Attack - Brute Force,10,0,0.0
+IsolationForest,42,5000,Web Attack - XSS,5,0,0.0
+IsolationForest,42,5000,Web Attack - SQL Injection,1,0,0.0
+LOF_novelty,42,5000,Bot,11,0,0.0
+LOF_novelty,42,5000,FTP-Patator,42,0,0.0
+LOF_novelty,42,5000,SSH-Patator,22,0,0.0
+LOF_novelty,42,5000,DDoS,849,496,0.5842167255594818
+LOF_novelty,42,5000,DoS slowloris,43,4,0.09302325581395349
+LOF_novelty,42,5000,DoS Slowhttptest,38,15,0.39473684210526316
+LOF_novelty,42,5000,DoS Hulk,1164,320,0.27491408934707906
+LOF_novelty,42,5000,DoS GoldenEye,61,28,0.45901639344262296
+LOF_novelty,42,5000,PortScan,17,6,0.35294117647058826
+LOF_novelty,42,5000,Web Attack - Brute Force,10,0,0.0
+LOF_novelty,42,5000,Web Attack - XSS,5,0,0.0
+LOF_novelty,42,5000,Web Attack - SQL Injection,1,0,0.0
+RBF_OneClassSVM,42,5000,Bot,11,0,0.0
+RBF_OneClassSVM,42,5000,FTP-Patator,42,0,0.0
+RBF_OneClassSVM,42,5000,SSH-Patator,22,0,0.0
+RBF_OneClassSVM,42,5000,DDoS,849,536,0.6313309776207303
+RBF_OneClassSVM,42,5000,DoS slowloris,43,24,0.5581395348837209
+RBF_OneClassSVM,42,5000,DoS Slowhttptest,38,36,0.9473684210526315
+RBF_OneClassSVM,42,5000,DoS Hulk,1164,1031,0.8857388316151202
+RBF_OneClassSVM,42,5000,DoS GoldenEye,61,50,0.819672131147541
+RBF_OneClassSVM,42,5000,PortScan,17,4,0.23529411764705882
+RBF_OneClassSVM,42,5000,Web Attack - Brute Force,10,0,0.0
+RBF_OneClassSVM,42,5000,Web Attack - XSS,5,0,0.0
+RBF_OneClassSVM,42,5000,Web Attack - SQL Injection,1,0,0.0
+IsolationForest,42,25000,Bot,11,0,0.0
+IsolationForest,42,25000,FTP-Patator,42,0,0.0
+IsolationForest,42,25000,SSH-Patator,22,0,0.0
+IsolationForest,42,25000,DDoS,849,425,0.5005889281507656
+IsolationForest,42,25000,DoS slowloris,43,21,0.4883720930232558
+IsolationForest,42,25000,DoS Slowhttptest,38,29,0.7631578947368421
+IsolationForest,42,25000,DoS Hulk,1164,974,0.8367697594501718
+IsolationForest,42,25000,DoS GoldenEye,61,25,0.4098360655737705
+IsolationForest,42,25000,PortScan,17,1,0.058823529411764705
+IsolationForest,42,25000,Web Attack - Brute Force,10,0,0.0
+IsolationForest,42,25000,Web Attack - XSS,5,0,0.0
+IsolationForest,42,25000,Web Attack - SQL Injection,1,0,0.0
+LOF_novelty,42,25000,Bot,11,0,0.0
+LOF_novelty,42,25000,FTP-Patator,42,0,0.0
+LOF_novelty,42,25000,SSH-Patator,22,0,0.0
+LOF_novelty,42,25000,DDoS,849,606,0.7137809187279152
+LOF_novelty,42,25000,DoS slowloris,43,7,0.16279069767441862
+LOF_novelty,42,25000,DoS Slowhttptest,38,10,0.2631578947368421
+LOF_novelty,42,25000,DoS Hulk,1164,429,0.36855670103092786
+LOF_novelty,42,25000,DoS GoldenEye,61,23,0.3770491803278688
+LOF_novelty,42,25000,PortScan,17,3,0.17647058823529413
+LOF_novelty,42,25000,Web Attack - Brute Force,10,0,0.0
+LOF_novelty,42,25000,Web Attack - XSS,5,1,0.2
+LOF_novelty,42,25000,Web Attack - SQL Injection,1,0,0.0
+RBF_OneClassSVM,42,25000,Bot,11,0,0.0
+RBF_OneClassSVM,42,25000,FTP-Patator,42,0,0.0
+RBF_OneClassSVM,42,25000,SSH-Patator,22,0,0.0
+RBF_OneClassSVM,42,25000,DDoS,849,540,0.6360424028268551
+RBF_OneClassSVM,42,25000,DoS slowloris,43,24,0.5581395348837209
+RBF_OneClassSVM,42,25000,DoS Slowhttptest,38,31,0.8157894736842105
+RBF_OneClassSVM,42,25000,DoS Hulk,1164,1034,0.8883161512027491
+RBF_OneClassSVM,42,25000,DoS GoldenEye,61,49,0.8032786885245902
+RBF_OneClassSVM,42,25000,PortScan,17,4,0.23529411764705882
+RBF_OneClassSVM,42,25000,Web Attack - Brute Force,10,0,0.0
+RBF_OneClassSVM,42,25000,Web Attack - XSS,5,0,0.0
+RBF_OneClassSVM,42,25000,Web Attack - SQL Injection,1,0,0.0
+IsolationForest,42,50000,Bot,11,0,0.0
+IsolationForest,42,50000,FTP-Patator,42,0,0.0
+IsolationForest,42,50000,SSH-Patator,22,0,0.0
+IsolationForest,42,50000,DDoS,849,420,0.49469964664310956
+IsolationForest,42,50000,DoS slowloris,43,21,0.4883720930232558
+IsolationForest,42,50000,DoS Slowhttptest,38,29,0.7631578947368421
+IsolationForest,42,50000,DoS Hulk,1164,969,0.8324742268041238
+IsolationForest,42,50000,DoS GoldenEye,61,23,0.3770491803278688
+IsolationForest,42,50000,PortScan,17,2,0.11764705882352941
+IsolationForest,42,50000,Web Attack - Brute Force,10,0,0.0
+IsolationForest,42,50000,Web Attack - XSS,5,0,0.0
+IsolationForest,42,50000,Web Attack - SQL Injection,1,0,0.0
+LOF_novelty,42,50000,Bot,11,0,0.0
+LOF_novelty,42,50000,FTP-Patator,42,0,0.0
+LOF_novelty,42,50000,SSH-Patator,22,19,0.8636363636363636
+LOF_novelty,42,50000,DDoS,849,605,0.7126030624263839
+LOF_novelty,42,50000,DoS slowloris,43,6,0.13953488372093023
+LOF_novelty,42,50000,DoS Slowhttptest,38,10,0.2631578947368421
+LOF_novelty,42,50000,DoS Hulk,1164,730,0.627147766323024
+LOF_novelty,42,50000,DoS GoldenEye,61,15,0.2459016393442623
+LOF_novelty,42,50000,PortScan,17,1,0.058823529411764705
+LOF_novelty,42,50000,Web Attack - Brute Force,10,0,0.0
+LOF_novelty,42,50000,Web Attack - XSS,5,0,0.0
+LOF_novelty,42,50000,Web Attack - SQL Injection,1,0,0.0
+RBF_OneClassSVM,42,50000,Bot,11,0,0.0
+RBF_OneClassSVM,42,50000,FTP-Patator,42,0,0.0
+RBF_OneClassSVM,42,50000,SSH-Patator,22,0,0.0
+RBF_OneClassSVM,42,50000,DDoS,849,540,0.6360424028268551
+RBF_OneClassSVM,42,50000,DoS slowloris,43,24,0.5581395348837209
+RBF_OneClassSVM,42,50000,DoS Slowhttptest,38,31,0.8157894736842105
+RBF_OneClassSVM,42,50000,DoS Hulk,1164,1035,0.8891752577319587
+RBF_OneClassSVM,42,50000,DoS GoldenEye,61,48,0.7868852459016393
+RBF_OneClassSVM,42,50000,PortScan,17,4,0.23529411764705882
+RBF_OneClassSVM,42,50000,Web Attack - Brute Force,10,0,0.0
+RBF_OneClassSVM,42,50000,Web Attack - XSS,5,0,0.0
+RBF_OneClassSVM,42,50000,Web Attack - SQL Injection,1,0,0.0
+IsolationForest,43,5000,Bot,11,0,0.0
+IsolationForest,43,5000,FTP-Patator,42,0,0.0
+IsolationForest,43,5000,SSH-Patator,22,0,0.0
+IsolationForest,43,5000,DDoS,849,523,0.6160188457008245
+IsolationForest,43,5000,DoS slowloris,43,20,0.46511627906976744
+IsolationForest,43,5000,DoS Slowhttptest,38,29,0.7631578947368421
+IsolationForest,43,5000,DoS Hulk,1164,1011,0.8685567010309279
+IsolationForest,43,5000,DoS GoldenEye,61,40,0.6557377049180327
+IsolationForest,43,5000,PortScan,17,2,0.11764705882352941
+IsolationForest,43,5000,Web Attack - Brute Force,10,0,0.0
+IsolationForest,43,5000,Web Attack - XSS,5,0,0.0
+IsolationForest,43,5000,Web Attack - SQL Injection,1,0,0.0
+LOF_novelty,43,5000,Bot,11,0,0.0
+LOF_novelty,43,5000,FTP-Patator,42,0,0.0
+LOF_novelty,43,5000,SSH-Patator,22,0,0.0
+LOF_novelty,43,5000,DDoS,849,488,0.574793875147232
+LOF_novelty,43,5000,DoS slowloris,43,4,0.09302325581395349
+LOF_novelty,43,5000,DoS Slowhttptest,38,8,0.21052631578947367
+LOF_novelty,43,5000,DoS Hulk,1164,238,0.20446735395189003
+LOF_novelty,43,5000,DoS GoldenEye,61,25,0.4098360655737705
+LOF_novelty,43,5000,PortScan,17,1,0.058823529411764705
+LOF_novelty,43,5000,Web Attack - Brute Force,10,0,0.0
+LOF_novelty,43,5000,Web Attack - XSS,5,0,0.0
+LOF_novelty,43,5000,Web Attack - SQL Injection,1,0,0.0
+RBF_OneClassSVM,43,5000,Bot,11,0,0.0
+RBF_OneClassSVM,43,5000,FTP-Patator,42,0,0.0
+RBF_OneClassSVM,43,5000,SSH-Patator,22,0,0.0
+RBF_OneClassSVM,43,5000,DDoS,849,540,0.6360424028268551
+RBF_OneClassSVM,43,5000,DoS slowloris,43,24,0.5581395348837209
+RBF_OneClassSVM,43,5000,DoS Slowhttptest,38,32,0.8421052631578947
+RBF_OneClassSVM,43,5000,DoS Hulk,1164,1036,0.8900343642611683
+RBF_OneClassSVM,43,5000,DoS GoldenEye,61,49,0.8032786885245902
+RBF_OneClassSVM,43,5000,PortScan,17,4,0.23529411764705882
+RBF_OneClassSVM,43,5000,Web Attack - Brute Force,10,0,0.0
+RBF_OneClassSVM,43,5000,Web Attack - XSS,5,0,0.0
+RBF_OneClassSVM,43,5000,Web Attack - SQL Injection,1,0,0.0
+IsolationForest,43,25000,Bot,11,0,0.0
+IsolationForest,43,25000,FTP-Patator,42,0,0.0
+IsolationForest,43,25000,SSH-Patator,22,0,0.0
+IsolationForest,43,25000,DDoS,849,502,0.591283863368669
+IsolationForest,43,25000,DoS slowloris,43,19,0.4418604651162791
+IsolationForest,43,25000,DoS Slowhttptest,38,29,0.7631578947368421
+IsolationForest,43,25000,DoS Hulk,1164,1010,0.8676975945017182
+IsolationForest,43,25000,DoS GoldenEye,61,41,0.6721311475409836
+IsolationForest,43,25000,PortScan,17,2,0.11764705882352941
+IsolationForest,43,25000,Web Attack - Brute Force,10,0,0.0
+IsolationForest,43,25000,Web Attack - XSS,5,0,0.0
+IsolationForest,43,25000,Web Attack - SQL Injection,1,0,0.0
+LOF_novelty,43,25000,Bot,11,0,0.0
+LOF_novelty,43,25000,FTP-Patator,42,0,0.0
+LOF_novelty,43,25000,SSH-Patator,22,0,0.0
+LOF_novelty,43,25000,DDoS,849,539,0.6348645465253239
+LOF_novelty,43,25000,DoS slowloris,43,6,0.13953488372093023
+LOF_novelty,43,25000,DoS Slowhttptest,38,8,0.21052631578947367
+LOF_novelty,43,25000,DoS Hulk,1164,503,0.4321305841924399
+LOF_novelty,43,25000,DoS GoldenEye,61,12,0.19672131147540983
+LOF_novelty,43,25000,PortScan,17,8,0.47058823529411764
+LOF_novelty,43,25000,Web Attack - Brute Force,10,0,0.0
+LOF_novelty,43,25000,Web Attack - XSS,5,1,0.2
+LOF_novelty,43,25000,Web Attack - SQL Injection,1,0,0.0
+RBF_OneClassSVM,43,25000,Bot,11,0,0.0
+RBF_OneClassSVM,43,25000,FTP-Patator,42,0,0.0
+RBF_OneClassSVM,43,25000,SSH-Patator,22,0,0.0
+RBF_OneClassSVM,43,25000,DDoS,849,540,0.6360424028268551
+RBF_OneClassSVM,43,25000,DoS slowloris,43,23,0.5348837209302325
+RBF_OneClassSVM,43,25000,DoS Slowhttptest,38,31,0.8157894736842105
+RBF_OneClassSVM,43,25000,DoS Hulk,1164,1034,0.8883161512027491
+RBF_OneClassSVM,43,25000,DoS GoldenEye,61,48,0.7868852459016393
+RBF_OneClassSVM,43,25000,PortScan,17,4,0.23529411764705882
+RBF_OneClassSVM,43,25000,Web Attack - Brute Force,10,0,0.0
+RBF_OneClassSVM,43,25000,Web Attack - XSS,5,0,0.0
+RBF_OneClassSVM,43,25000,Web Attack - SQL Injection,1,0,0.0
+IsolationForest,43,50000,Bot,11,0,0.0
+IsolationForest,43,50000,FTP-Patator,42,0,0.0
+IsolationForest,43,50000,SSH-Patator,22,0,0.0
+IsolationForest,43,50000,DDoS,849,534,0.6289752650176679
+IsolationForest,43,50000,DoS slowloris,43,20,0.46511627906976744
+IsolationForest,43,50000,DoS Slowhttptest,38,29,0.7631578947368421
+IsolationForest,43,50000,DoS Hulk,1164,1031,0.8857388316151202
+IsolationForest,43,50000,DoS GoldenEye,61,40,0.6557377049180327
+IsolationForest,43,50000,PortScan,17,2,0.11764705882352941
+IsolationForest,43,50000,Web Attack - Brute Force,10,0,0.0
+IsolationForest,43,50000,Web Attack - XSS,5,0,0.0
+IsolationForest,43,50000,Web Attack - SQL Injection,1,0,0.0
+LOF_novelty,43,50000,Bot,11,0,0.0
+LOF_novelty,43,50000,FTP-Patator,42,30,0.7142857142857143
+LOF_novelty,43,50000,SSH-Patator,22,19,0.8636363636363636
+LOF_novelty,43,50000,DDoS,849,444,0.5229681978798587
+LOF_novelty,43,50000,DoS slowloris,43,10,0.23255813953488372
+LOF_novelty,43,50000,DoS Slowhttptest,38,10,0.2631578947368421
+LOF_novelty,43,50000,DoS Hulk,1164,511,0.43900343642611683
+LOF_novelty,43,50000,DoS GoldenEye,61,17,0.2786885245901639
+LOF_novelty,43,50000,PortScan,17,0,0.0
+LOF_novelty,43,50000,Web Attack - Brute Force,10,0,0.0
+LOF_novelty,43,50000,Web Attack - XSS,5,0,0.0
+LOF_novelty,43,50000,Web Attack - SQL Injection,1,0,0.0
+RBF_OneClassSVM,43,50000,Bot,11,0,0.0
+RBF_OneClassSVM,43,50000,FTP-Patator,42,0,0.0
+RBF_OneClassSVM,43,50000,SSH-Patator,22,0,0.0
+RBF_OneClassSVM,43,50000,DDoS,849,540,0.6360424028268551
+RBF_OneClassSVM,43,50000,DoS slowloris,43,24,0.5581395348837209
+RBF_OneClassSVM,43,50000,DoS Slowhttptest,38,31,0.8157894736842105
+RBF_OneClassSVM,43,50000,DoS Hulk,1164,1044,0.8969072164948454
+RBF_OneClassSVM,43,50000,DoS GoldenEye,61,48,0.7868852459016393
+RBF_OneClassSVM,43,50000,PortScan,17,4,0.23529411764705882
+RBF_OneClassSVM,43,50000,Web Attack - Brute Force,10,0,0.0
+RBF_OneClassSVM,43,50000,Web Attack - XSS,5,0,0.0
+RBF_OneClassSVM,43,50000,Web Attack - SQL Injection,1,0,0.0
+IsolationForest,44,5000,Bot,11,0,0.0
+IsolationForest,44,5000,FTP-Patator,42,0,0.0
+IsolationForest,44,5000,SSH-Patator,22,0,0.0
+IsolationForest,44,5000,DDoS,849,398,0.46878680800942285
+IsolationForest,44,5000,DoS slowloris,43,21,0.4883720930232558
+IsolationForest,44,5000,DoS Slowhttptest,38,29,0.7631578947368421
+IsolationForest,44,5000,DoS Hulk,1164,970,0.8333333333333334
+IsolationForest,44,5000,DoS GoldenEye,61,28,0.45901639344262296
+IsolationForest,44,5000,PortScan,17,2,0.11764705882352941
+IsolationForest,44,5000,Web Attack - Brute Force,10,0,0.0
+IsolationForest,44,5000,Web Attack - XSS,5,0,0.0
+IsolationForest,44,5000,Web Attack - SQL Injection,1,0,0.0
+LOF_novelty,44,5000,Bot,11,0,0.0
+LOF_novelty,44,5000,FTP-Patator,42,0,0.0
+LOF_novelty,44,5000,SSH-Patator,22,0,0.0
+LOF_novelty,44,5000,DDoS,849,559,0.6584216725559482
+LOF_novelty,44,5000,DoS slowloris,43,4,0.09302325581395349
+LOF_novelty,44,5000,DoS Slowhttptest,38,18,0.47368421052631576
+LOF_novelty,44,5000,DoS Hulk,1164,684,0.5876288659793815
+LOF_novelty,44,5000,DoS GoldenEye,61,30,0.4918032786885246
+LOF_novelty,44,5000,PortScan,17,1,0.058823529411764705
+LOF_novelty,44,5000,Web Attack - Brute Force,10,0,0.0
+LOF_novelty,44,5000,Web Attack - XSS,5,0,0.0
+LOF_novelty,44,5000,Web Attack - SQL Injection,1,0,0.0
+RBF_OneClassSVM,44,5000,Bot,11,0,0.0
+RBF_OneClassSVM,44,5000,FTP-Patator,42,0,0.0
+RBF_OneClassSVM,44,5000,SSH-Patator,22,0,0.0
+RBF_OneClassSVM,44,5000,DDoS,849,540,0.6360424028268551
+RBF_OneClassSVM,44,5000,DoS slowloris,43,23,0.5348837209302325
+RBF_OneClassSVM,44,5000,DoS Slowhttptest,38,31,0.8157894736842105
+RBF_OneClassSVM,44,5000,DoS Hulk,1164,1036,0.8900343642611683
+RBF_OneClassSVM,44,5000,DoS GoldenEye,61,48,0.7868852459016393
+RBF_OneClassSVM,44,5000,PortScan,17,4,0.23529411764705882
+RBF_OneClassSVM,44,5000,Web Attack - Brute Force,10,0,0.0
+RBF_OneClassSVM,44,5000,Web Attack - XSS,5,0,0.0
+RBF_OneClassSVM,44,5000,Web Attack - SQL Injection,1,0,0.0
+IsolationForest,44,25000,Bot,11,0,0.0
+IsolationForest,44,25000,FTP-Patator,42,0,0.0
+IsolationForest,44,25000,SSH-Patator,22,0,0.0
+IsolationForest,44,25000,DDoS,849,391,0.46054181389870436
+IsolationForest,44,25000,DoS slowloris,43,21,0.4883720930232558
+IsolationForest,44,25000,DoS Slowhttptest,38,29,0.7631578947368421
+IsolationForest,44,25000,DoS Hulk,1164,966,0.8298969072164949
+IsolationForest,44,25000,DoS GoldenEye,61,22,0.36065573770491804
+IsolationForest,44,25000,PortScan,17,2,0.11764705882352941
+IsolationForest,44,25000,Web Attack - Brute Force,10,0,0.0
+IsolationForest,44,25000,Web Attack - XSS,5,0,0.0
+IsolationForest,44,25000,Web Attack - SQL Injection,1,0,0.0
+LOF_novelty,44,25000,Bot,11,0,0.0
+LOF_novelty,44,25000,FTP-Patator,42,0,0.0
+LOF_novelty,44,25000,SSH-Patator,22,0,0.0
+LOF_novelty,44,25000,DDoS,849,535,0.6301531213191991
+LOF_novelty,44,25000,DoS slowloris,43,7,0.16279069767441862
+LOF_novelty,44,25000,DoS Slowhttptest,38,9,0.23684210526315788
+LOF_novelty,44,25000,DoS Hulk,1164,382,0.3281786941580756
+LOF_novelty,44,25000,DoS GoldenEye,61,22,0.36065573770491804
+LOF_novelty,44,25000,PortScan,17,3,0.17647058823529413
+LOF_novelty,44,25000,Web Attack - Brute Force,10,0,0.0
+LOF_novelty,44,25000,Web Attack - XSS,5,1,0.2
+LOF_novelty,44,25000,Web Attack - SQL Injection,1,0,0.0
+RBF_OneClassSVM,44,25000,Bot,11,0,0.0
+RBF_OneClassSVM,44,25000,FTP-Patator,42,0,0.0
+RBF_OneClassSVM,44,25000,SSH-Patator,22,0,0.0
+RBF_OneClassSVM,44,25000,DDoS,849,540,0.6360424028268551
+RBF_OneClassSVM,44,25000,DoS slowloris,43,24,0.5581395348837209
+RBF_OneClassSVM,44,25000,DoS Slowhttptest,38,31,0.8157894736842105
+RBF_OneClassSVM,44,25000,DoS Hulk,1164,1036,0.8900343642611683
+RBF_OneClassSVM,44,25000,DoS GoldenEye,61,47,0.7704918032786885
+RBF_OneClassSVM,44,25000,PortScan,17,4,0.23529411764705882
+RBF_OneClassSVM,44,25000,Web Attack - Brute Force,10,0,0.0
+RBF_OneClassSVM,44,25000,Web Attack - XSS,5,0,0.0
+RBF_OneClassSVM,44,25000,Web Attack - SQL Injection,1,0,0.0
+IsolationForest,44,50000,Bot,11,0,0.0
+IsolationForest,44,50000,FTP-Patator,42,0,0.0
+IsolationForest,44,50000,SSH-Patator,22,0,0.0
+IsolationForest,44,50000,DDoS,849,471,0.5547703180212014
+IsolationForest,44,50000,DoS slowloris,43,21,0.4883720930232558
+IsolationForest,44,50000,DoS Slowhttptest,38,29,0.7631578947368421
+IsolationForest,44,50000,DoS Hulk,1164,984,0.845360824742268
+IsolationForest,44,50000,DoS GoldenEye,61,27,0.4426229508196721
+IsolationForest,44,50000,PortScan,17,2,0.11764705882352941
+IsolationForest,44,50000,Web Attack - Brute Force,10,0,0.0
+IsolationForest,44,50000,Web Attack - XSS,5,0,0.0
+IsolationForest,44,50000,Web Attack - SQL Injection,1,0,0.0
+LOF_novelty,44,50000,Bot,11,0,0.0
+LOF_novelty,44,50000,FTP-Patator,42,0,0.0
+LOF_novelty,44,50000,SSH-Patator,22,19,0.8636363636363636
+LOF_novelty,44,50000,DDoS,849,441,0.519434628975265
+LOF_novelty,44,50000,DoS slowloris,43,10,0.23255813953488372
+LOF_novelty,44,50000,DoS Slowhttptest,38,10,0.2631578947368421
+LOF_novelty,44,50000,DoS Hulk,1164,545,0.468213058419244
+LOF_novelty,44,50000,DoS GoldenEye,61,26,0.4262295081967213
+LOF_novelty,44,50000,PortScan,17,3,0.17647058823529413
+LOF_novelty,44,50000,Web Attack - Brute Force,10,0,0.0
+LOF_novelty,44,50000,Web Attack - XSS,5,1,0.2
+LOF_novelty,44,50000,Web Attack - SQL Injection,1,0,0.0
+RBF_OneClassSVM,44,50000,Bot,11,0,0.0
+RBF_OneClassSVM,44,50000,FTP-Patator,42,0,0.0
+RBF_OneClassSVM,44,50000,SSH-Patator,22,0,0.0
+RBF_OneClassSVM,44,50000,DDoS,849,540,0.6360424028268551
+RBF_OneClassSVM,44,50000,DoS slowloris,43,24,0.5581395348837209
+RBF_OneClassSVM,44,50000,DoS Slowhttptest,38,31,0.8157894736842105
+RBF_OneClassSVM,44,50000,DoS Hulk,1164,1035,0.8891752577319587
+RBF_OneClassSVM,44,50000,DoS GoldenEye,61,48,0.7868852459016393
+RBF_OneClassSVM,44,50000,PortScan,17,4,0.23529411764705882
+RBF_OneClassSVM,44,50000,Web Attack - Brute Force,10,0,0.0
+RBF_OneClassSVM,44,50000,Web Attack - XSS,5,0,0.0
+RBF_OneClassSVM,44,50000,Web Attack - SQL Injection,1,0,0.0

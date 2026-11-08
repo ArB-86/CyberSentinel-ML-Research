@@ -1,0 +1,75 @@
+{
+  "dataset": "data/cleaned_cicids2017.parquet",
+  "rows": 2228970,
+  "numeric_features": 69,
+  "label_distribution": {
+    "Benign": 1892671,
+    "DoS Hulk": 172688,
+    "DDoS": 127995,
+    "DoS GoldenEye": 10281,
+    "FTP-Patator": 5927,
+    "DoS slowloris": 5385,
+    "DoS Slowhttptest": 5228,
+    "SSH-Patator": 3217,
+    "PortScan": 1956,
+    "Web Attack - Brute Force": 1470,
+    "Bot": 1437,
+    "Web Attack - XSS": 652,
+    "Infiltration": 35,
+    "Web Attack - SQL Injection": 21,
+    "Heartbleed": 7
+  },
+  "split_method": "StratifiedGroupKFold on exact numeric-feature hashes",
+  "split_seed": 42,
+  "folds": 7,
+  "train_rows": 1592120,
+  "validation_rows": 318425,
+  "test_fold_rows": 318425,
+  "calibration_indices_fixed_across_all_runs": true,
+  "test_indices_fixed_across_all_runs": true,
+  "benign_train_subsets_nested_within_each_seed": true,
+  "seeds": [
+    42,
+    43,
+    44
+  ],
+  "train_sizes": [
+    5000,
+    25000,
+    50000
+  ],
+  "calibration_rows": 5000,
+  "evaluation_rows": 15000,
+  "target_fpr": 0.05,
+  "exact_duplicate_group_overlap": 0,
+  "threshold_rule": "upper target-FPR tail of fixed held-out benign calibration scores",
+  "models": [
+    "IsolationForest",
+    "LOF_novelty",
+    "RBF_OneClassSVM"
+  ],
+  "software": {
+    "python": "3.11.18",
+    "numpy": "2.4.6",
+    "pandas": "3.1.1",
+    "scikit_learn": "1.9.1"
+  },
+  "arguments": {
+    "data": "data/cleaned_cicids2017.parquet",
+    "outdir": "experiments/results/scaling-validation-v1",
+    "seeds": "42,43,44",
+    "train_sizes": "5000,25000,50000",
+    "folds": 7,
+    "split_seed": 42,
+    "calibration_rows": 5000,
+    "evaluation_rows": 15000,
+    "target_fpr": 0.05,
+    "trees": 200,
+    "max_samples": 1024,
+    "lof_neighbors": 35,
+    "svm_nu": 0.05,
+    "svm_cache_mb": 512.0
+  },
+  "interpretation": "Seeds change the benign training permutation and Isolation Forest random_state. Calibration and test rows are fixed across all sizes and seeds, enabling paired comparisons.",
+  "limitations": "Exact duplicate feature groups are separated; temporal and five-tuple grouping are not possible from this cleaned Parquet because flow identifiers and timestamps are absent."
+}
