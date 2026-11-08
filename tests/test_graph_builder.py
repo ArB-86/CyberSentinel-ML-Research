@@ -54,3 +54,32 @@ def test_gexf_export_omits_missing_optional_attributes(tmp_path):
     loaded = __import__("networkx").read_gexf(path)
     event = loaded.nodes["event:EVT-00001"]
     assert "mean_anomaly_score" not in event
+
+
+
+def test_overlapping_events_do_not_hide_later_non_overlapping_successor():
+    events = pd.DataFrame([
+        {
+            "event_id": "EVT-00001", "start_time": "2026-01-01T00:00:00Z",
+            "end_time": "2026-01-01T00:00:20Z", "src_ip": "A", "dst_ip": "B",
+            "protocol": "6", "flow_count": 2, "attack_type": "Unclassified",
+        },
+        {
+            "event_id": "EVT-00002", "start_time": "2026-01-01T00:00:10Z",
+            "end_time": "2026-01-01T00:00:12Z", "src_ip": "B", "dst_ip": "C",
+            "protocol": "6", "flow_count": 1, "attack_type": "Unclassified",
+        },
+        {
+            "event_id": "EVT-00003", "start_time": "2026-01-01T00:00:21Z",
+            "end_time": "2026-01-01T00:00:22Z", "src_ip": "B", "dst_ip": "D",
+            "protocol": "6", "flow_count": 1, "attack_type": "Unclassified",
+        },
+    ])
+    graph = add_sequence_edges(build_attack_graph(events), events, max_gap_seconds=60)
+
+    assert not graph.has_edge("event:EVT-00001", "event:EVT-00002")
+    assert graph.has_edge("event:EVT-00001", "event:EVT-00003")
+    assert graph.has_edge("event:EVT-00002", "event:EVT-00003")
+    edge = graph.edges["event:EVT-00001", "event:EVT-00003"]
+    assert edge["gap_seconds"] == 1.0
+    assert edge["causal_claim"] is False
