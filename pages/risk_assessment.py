@@ -267,8 +267,7 @@ out_deg = selected_row.get('out_degree', 0)
 factor_a = selected_row.get('anomaly_severity_factor', 50.0)
 factor_b = selected_row.get('frequency_factor', 30.0)
 factor_h = selected_row.get('host_involvement_factor', 40.0)
-factor_t = selected_row.get('temporal_correlation_factor', 20.0)
-factor_c = selected_row.get('attack_category_factor', 60.0)
+factor_t = selected_row.get('temporal_correlation_factor', 0.0)
 
 # Check if Markdown report file exists in outputs folder
 report_file_path = Path(f"outputs/agentic_investigation_output/report_{selected_event_id}.md")
@@ -284,9 +283,9 @@ if report_file_path.exists():
 # ============================================================
 
 tab1, tab2, tab3 = st.tabs([
-    "AI Investigator", 
-    "Risk Analysis", 
-    "Interactive SOAR Playbooks"
+    "AI Investigator",
+    "Risk Analysis",
+    "Analyst Response Checklist"
 ])
 
 with tab1:
@@ -364,8 +363,11 @@ with tab1:
         st.info("Click **'Trigger AI Investigation'** above to execute the agentic workflow and view the report.")
 
 with tab2:
-    st.markdown("### 5-Factor Deterministic Risk Engine Breakdown")
-    st.markdown("Quantitative scoring breakdown used to compute overall incident severity.")
+    st.markdown("### Four-Factor Evidence-Based Triage Score")
+    st.markdown(
+        "This is a transparent heuristic priority score (0–100), not a calibrated "
+        "probability, verified incident severity, or an automatic response decision."
+    )
     
     col_score, col_metrics = st.columns([1, 2])
     
@@ -383,7 +385,12 @@ with tab2:
         st.markdown(f"<br><b>Attack Vector:</b> `{attack_type}`<br><b>Flow Volume:</b> `{flow_count}` records<br><b>Graph In/Out Degree:</b> `{in_deg}` / `{out_deg}` links", unsafe_allow_html=True)
 
     with col_metrics:
-        st.markdown("**Factor Contribution Weights ($R = 0.30A + 0.20F + 0.15H + 0.20T + 0.15C$)**")
+        st.markdown("**Configured base weights: $R = 0.45A + 0.20F + 0.20H + 0.15T$**")
+        st.caption(
+            "If a factor is unavailable, the risk engine renormalises the weights "
+            "over the available factors. Dataset ground-truth attack labels are not "
+            "used as a risk factor."
+        )
         
         st.markdown(f"1. **Anomaly Severity ($A$ - Isolation Forest)**: `{factor_a:.1f} / 100`")
         st.progress(min(1.0, factor_a / 100.0))
@@ -397,12 +404,18 @@ with tab2:
         st.markdown(f"4. **Temporal Correlation ($T$ - 300s Window Cluster)**: `{factor_t:.1f} / 100`")
         st.progress(min(1.0, factor_t / 100.0))
         
-        st.markdown(f"5. **Attack Baseline Weight ($C$ - Threat Category)**: `{factor_c:.1f} / 100`")
-        st.progress(min(1.0, factor_c / 100.0))
+        st.info(
+            "Attack-category weighting is intentionally excluded. The event pipeline "
+            "does not use CICIDS ground-truth labels as production predictions."
+        )
 
 with tab3:
-    st.markdown("### Interactive SOAR Containment Playbook")
-    st.markdown("Execute and track tactical mitigation steps for this incident directly from the triage console.")
+    st.markdown("### Analyst Response Checklist")
+    st.warning(
+        "These are manual recommendations only. CyberSentinel does not execute "
+        "firewall, host-isolation, SSH, FTP, or containment actions from this page. "
+        "Verify the evidence and obtain the required operational approval first."
+    )
     
     if "ssh" in attack_type.lower():
         steps = [
