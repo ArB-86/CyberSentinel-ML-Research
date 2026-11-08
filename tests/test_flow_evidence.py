@@ -50,6 +50,8 @@ def test_flow_evidence_matches_port_pairs_and_exact_event_interval(monkeypatch):
     assert "Flow ID: MATCH" in result
     assert "Flow ID: WRONG_PORT" not in result
     assert "Flow ID: OUTSIDE_INTERVAL" not in result
+    assert "Label:" not in result
+    assert "Label counts:" not in result
 
 
 def test_malformed_event_port_metadata_fails_closed(monkeypatch):
