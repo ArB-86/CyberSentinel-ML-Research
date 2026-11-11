@@ -60,11 +60,11 @@ st.markdown(
       <div class="smallcaps">APPLICATION MODEL</div>
       <div style="font-size:1.35rem;font-weight:800;margin-top:7px">Isolation Forest remains the active detector</div>
       <div style="color:#8190a3;font-size:.84rem;line-height:1.55;margin-top:7px">
-        The comparative study does <b>not</b> show Isolation Forest as the highest-scoring detector.
-        RBF One-Class SVM led PR-AUC and F1 at all tested training sizes; LOF led ROC-AUC at 25k and 50k.
-        Isolation Forest is retained because its measured training and scoring cost was substantially lower
-        in this experiment, while its detection results remained competitive enough to serve as the current
-        integrated baseline pending metadata-rich validation.
+        The historical paired study recorded higher Average Precision and F1 for RBF One-Class SVM,
+        higher ROC-AUC for LOF at larger training sizes, and much lower observed fit/scoring time for
+        Isolation Forest. <b>Important:</b> that comparison predates the current preprocessing-hardening
+        changes. These figures are historical evidence, not the final ranking for the hardened pipeline.
+        Isolation Forest remains the integrated application detector pending a fresh controlled rerun.
       </div>
     </div>
     """,
@@ -75,9 +75,13 @@ st.markdown("")
 st.markdown(
     """
     <div class="warning">
-      <b>Metric integrity:</b> values on this page are the measured paired 5k/25k/50k comparison.
-      They are not edited UI values and are not interchangeable with the older single-model Isolation
-      Forest metrics on the Attack Detection page, which came from a different evaluation run and protocol.
+      <b>Validation status: HISTORICAL / PRE-HARDENING.</b> The paired 5k/25k/50k metrics and runtime
+      values below were generated before the latest feature-schema and train-only imputation fixes.
+      The hardening report explicitly says the comparison must be rerun before its ranking is treated as
+      current. The verified Parquet dataset is not committed to this repository, so this UI change does
+      not claim that the hardened rerun has been completed. All historical values are shown unchanged.
+      The older single-model Isolation Forest metrics on the Attack Detection page are from another
+      evaluation protocol and are not directly comparable either.
     </div>
     """,
     unsafe_allow_html=True,
@@ -155,7 +159,7 @@ quality_tab, runtime_tab, method_tab, references_tab = st.tabs(
 )
 
 with quality_tab:
-    st.markdown("### Key result at 50,000 benign training rows")
+    st.markdown("### Historical result at 50,000 benign training rows")
     kpi_cols = st.columns(4)
     kpis = [
         ("Highest AP", "0.7665", "RBF One-Class SVM"),
@@ -172,7 +176,7 @@ with quality_tab:
             )
 
     st.markdown("#### Paired comparison results")
-    st.caption("Mean ± sample standard deviation across seeds 42, 43 and 44. Average Precision (AP) is the PR-AUC summary reported by the experiment.")
+    st.caption("Pre-hardening historical run: mean ± sample standard deviation across seeds 42, 43 and 44. Average Precision (AP) is the PR-AUC summary reported by the experiment.")
     st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
     chart_left, chart_right = st.columns(2)
@@ -188,7 +192,7 @@ with quality_tab:
                 error_y={"type": "data", "array": d["ap_sd"], "visible": True},
             ))
         fig_ap.update_layout(
-            title="Average Precision vs benign training size",
+            title="Historical Average Precision vs benign training size",
             xaxis_title="Benign training rows",
             yaxis_title="Average Precision",
             yaxis_range=[0, 1],
@@ -213,7 +217,7 @@ with quality_tab:
                 error_y={"type": "data", "array": d["f1_sd"], "visible": True},
             ))
         fig_f1.update_layout(
-            title="F1 vs benign training size",
+            title="Historical F1 vs benign training size",
             xaxis_title="Benign training rows",
             yaxis_title="F1",
             yaxis_range=[0, 1],
@@ -234,7 +238,7 @@ with quality_tab:
     )
 
 with runtime_tab:
-    st.markdown("### Measured runtime on the experiment runner")
+    st.markdown("### Historical runtime on the experiment runner (pre-hardening)")
     runtime_rows = []
     for model_name in MODEL_ORDER:
         d = MODEL_DATA[model_name]
@@ -301,10 +305,11 @@ with method_tab:
     st.markdown("### Why retain Isolation Forest in the application?")
     st.markdown(
         """
-        - **Measured cost:** at 50k benign training rows, Isolation Forest fit in 0.408 s and scored the shared 15k test batch in 0.103 s on the experiment runner. RBF One-Class SVM took 17.391 s to fit and 2.082 s to score the same batch.
-        - **Operational trade-off:** SVM delivered higher AP/F1, but its measured fit and scoring cost grew sharply with training size. Isolation Forest's fit/scoring times remained nearly flat across 5k–50k in this run.
+        - **Historical measured cost:** at 50k benign training rows, Isolation Forest fit in 0.408 s and scored the shared 15k test batch in 0.103 s on the experiment runner. RBF One-Class SVM took 17.391 s to fit and 2.082 s to score the same batch.
+        - **Historical quality trade-off:** SVM delivered higher AP/F1, while Isolation Forest's measured fit/scoring times grew much less across 5k–50k in that run.
         - **Existing integration:** the current detection, event, graph and risk pipeline already consumes an Isolation Forest artifact. A switch is a model change that should be revalidated end-to-end, not made solely from flow-level F1.
-        - **Decision status:** retain Isolation Forest as the current application detector; treat RBF One-Class SVM as the leading AP/F1 alternative for shadow evaluation. This is a provisional engineering decision, not proof that Isolation Forest is universally superior.
+        - **Decision status:** retain Isolation Forest as the current integrated application detector; treat RBF One-Class SVM as the leading historical AP/F1 alternative for a fresh shadow evaluation.
+        - **Evidence qualification:** these runtime and quality rankings predate the latest comparison-preprocessing hardening and must be reproduced with the hardened scripts before final model selection.
         """
     )
 
@@ -323,7 +328,7 @@ with method_tab:
     st.markdown(
         '<div class="warning"><b>Limits:</b> the processed Parquet permits exact-feature-duplicate grouping, but does not retain timestamps, IP addresses or ports. '
         'This is not a temporal or five-tuple holdout. The study also reuses one 15k test sample across seeds, has low support for rare attack families, '
-        'and does not measure downstream incident/graph/agent outcomes.</div>',
+        'and does not measure downstream incident/graph/agent outcomes. A fresh run with the hardened comparison code is still required.</div>',
         unsafe_allow_html=True,
     )
 
@@ -359,8 +364,9 @@ with references_tab:
 
 st.markdown('<div class="rule"></div>', unsafe_allow_html=True)
 st.caption(
-    "Source: processed CICIDS2017 validation, 2,228,970 records / 69 numeric features. "
+    "Source: historical pre-hardening processed CICIDS2017 validation, 2,228,970 records / 69 numeric features. "
     "Three seeds (42, 43, 44), duplicate-feature-grouped split, shared 5,000-benign calibration sample, "
     "shared 15,000-row test sample, and benign-only training budgets of 5k / 25k / 50k. "
-    "Means ± sample standard deviations; one benchmark dataset and one experiment runner."
+    "Means ± sample standard deviations; one benchmark dataset and one experiment runner. "
+    "Not yet rerun with the current hardened comparison preprocessing."
 )
