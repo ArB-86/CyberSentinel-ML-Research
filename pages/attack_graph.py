@@ -192,6 +192,7 @@ with st.sidebar:
 
     st.markdown('<div class="smallcaps" style="margin-top:18px">Detection</div>', unsafe_allow_html=True)
     st.page_link("pages/attack_detection.py", label="Attack Detection")
+    st.page_link("pages/model_selection.py", label="Model Selection & Evidence")
 
     st.markdown('<div class="smallcaps" style="margin-top:18px">Investigation</div>', unsafe_allow_html=True)
     st.page_link("pages/incident_investigation.py", label="Event Investigation")
