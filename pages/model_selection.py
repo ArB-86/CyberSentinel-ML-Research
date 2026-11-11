@@ -264,9 +264,9 @@ with runtime_tab:
     svm_score = MODEL_DATA["RBF One-Class SVM"]["score"][-1]
     speed_cols = st.columns(2)
     speed_cols[0].metric("Isolation Forest fit time", f"{if_fit:.3f} s", help="Mean wall-clock time on the GitHub Actions runner.")
-    speed_cols[1].metric("RBF One-Class SVM fit time", f"{svm_fit:.3f} s", f"{svm_fit / if_fit:.1f}× IF time")
+    speed_cols[1].metric("RBF One-Class SVM fit time", f"{svm_fit:.3f} s", f"{svm_fit / if_fit:.1f}× IF time", delta_color="inverse")
     speed_cols[0].metric("Isolation Forest scoring time", f"{if_score:.3f} s", help="Scoring the same 15,000 held-out rows.")
-    speed_cols[1].metric("RBF One-Class SVM scoring time", f"{svm_score:.3f} s", f"{svm_score / if_score:.1f}× IF time")
+    speed_cols[1].metric("RBF One-Class SVM scoring time", f"{svm_score:.3f} s", f"{svm_score / if_score:.1f}× IF time", delta_color="inverse")
 
     st.markdown(
         '<div class="warning"><b>Runtime qualification:</b> timings are from one GitHub Actions runner and a 15,000-row test-scoring batch. '
