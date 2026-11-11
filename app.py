@@ -334,6 +334,10 @@ with st.sidebar:
         "pages/attack_detection.py",
         label="Attack Detection",
     )
+    st.page_link(
+        "pages/model_selection.py",
+        label="Model Selection & Evidence",
+    )
 
     st.markdown(
         '<div class="smallcaps" style="margin-top:18px">'
