@@ -338,6 +338,10 @@ with st.sidebar:
         "pages/attack_detection.py",
         label="Attack Detection",
     )
+    st.page_link(
+        "pages/model_selection.py",
+        label="Model Selection & Evidence",
+    )
 
     st.markdown(
         '<div class="smallcaps" '
@@ -649,8 +653,9 @@ st.markdown(
 st.header("Detection Performance")
 
 st.caption(
-    "Held-out evaluation results from the project "
-    "Isolation Forest experiment."
+    "Legacy single-model Isolation Forest benchmark. These values come from a different "
+    "evaluation protocol and must not be compared directly with the paired 5k/25k/50k "
+    "three-model study on the Model Selection & Evidence page."
 )
 
 
