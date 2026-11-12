@@ -96,3 +96,46 @@ Outputs:
 - `event_correlation_sensitivity_metadata.json` — input SHA-256, data time range, parameter grid and interpretation limits.
 
 This is a **structural sensitivity** experiment only. Without analyst-labelled incident/stage ground truth it does not measure event precision/recall, causal reconstruction or which setting is correct. Run on the full detector-flagged metadata-rich export; do not treat a prefix-limited smoke-test file as representative.
+
+## Temporal validation and Isolation Forest tuning
+
+Run this experiment on the original metadata-rich CICIDS2017 CSV archive (not
+the cleaned Parquet, which does not retain the required timestamps and host
+metadata):
+
+```powershell
+.\.venv\Scripts\python.exe experiments\temporal_threshold_optimization.py \
+  --data-dir data\cicids2017_metadata \
+  --outdir experiments\results\temporal-threshold-v1 \
+  --train-rows 25000 \
+  --validation-rows 120000 \
+  --test-rows 0 \
+  --target-fpr 0.01
+```
+
+The script parses CICIDS timestamps day-first (so 03/07/2017 means 3 July),
+uses all earlier capture days for benign-only fitting, the penultimate day for
+hyperparameter/threshold selection, and the final day as an untouched temporal
+test. Exact duplicate numeric-feature rows are retained in their earliest
+chronological partition only. All detectors use the same benign training rows.
+
+Isolation Forest searches the configured grid of tree count, max_samples and
+max_features. It selects the configuration with the highest validation attack
+recall at the primary FPR budget (ties: F1, AP, then fit time). LOF novelty and
+RBF One-Class SVM are fitted as comparators. Thresholds at 0.5%, 1%, 2% and 5%
+FPR are set from validation-benign scores only, then frozen for final test
+evaluation. No test label is used for tuning.
+
+Outputs:
+- `isolation_forest_validation_grid.csv` — IF hyperparameter search.
+- `validation_threshold_sweep.csv` — validation metrics at each FPR budget.
+- `temporal_test_metrics.csv` — final later-day comparison at identical frozen thresholds.
+- `per_attack_recall_at_target_fpr.csv` — attack-class recall and support at the primary FPR.
+- `isolation_forest_temporally_tuned.joblib` — selected IF model, imputer and validation thresholds.
+- `temporal_validation_summary.json` — split dates, selected configuration, test result and run metadata.
+
+The final test date is one chronological CICIDS2017 holdout, not independent
+evidence across networks or future years. Precision/AP depend on test prevalence;
+with `--test-rows 0`, the full final capture day is evaluated. The script never
+forces Isolation Forest to win: report the detector that actually leads at the
+chosen false-positive budget.
