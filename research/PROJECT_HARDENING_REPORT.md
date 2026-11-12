@@ -140,7 +140,9 @@ The manual response checklist no longer claims to execute SOAR, firewall blocks,
 - Every comparison model fits `SimpleImputer(strategy="median", keep_empty_features=True)` on its own training subset and applies that fitted imputer to calibration/test rows.
 - New Parquet-fixture tests cover constant, all-missing and numeric identifier columns in both loaders.
 
-**Limit:** the existing comparison CSVs and reported rankings are historical outputs generated before this preprocessing change. The processed Parquet is not committed to Git (see `DATASET_SOURCES.md`), so this session has not regenerated the full CICIDS2017 comparison metrics. Do not present the old numbers as results of the current hardened experiment until the exact verified Parquet is rerun.
+**Rerun completed (12 November 2026):** the exact processed Parquet was downloaded from the published release and verified (257,156,788 bytes; SHA-256 `9401495356b1b6f360d6aebf0ad7ddc18a39cbf02c02f7461338dea02a747146`). The hardened `compare_model_scales.py` completed successfully on 2,228,970 rows / 69 numeric features using the paired 5k/25k/50k, three-seed protocol, a shared 5k benign calibration sample and a shared 15k test sample. RBF One-Class SVM led AP and F1 at all training sizes; LOF led ROC-AUC at 25k/50k; Isolation Forest had substantially lower fit/scoring time. The complete measured summary, per-attack coverage, runtime, run metadata and limitations are in [HARDENED_SCALING_VALIDATION_2026-11-12.md](HARDENED_SCALING_VALIDATION_2026-11-12.md), with raw outputs in [workflow run 43156530860](https://github.com/ArB-86/CyberSentinel-ML-Research/actions/runs/43156530860).
+
+**Remaining limit:** exact numeric-feature grouping is not a temporal or five-tuple split because this cleaned Parquet lacks timestamps and connection identifiers. The fixed test sample is reused across seeds, rare classes have low support, and no production-hardware or downstream incident/graph/agent validation is established. Do not present these benchmark results as proof of production superiority.
 
 ### 2.10 Event/incident parameter sensitivity harness
 
