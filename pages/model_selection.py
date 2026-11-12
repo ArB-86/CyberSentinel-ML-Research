@@ -102,7 +102,7 @@ ATTACKS = [
     ("Web Brute Force", 10, [0.0, 0.0, 0.0]),
     ("SQL Injection", 1, [0.0, 0.0, 0.0]),
     ("XSS", 5, [0.0, 6.7, 0.0]),
-}
+]
 
 
 def base_layout(fig: go.Figure, *, height: int = 300) -> go.Figure:
