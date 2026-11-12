@@ -103,9 +103,9 @@ Run this experiment on the original metadata-rich CICIDS2017 CSV archive (not
 the cleaned Parquet, which does not retain the required timestamps and host
 metadata):
 
-\`\`\`powershell
+```powershell
 .\.venv\Scripts\python.exe experiments\temporal_threshold_optimization.py --data-dir data\cicids2017_metadata --outdir experiments\results\temporal-rolling-v1 --folds 3 --train-rows 25000 --validation-rows 120000 --test-rows 0 --target-fpr 0.01
-\`\`\`
+```
 
 The default three folds use expanding-window forward chaining:
 
@@ -118,7 +118,7 @@ The default three folds use expanding-window forward chaining:
 The script parses CICIDS timestamps day-first (so 03/07/2017 means 3 July).
 Exact duplicate numeric-feature rows are retained in their earliest temporal
 partition only. The same benign training rows are used by all four detectors
-within a fold. The \`--folds\` option may be reduced for a shorter run, but cannot
+within a fold. The `--folds` option may be reduced for a shorter run, but cannot
 exceed the number of possible forward-chaining windows.
 
 Within each fold:
@@ -128,14 +128,14 @@ Within each fold:
 - Test labels are never used for model or threshold selection. Actual test FPR is measured and may exceed the validation budget under temporal distribution shift.
 
 Outputs:
-- \`rolling_if_validation_grid.csv\` — all IF configurations and validation metrics per fold.
-- \`rolling_validation_threshold_sweep.csv\` — validation metrics at each FPR budget.
-- \`rolling_test_metrics.csv\` — per-fold later-day metrics at frozen thresholds.
-- \`rolling_per_attack_recall.csv\` — attack-family recall and support per fold.
-- \`rolling_macro_metrics.csv\` — fold-macro mean and standard deviation by detector/FPR.
-- \`rolling_pooled_confusion_metrics.csv\` — precision, recall, F1 and FPR from summed confusion counts; AP/ROC-AUC are intentionally not pooled across score scales.
-- \`fold_1/\`, \`fold_2/\`, \`fold_3/\` — fold-specific tuned Isolation Forest artifacts.
-- \`rolling_temporal_summary.json\` — fold dates, row counts, test prevalence, selected configurations, metrics and interpretation limits.
+- `rolling_if_validation_grid.csv` — all IF configurations and validation metrics per fold.
+- `rolling_validation_threshold_sweep.csv` — validation metrics at each FPR budget.
+- `rolling_test_metrics.csv` — per-fold later-day metrics at frozen thresholds.
+- `rolling_per_attack_recall.csv` — attack-family recall and support per fold.
+- `rolling_macro_metrics.csv` — fold-macro mean and standard deviation by detector/FPR.
+- `rolling_pooled_confusion_metrics.csv` — precision, recall, F1 and FPR from summed confusion counts; AP/ROC-AUC are intentionally not pooled across score scales.
+- `fold_1/`, `fold_2/`, `fold_3/` — fold-specific tuned Isolation Forest artifacts.
+- `rolling_temporal_summary.json` — fold dates, row counts, test prevalence, selected configurations, metrics and interpretation limits.
 
 The three test windows come from one CICIDS2017 capture, not three independent
 datasets. They provide a stronger temporal-shift check than a single holdout,
