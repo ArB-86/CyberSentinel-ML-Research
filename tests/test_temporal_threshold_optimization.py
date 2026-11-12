@@ -83,7 +83,7 @@ def test_temporal_csv_loader_keeps_numeric_features_and_correct_dates(tmp_path):
         ("03_Friday.csv", "07/07/2017"),
     ]
     for filename, date in dates:
-        pd.DataFrame({
+        frame = pd.DataFrame({
             "Timestamp": [f"{date} 08:00:00", f"{date} 08:01:00"],
             "Source IP": ["10.0.0.1", "10.0.0.2"],
             "Destination IP": ["10.0.0.3", "10.0.0.4"],
@@ -92,10 +92,16 @@ def test_temporal_csv_loader_keeps_numeric_features_and_correct_dates(tmp_path):
             "Destination Port": [80, 53],
             "Flow Duration": [100.0, 200.0],
             "Label": ["BENIGN", "DDoS"],
-        }).to_csv(data_dir / filename, index=False)
+        })
+        if filename == "02_Thursday.csv":
+            # Mirrors can contain delimiter-only records with no data at all.
+            frame.loc[len(frame)] = [np.nan] * len(frame.columns)
+            frame.loc[len(frame)] = [np.nan] * len(frame.columns)
+        frame.to_csv(data_dir / filename, index=False)
 
-    x, hashes, labels, y, days, features = load_temporal_csvs(data_dir)
+    x, hashes, labels, y, days, features, dropped_empty = load_temporal_csvs(data_dir)
 
+    assert dropped_empty == 2
     assert x.shape == (6, 4)
     assert len(hashes) == 6
     assert y.tolist() == [0, 1, 0, 1, 0, 1]
@@ -108,3 +114,33 @@ def test_temporal_csv_loader_keeps_numeric_features_and_correct_dates(tmp_path):
     assert "label" not in features
     assert "Flow Duration" in features
     assert "src_port" in features
+
+
+def test_temporal_csv_loader_does_not_hide_partially_populated_bad_rows(tmp_path):
+    from experiments.temporal_threshold_optimization import load_temporal_csvs
+
+    data_dir = tmp_path / "cicids"
+    data_dir.mkdir()
+    for filename, date in (
+        ("01_Monday.csv", "03/07/2017"),
+        ("02_Thursday.csv", "06/07/2017"),
+        ("03_Friday.csv", "07/07/2017"),
+    ):
+        frame = pd.DataFrame({
+            "Timestamp": [f"{date} 08:00:00", f"{date} 08:01:00"],
+            "Source IP": ["10.0.0.1", "10.0.0.2"],
+            "Destination IP": ["10.0.0.3", "10.0.0.4"],
+            "Protocol": [6, 17],
+            "Source Port": [1000, 2000],
+            "Destination Port": [80, 53],
+            "Flow Duration": [100.0, 200.0],
+            "Label": ["BENIGN", "DDoS"],
+        })
+        frame.to_csv(data_dir / filename, index=False)
+
+    bad = pd.read_csv(data_dir / "02_Thursday.csv")
+    bad.loc[0, "Timestamp"] = np.nan
+    bad.to_csv(data_dir / "02_Thursday.csv", index=False)
+
+    with pytest.raises(ValueError, match="timestamps failed"):
+        load_temporal_csvs(data_dir)
