@@ -226,24 +226,56 @@ def _rolling_host_features(
     metric_columns: list[str],
     output_names: dict[str, dict[str, str]],
 ) -> pd.DataFrame:
-    """Sum completed host-minute buckets over causal 1m and 5m windows."""
-    ordered = bucket_table.sort_values([host_column, "bucket"], kind="mergesort")
-    pieces = []
+    """Sum prior host-minute buckets over exact causal 1m and 5m windows.
+
+    Uses per-host prefix sums and searchsorted rather than pandas' grouped
+    time-based rolling implementation. This makes the left-closed window
+    semantics explicit and consistent across supported pandas versions.
+    """
+    ordered = bucket_table.sort_values(
+        [host_column, "bucket"], kind="mergesort"
+    ).reset_index(drop=True)
+    result = ordered[[host_column, "bucket"]].copy()
+    if ordered.empty:
+        for mapping in output_names.values():
+            for output_column in mapping.values():
+                result[output_column] = np.zeros(0, dtype=np.float32)
+        return result
+
+    timestamps = ordered["bucket"].astype("int64").to_numpy(dtype=np.int64)
+    values = ordered[metric_columns].to_numpy(dtype=np.float64, copy=True)
+    grouped_positions = ordered.groupby(
+        host_column, sort=False, dropna=False
+    ).indices.values()
+
     for window_label, window in (("1m", "1min"), ("5m", "5min")):
-        rolled = (
-            ordered.groupby(host_column, sort=False)
-            .rolling(window=window, on="bucket", closed="left", min_periods=1)[metric_columns]
-            .sum()
-            .reset_index()
+        window_ns = int(pd.Timedelta(window).value)
+        window_values = np.zeros(
+            (len(ordered), len(metric_columns)), dtype=np.float64
         )
-        key_frame = rolled[[host_column, "bucket"]].copy()
-        for metric, output_column in output_names[window_label].items():
-            key_frame[output_column] = rolled[metric].fillna(0.0).astype(np.float32)
-        pieces.append(key_frame)
-    combined = pieces[0].merge(
-        pieces[1], on=[host_column, "bucket"], how="inner", validate="one_to_one"
-    )
-    return combined
+        for positions in grouped_positions:
+            positions = np.asarray(positions, dtype=np.int64)
+            group_times = timestamps[positions]
+            group_values = values[positions]
+
+            # Prefix[k] contains the sum of rows strictly before local row k.
+            prefix = np.vstack([
+                np.zeros((1, len(metric_columns)), dtype=np.float64),
+                np.cumsum(group_values, axis=0, dtype=np.float64),
+            ])
+            left = np.searchsorted(
+                group_times, group_times - window_ns, side="left"
+            )
+            current = np.arange(len(positions), dtype=np.int64)
+            window_values[positions] = prefix[current] - prefix[left]
+
+        for metric_index, metric in enumerate(metric_columns):
+            output_column = output_names[window_label][metric]
+            result[output_column] = window_values[:, metric_index].astype(
+                np.float32, copy=False
+            )
+
+    return result
 
 
 def build_behavioral_history_features(
