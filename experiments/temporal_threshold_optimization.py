@@ -895,31 +895,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-s["RBF_OneClassSVM"]["fit_seconds"],
-            "IsolationForest_tuned": best_if_fit_seconds,
-            "IsolationForest_default": default_if_fit_seconds,
-        },
-        "test_scoring_times_seconds": scoring_seconds,
-        "total_elapsed_seconds": time.perf_counter() - started_total,
-        "interpretation_warning": (
-            "The final date is a single chronological holdout from CICIDS2017, not proof of "
-            "generalization to other networks or future years. A model wins only on the "
-            "reported metric and FPR budget; this script does not force an Isolation Forest win."
-        ),
-    }
-    (output / "temporal_validation_summary.json").write_text(
-        json.dumps(summary, indent=2, default=str), encoding="utf-8"
-    )
-
-    print("\nFINAL TEMPORAL TEST — same validation-calibrated FPR budget", flush=True)
-    print(primary[[
-        "model", "precision", "recall", "f1", "fpr",
-        "false_alerts_per_million_benign", "average_precision", "roc_auc",
-    ]].to_string(index=False), flush=True)
-    print(f"\nSelected IF config: {best_config}", flush=True)
-    print(f"Test winner at {args.target_fpr:.2%} validation FPR budget: {winner['model']}", flush=True)
-    print(f"Outputs: {output.resolve()}", flush=True)
-
-
-if __name__ == "__main__":
-    main()
