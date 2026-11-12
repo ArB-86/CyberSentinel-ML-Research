@@ -227,21 +227,21 @@ with quality_tab:
 
     st.markdown("#### Per-attack recall at 50k benign training rows")
     attack_rows = [
-        {"Attack family": "Bot", "Test support": 33, "Isolation Forest": "0.0%", "LOF": "0.0%", "RBF One-Class SVM": "0.0%"},
-        {"Attack family": "DDoS", "Test support": 2547, "Isolation Forest": "55.9%", "LOF": "58.5%", "RBF One-Class SVM": "63.6%"},
-        {"Attack family": "DoS GoldenEye", "Test support": 183, "Isolation Forest": "49.2%", "LOF": "31.7%", "RBF One-Class SVM": "78.7%"},
-        {"Attack family": "DoS Hulk", "Test support": 3492, "Isolation Forest": "85.5%", "LOF": "51.1%", "RBF One-Class SVM": "89.2%"},
-        {"Attack family": "DoS Slowhttptest", "Test support": 114, "Isolation Forest": "76.3%", "LOF": "26.3%", "RBF One-Class SVM": "81.6%"},
-        {"Attack family": "DoS slowloris", "Test support": 129, "Isolation Forest": "48.1%", "LOF": "20.2%", "RBF One-Class SVM": "55.8%"},
-        {"Attack family": "FTP-Patator", "Test support": 126, "Isolation Forest": "0.0%", "LOF": "23.8%", "RBF One-Class SVM": "0.0%"},
-        {"Attack family": "PortScan", "Test support": 51, "Isolation Forest": "11.8%", "LOF": "7.8%", "RBF One-Class SVM": "23.5%"},
-        {"Attack family": "SSH-Patator", "Test support": 66, "Isolation Forest": "0.0%", "LOF": "86.4%", "RBF One-Class SVM": "0.0%"},
-        {"Attack family": "Web Attack - Brute Force", "Test support": 30, "Isolation Forest": "0.0%", "LOF": "0.0%", "RBF One-Class SVM": "0.0%"},
-        {"Attack family": "Web Attack - SQL Injection", "Test support": 3, "Isolation Forest": "0.0%", "LOF": "0.0%", "RBF One-Class SVM": "0.0%"},
-        {"Attack family": "Web Attack - XSS", "Test support": 15, "Isolation Forest": "0.0%", "LOF": "6.7%", "RBF One-Class SVM": "0.0%"},
+        {"Attack family": "Bot", "Unique test support": 11, "Isolation Forest": "0.0%", "LOF": "0.0%", "RBF One-Class SVM": "0.0%"},
+        {"Attack family": "DDoS", "Unique test support": 849, "Isolation Forest": "55.9%", "LOF": "58.5%", "RBF One-Class SVM": "63.6%"},
+        {"Attack family": "DoS GoldenEye", "Unique test support": 61, "Isolation Forest": "49.2%", "LOF": "31.7%", "RBF One-Class SVM": "78.7%"},
+        {"Attack family": "DoS Hulk", "Unique test support": 1164, "Isolation Forest": "85.5%", "LOF": "51.1%", "RBF One-Class SVM": "89.2%"},
+        {"Attack family": "DoS Slowhttptest", "Unique test support": 38, "Isolation Forest": "76.3%", "LOF": "26.3%", "RBF One-Class SVM": "81.6%"},
+        {"Attack family": "DoS slowloris", "Unique test support": 43, "Isolation Forest": "48.1%", "LOF": "20.2%", "RBF One-Class SVM": "55.8%"},
+        {"Attack family": "FTP-Patator", "Unique test support": 42, "Isolation Forest": "0.0%", "LOF": "23.8%", "RBF One-Class SVM": "0.0%"},
+        {"Attack family": "PortScan", "Unique test support": 17, "Isolation Forest": "11.8%", "LOF": "7.8%", "RBF One-Class SVM": "23.5%"},
+        {"Attack family": "SSH-Patator", "Unique test support": 22, "Isolation Forest": "0.0%", "LOF": "86.4%", "RBF One-Class SVM": "0.0%"},
+        {"Attack family": "Web Attack - Brute Force", "Unique test support": 10, "Isolation Forest": "0.0%", "LOF": "0.0%", "RBF One-Class SVM": "0.0%"},
+        {"Attack family": "Web Attack - SQL Injection", "Unique test support": 1, "Isolation Forest": "0.0%", "LOF": "0.0%", "RBF One-Class SVM": "0.0%"},
+        {"Attack family": "Web Attack - XSS", "Unique test support": 5, "Isolation Forest": "0.0%", "LOF": "6.7%", "RBF One-Class SVM": "0.0%"},
     ]
     st.dataframe(pd.DataFrame(attack_rows), use_container_width=True, hide_index=True)
-    st.caption("Recall is calculated on the same held-out 15k rows and pooled across the three training seeds. Small-support rows are descriptive only; do not infer stable class-level generalisation.")
+    st.caption("Recall is pooled over three seeds on the same fixed 15k test rows. Unique test support is shown once (not tripled across seeds). Small-support rows are descriptive only; do not infer stable class-level generalisation.")
 
 
 with runtime_tab:
