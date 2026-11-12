@@ -60,11 +60,11 @@ st.markdown(
       <div class="smallcaps">APPLICATION MODEL</div>
       <div style="font-size:1.35rem;font-weight:800;margin-top:7px">Isolation Forest remains the active detector</div>
       <div style="color:#8190a3;font-size:.84rem;line-height:1.55;margin-top:7px">
-        The historical paired study recorded higher Average Precision and F1 for RBF One-Class SVM,
-        higher ROC-AUC for LOF at larger training sizes, and much lower observed fit/scoring time for
-        Isolation Forest. <b>Important:</b> that comparison predates the current preprocessing-hardening
-        changes. These figures are historical evidence, not the final ranking for the hardened pipeline.
-        Isolation Forest remains the integrated application detector pending a fresh controlled rerun.
+        The completed hardened paired study records higher Average Precision and F1 for RBF One-Class SVM,
+        higher ROC-AUC for LOF at 25k and 50k training rows, and substantially lower fit/scoring time for
+        Isolation Forest. Isolation Forest remains the integrated application detector for its measured
+        runtime and existing downstream integration; this is an operational choice, not a claim that it
+        leads detection quality.
       </div>
     </div>
     """,
@@ -74,66 +74,54 @@ st.markdown(
 st.markdown("")
 st.markdown(
     """
-    <div class="warning">
-      <b>Validation status: HISTORICAL / PRE-HARDENING.</b> The paired 5k/25k/50k metrics and runtime
-      values below were generated before the latest feature-schema and train-only imputation fixes.
-      The hardening report explicitly says the comparison must be rerun before its ranking is treated as
-      current. The verified Parquet dataset is not committed to this repository, so this UI change does
-      not claim that the hardened rerun has been completed. All historical values are shown unchanged.
-      The older single-model Isolation Forest metrics on the Attack Detection page are from another
-      evaluation protocol and are not directly comparable either.
+    <div class="callout">
+      <b>Validation status: HARDENED RERUN COMPLETE · 12 NOVEMBER 2026.</b>
+      The current comparison loaders were rerun on the checksum-verified CICIDS2017 Parquet
+      (2,228,970 rows; 69 numeric features; SHA-256
+      <code>9401495356b1b6f360d6aebf0ad7ddc18a39cbf02c02f7461338dea02a747146</code>).
+      Results below use the hardened feature schema, training-subset-only median imputation,
+      three seeds (42, 43, 44), 5k/25k/50k nested benign training samples, a shared 5k benign
+      calibration sample, and a shared 15k held-out test sample. These are CICIDS2017 benchmark
+      results, not a production performance guarantee. The older single-model Isolation Forest
+      metrics on the Attack Detection page use another evaluation protocol and are not directly comparable.
+      <a href="https://github.com/ArB-86/CyberSentinel-ML-Research/actions/runs/43156530860" target="_blank">Open completed workflow and outputs</a>.
     </div>
     """,
     unsafe_allow_html=True,
 )
 
-# Paired validation data: mean and sample standard deviation across seeds 42, 43 and 44.
+# Hardened paired validation: mean and sample standard deviation across seeds 42, 43 and 44.
 TRAIN_SIZES = [5000, 25000, 50000]
 MODEL_DATA = {
     "Isolation Forest": {
-        "roc": [0.8874, 0.8866, 0.8848],
-        "roc_sd": [0.0023, 0.0027, 0.0039],
-        "ap": [0.6793, 0.6725, 0.6736],
-        "ap_sd": [0.0114, 0.0070, 0.0185],
-        "precision": [0.7046, 0.6978, 0.7048],
-        "precision_sd": [0.0151, 0.0088, 0.0103],
-        "recall": [0.6786, 0.6642, 0.6855],
-        "recall_sd": [0.0391, 0.0395, 0.0429],
-        "f1": [0.6912, 0.6803, 0.6948],
-        "f1_sd": [0.0275, 0.0246, 0.0269],
-        "fpr": [5.05, 5.10, 5.09],
-        "fit": [0.268, 0.338, 0.408],
-        "score": [0.103, 0.102, 0.103],
+        "roc": [0.8874, 0.8866, 0.8848], "roc_sd": [0.0023, 0.0027, 0.0039],
+        "ap": [0.6793, 0.6725, 0.6736], "ap_sd": [0.0114, 0.0070, 0.0185],
+        "precision": [0.7046, 0.6978, 0.7048], "precision_sd": [0.0151, 0.0088, 0.0103],
+        "recall": [0.6786, 0.6642, 0.6855], "recall_sd": [0.0391, 0.0395, 0.0429],
+        "f1": [0.6912, 0.6803, 0.6948], "f1_sd": [0.0275, 0.0246, 0.0269],
+        "fpr": [5.05, 5.10, 5.09], "fpr_sd": [0.08, 0.11, 0.07],
+        "fit": [0.274, 0.338, 0.411], "fit_sd": [0.008, 0.005, 0.002],
+        "score": [0.104, 0.103, 0.104], "score_sd": [0.003, 0.001, 0.001],
     },
     "LOF": {
-        "roc": [0.8899, 0.9084, 0.9087],
-        "roc_sd": [0.0136, 0.0033, 0.0052],
-        "ap": [0.5624, 0.5576, 0.5687],
-        "ap_sd": [0.0290, 0.0161, 0.0120],
-        "precision": [0.6170, 0.6380, 0.6553],
-        "precision_sd": [0.0657, 0.0091, 0.0297],
-        "recall": [0.4314, 0.4588, 0.5129],
-        "recall_sd": [0.1245, 0.0304, 0.0863],
-        "f1": [0.5053, 0.5335, 0.5740],
-        "f1_sd": [0.1072, 0.0237, 0.0646],
-        "fpr": [4.60, 4.62, 4.74],
-        "fit": [0.195, 3.865, 14.820],
-        "score": [0.559, 2.310, 4.439],
+        "roc": [0.8899, 0.9084, 0.9087], "roc_sd": [0.0136, 0.0034, 0.0052],
+        "ap": [0.5624, 0.5576, 0.5687], "ap_sd": [0.0290, 0.0161, 0.0120],
+        "precision": [0.6170, 0.6380, 0.6553], "precision_sd": [0.0657, 0.0091, 0.0297],
+        "recall": [0.4314, 0.4588, 0.5129], "recall_sd": [0.1245, 0.0304, 0.0863],
+        "f1": [0.5053, 0.5335, 0.5740], "f1_sd": [0.1072, 0.0237, 0.0646],
+        "fpr": [4.60, 4.62, 4.74], "fpr_sd": [0.09, 0.16, 0.18],
+        "fit": [0.106, 1.966, 7.576], "fit_sd": [0.011, 0.003, 0.031],
+        "score": [0.290, 1.253, 2.313], "score_sd": [0.003, 0.101, 0.019],
     },
     "RBF One-Class SVM": {
-        "roc": [0.8514, 0.8439, 0.8430],
-        "roc_sd": [0.0051, 0.0084, 0.0104],
-        "ap": [0.7486, 0.7620, 0.7665],
-        "ap_sd": [0.0023, 0.0013, 0.0029],
-        "precision": [0.7293, 0.7222, 0.7225],
-        "precision_sd": [0.0004, 0.0061, 0.0036],
-        "recall": [0.7436, 0.7430, 0.7446],
-        "recall_sd": [0.0009, 0.0005, 0.0023],
-        "f1": [0.7363, 0.7324, 0.7334],
-        "f1_sd": [0.0005, 0.0032, 0.0014],
-        "fpr": [4.90, 5.08, 5.08],
-        "fit": [0.095, 2.375, 17.391],
-        "score": [0.235, 1.076, 2.082],
+        "roc": [0.8514, 0.8439, 0.8430], "roc_sd": [0.0051, 0.0084, 0.0104],
+        "ap": [0.7486, 0.7620, 0.7665], "ap_sd": [0.0023, 0.0013, 0.0029],
+        "precision": [0.7293, 0.7222, 0.7225], "precision_sd": [0.0004, 0.0061, 0.0036],
+        "recall": [0.7436, 0.7430, 0.7446], "recall_sd": [0.0009, 0.0005, 0.0023],
+        "f1": [0.7363, 0.7324, 0.7334], "f1_sd": [0.0005, 0.0032, 0.0014],
+        "fpr": [4.90, 5.08, 5.08], "fpr_sd": [0.01, 0.15, 0.10],
+        "fit": [0.096, 2.383, 19.484], "fit_sd": [0.003, 0.012, 2.168],
+        "score": [0.230, 1.024, 2.106], "score_sd": [0.007, 0.003, 0.065],
     },
 }
 
@@ -151,7 +139,7 @@ for model_name in MODEL_ORDER:
             "Precision (mean ± SD)": f"{d['precision'][i]:.4f} ± {d['precision_sd'][i]:.4f}",
             "Recall (mean ± SD)": f"{d['recall'][i]:.4f} ± {d['recall_sd'][i]:.4f}",
             "F1 (mean ± SD)": f"{d['f1'][i]:.4f} ± {d['f1_sd'][i]:.4f}",
-            "Test FPR": f"{d['fpr'][i]:.2f}%",
+            "Test FPR (mean ± SD)": f"{d['fpr'][i]:.2f}% ± {d['fpr_sd'][i]:.2f}%",
         })
 
 quality_tab, runtime_tab, method_tab, references_tab = st.tabs(
@@ -159,13 +147,13 @@ quality_tab, runtime_tab, method_tab, references_tab = st.tabs(
 )
 
 with quality_tab:
-    st.markdown("### Historical result at 50,000 benign training rows")
+    st.markdown("### Hardened result at 50,000 benign training rows")
     kpi_cols = st.columns(4)
     kpis = [
         ("Highest AP", "0.7665", "RBF One-Class SVM"),
         ("Highest F1", "0.7334", "RBF One-Class SVM"),
         ("Highest ROC-AUC", "0.9087", "LOF"),
-        ("Lowest test scoring time", "0.103 s", "Isolation Forest · 15k test rows"),
+        ("Lowest test scoring time", "0.104 s", "Isolation Forest · 15k test rows"),
     ]
     for col, (label, value, note) in zip(kpi_cols, kpis):
         with col:
@@ -176,7 +164,7 @@ with quality_tab:
             )
 
     st.markdown("#### Paired comparison results")
-    st.caption("Pre-hardening historical run: mean ± sample standard deviation across seeds 42, 43 and 44. Average Precision (AP) is the PR-AUC summary reported by the experiment.")
+    st.caption("Hardened run completed 12 Nov 2026: mean ± sample SD across seeds 42, 43 and 44. Average Precision (AP) is the PR-AUC summary reported by the experiment.")
     st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
     chart_left, chart_right = st.columns(2)
@@ -192,7 +180,7 @@ with quality_tab:
                 error_y={"type": "data", "array": d["ap_sd"], "visible": True},
             ))
         fig_ap.update_layout(
-            title="Historical Average Precision vs benign training size",
+            title="Average Precision vs benign training size",
             xaxis_title="Benign training rows",
             yaxis_title="Average Precision",
             yaxis_range=[0, 1],
@@ -217,7 +205,7 @@ with quality_tab:
                 error_y={"type": "data", "array": d["f1_sd"], "visible": True},
             ))
         fig_f1.update_layout(
-            title="Historical F1 vs benign training size",
+            title="F1 vs benign training size",
             xaxis_title="Benign training rows",
             yaxis_title="F1",
             yaxis_range=[0, 1],
@@ -237,8 +225,27 @@ with quality_tab:
         unsafe_allow_html=True,
     )
 
+    st.markdown("#### Per-attack recall at 50k benign training rows")
+    attack_rows = [
+        {"Attack family": "Bot", "Test support": 33, "Isolation Forest": "0.0%", "LOF": "0.0%", "RBF One-Class SVM": "0.0%"},
+        {"Attack family": "DDoS", "Test support": 2547, "Isolation Forest": "55.9%", "LOF": "58.5%", "RBF One-Class SVM": "63.6%"},
+        {"Attack family": "DoS GoldenEye", "Test support": 183, "Isolation Forest": "49.2%", "LOF": "31.7%", "RBF One-Class SVM": "78.7%"},
+        {"Attack family": "DoS Hulk", "Test support": 3492, "Isolation Forest": "85.5%", "LOF": "51.1%", "RBF One-Class SVM": "89.2%"},
+        {"Attack family": "DoS Slowhttptest", "Test support": 114, "Isolation Forest": "76.3%", "LOF": "26.3%", "RBF One-Class SVM": "81.6%"},
+        {"Attack family": "DoS slowloris", "Test support": 129, "Isolation Forest": "48.1%", "LOF": "20.2%", "RBF One-Class SVM": "55.8%"},
+        {"Attack family": "FTP-Patator", "Test support": 126, "Isolation Forest": "0.0%", "LOF": "23.8%", "RBF One-Class SVM": "0.0%"},
+        {"Attack family": "PortScan", "Test support": 51, "Isolation Forest": "11.8%", "LOF": "7.8%", "RBF One-Class SVM": "23.5%"},
+        {"Attack family": "SSH-Patator", "Test support": 66, "Isolation Forest": "0.0%", "LOF": "86.4%", "RBF One-Class SVM": "0.0%"},
+        {"Attack family": "Web Attack - Brute Force", "Test support": 30, "Isolation Forest": "0.0%", "LOF": "0.0%", "RBF One-Class SVM": "0.0%"},
+        {"Attack family": "Web Attack - SQL Injection", "Test support": 3, "Isolation Forest": "0.0%", "LOF": "0.0%", "RBF One-Class SVM": "0.0%"},
+        {"Attack family": "Web Attack - XSS", "Test support": 15, "Isolation Forest": "0.0%", "LOF": "6.7%", "RBF One-Class SVM": "0.0%"},
+    ]
+    st.dataframe(pd.DataFrame(attack_rows), use_container_width=True, hide_index=True)
+    st.caption("Recall is calculated on the same held-out 15k rows and pooled across the three training seeds. Small-support rows are descriptive only; do not infer stable class-level generalisation.")
+
+
 with runtime_tab:
-    st.markdown("### Historical runtime on the experiment runner (pre-hardening)")
+    st.markdown("### Measured runtime on the experiment runner · hardened rerun")
     runtime_rows = []
     for model_name in MODEL_ORDER:
         d = MODEL_DATA[model_name]
@@ -247,7 +254,9 @@ with runtime_tab:
                 "Model": model_name,
                 "Benign train rows": f"{n:,}",
                 "Fit time (s)": d["fit"][i],
+                "Fit time SD (s)": d["fit_sd"][i],
                 "Test scoring time (s)": d["score"][i],
+                "Scoring time SD (s)": d["score_sd"][i],
                 "Test scoring rows": 15000,
             })
     runtime_df = pd.DataFrame(runtime_rows)
@@ -257,7 +266,9 @@ with runtime_tab:
         hide_index=True,
         column_config={
             "Fit time (s)": st.column_config.NumberColumn(format="%.3f"),
+            "Fit time SD (s)": st.column_config.NumberColumn(format="%.3f"),
             "Test scoring time (s)": st.column_config.NumberColumn(format="%.3f"),
+            "Scoring time SD (s)": st.column_config.NumberColumn(format="%.3f"),
         },
     )
 
@@ -305,11 +316,11 @@ with method_tab:
     st.markdown("### Why retain Isolation Forest in the application?")
     st.markdown(
         """
-        - **Historical measured cost:** at 50k benign training rows, Isolation Forest fit in 0.408 s and scored the shared 15k test batch in 0.103 s on the experiment runner. RBF One-Class SVM took 17.391 s to fit and 2.082 s to score the same batch.
-        - **Historical quality trade-off:** SVM delivered higher AP/F1, while Isolation Forest's measured fit/scoring times grew much less across 5k–50k in that run.
-        - **Existing integration:** the current detection, event, graph and risk pipeline already consumes an Isolation Forest artifact. A switch is a model change that should be revalidated end-to-end, not made solely from flow-level F1.
-        - **Decision status:** retain Isolation Forest as the current integrated application detector; treat RBF One-Class SVM as the leading historical AP/F1 alternative for a fresh shadow evaluation.
-        - **Evidence qualification:** these runtime and quality rankings predate the latest comparison-preprocessing hardening and must be reproduced with the hardened scripts before final model selection.
+        - **Measured 50k cost:** Isolation Forest fit in 0.411 s and scored the shared 15k test batch in 0.104 s. RBF One-Class SVM took 19.484 s to fit and 2.106 s to score; LOF took 7.576 s to fit and 2.313 s to score. These are means on one GitHub Actions runner, not deployment-hardware guarantees.
+        - **Measured quality:** RBF One-Class SVM led Average Precision (0.7665) and F1 (0.7334); Isolation Forest recorded AP 0.6736 and F1 0.6948. LOF led ROC-AUC (0.9087) but had lower AP/F1 (0.5687 / 0.5740).
+        - **Per-attack caveat:** at 50k, SVM detected 0/126 FTP-Patator and 0/66 SSH-Patator; LOF detected 30/126 FTP-Patator and 57/66 SSH-Patator. All three detected 0/33 Bot and 0/30 Web Attack - Brute Force. Aggregate F1 does not imply coverage of every attack family.
+        - **Existing integration:** the detection, event, graph and risk pipeline already consumes an Isolation Forest artifact. Replacing it requires end-to-end validation on metadata-rich traffic and target hardware.
+        - **Decision status:** retain Isolation Forest as the current integrated detector for its large measured throughput advantage and lower operational cost. Treat RBF One-Class SVM as the leading aggregate AP/F1 shadow candidate and LOF as a complementary ROC-AUC / SSH-Patator candidate—not as proven production replacements.
         """
     )
 
@@ -327,8 +338,9 @@ with method_tab:
 
     st.markdown(
         '<div class="warning"><b>Limits:</b> the processed Parquet permits exact-feature-duplicate grouping, but does not retain timestamps, IP addresses or ports. '
-        'This is not a temporal or five-tuple holdout. The study also reuses one 15k test sample across seeds, has low support for rare attack families, '
-        'and does not measure downstream incident/graph/agent outcomes. A fresh run with the hardened comparison code is still required.</div>',
+        'This is not a temporal or five-tuple holdout. The same 15k test sample is reused across seeds, so SD measures training-sample/model randomness—not independent test-set uncertainty. '
+        'Rare attack families have small support (SQL Injection has only 3 test rows); Heartbleed is absent from this sampled test set. '
+        'The experiment covers flow-level detection only, not downstream incident/graph/agent outcomes or external-network generalisation.</div>',
         unsafe_allow_html=True,
     )
 
@@ -364,9 +376,9 @@ with references_tab:
 
 st.markdown('<div class="rule"></div>', unsafe_allow_html=True)
 st.caption(
-    "Source: historical pre-hardening processed CICIDS2017 validation, 2,228,970 records / 69 numeric features. "
-    "Three seeds (42, 43, 44), duplicate-feature-grouped split, shared 5,000-benign calibration sample, "
-    "shared 15,000-row test sample, and benign-only training budgets of 5k / 25k / 50k. "
-    "Means ± sample standard deviations; one benchmark dataset and one experiment runner. "
-    "Not yet rerun with the current hardened comparison preprocessing."
+    "Source: hardened CICIDS2017 scaling validation completed 12 Nov 2026, 2,228,970 records / 69 numeric features. "
+    "Dataset checksum verified before the run. Three seeds (42, 43, 44), duplicate-feature-grouped split, "
+    "shared 5,000-benign calibration sample, shared 15,000-row test sample, and benign-only training budgets "
+    "of 5k / 25k / 50k. Means ± sample standard deviations; one benchmark dataset and one runner. "
+    "Run details and raw outputs: https://github.com/ArB-86/CyberSentinel-ML-Research/actions/runs/43156530860."
 )
