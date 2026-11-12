@@ -278,10 +278,10 @@ def load_temporal_csvs(data_dir: Path, *, return_metadata: bool = False):
         if return_metadata:
             flow_metadata = pd.DataFrame({
                 "timestamp": timestamps.to_numpy(),
-                "src_ip": work["src_ip"].astype("string").str.strip().fillna("__MISSING__"),
-                "dst_ip": work["dst_ip"].astype("string").str.strip().fillna("__MISSING__"),
-                "dst_port": pd.to_numeric(work["dst_port"], errors="coerce"),
-                "protocol": work["protocol"].astype("string").str.strip().fillna("__MISSING__"),
+                "src_ip": work["src_ip"].astype("string").str.strip().fillna("__MISSING__").to_numpy(),
+                "dst_ip": work["dst_ip"].astype("string").str.strip().fillna("__MISSING__").to_numpy(),
+                "dst_port": pd.to_numeric(work["dst_port"], errors="coerce").to_numpy(),
+                "protocol": work["protocol"].astype("string").str.strip().fillna("__MISSING__").to_numpy(),
             })
             metadata_parts.append(flow_metadata)
         rows_read += len(work)
