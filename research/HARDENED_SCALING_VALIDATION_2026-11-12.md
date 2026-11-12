@@ -114,6 +114,26 @@ Before replacing the integrated detector:
 - investigate the weak/zero recall for Bot, FTP-Patator and web attack families;
 - validate effects on event grouping, graph construction, incident triage and analyst investigation outcomes.
 
+### Why benchmark precision does not equal deployment precision
+
+The source dataset contains 336,299 attack rows out of 2,228,970 total rows (15.09%). The shared 15,000-row test sample has essentially the same class prevalence. Average Precision and thresholded precision are prevalence-sensitive, so the 0.7665 AP and 0.7225 precision measured for SVM are conditional on this CICIDS2017 distribution.
+
+At the selected operating point, the observed test FPR is about 5.08% for SVM and 5.09% for Isolation Forest. To show the operational consequence, the table below applies the measured 50k mean TPR/FPR to hypothetical attack prevalences using Bayes' rule:
+
+\[
+\mathrm{PPV}=\frac{\mathrm{TPR}\cdot p}{\mathrm{TPR}\cdot p+\mathrm{FPR}\cdot(1-p)}
+\]
+
+| Assumed attack prevalence | IF projected precision | SVM projected precision | IF false alerts / 1M flows | SVM false alerts / 1M flows |
+|---|---:|---:|---:|---:|
+| 15.09% (benchmark) | 70.5% | 72.3% | 43,243 | 43,154 |
+| 1.0% (hypothetical) | 12.0% | 12.9% | 50,419 | 50,315 |
+| 0.1% (hypothetical) | 1.33% | 1.45% | 50,877 | 50,772 |
+
+**These are sensitivity calculations, not measured deployment metrics.** They assume the class-conditional TPR/FPR remain unchanged as prevalence changes; domain shift may violate that assumption. The figures do not recompute Average Precision. They show why the benchmark's high precision/AP cannot be presented as an expected operational alert precision without a realistic base-rate evaluation.
+
+A 5% FPR implies roughly 50,000 false alerts per million predominantly benign flows. Neither detector is ready for production thresholding at this operating point. Re-evaluate with much lower FPR targets and a substantially larger benign calibration sample; with only 5,000 calibration rows, a 0.1% tail contains about five observations and is too coarse for a robust low-FPR claim.
+
 No real-world production superiority has been established by this CICIDS2017 experiment.
 
 ## 7. Limitations
