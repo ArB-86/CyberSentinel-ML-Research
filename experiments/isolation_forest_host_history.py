@@ -128,7 +128,7 @@ def load_behavioral_dataset(data_dir: Path):
             )
 
         labels = work["label"].astype("string").str.strip()
-        labels = labels.str.replace("\\x96", "-", regex=False).str.replace("\\ufffd", "-", regex=False)
+        labels = labels.str.replace("\x96", "-", regex=False).str.replace("\ufffd", "-", regex=False)
         if (
             labels.isna().any()
             or labels.str.casefold().isin({"", "nan", "none", "null"}).any()
