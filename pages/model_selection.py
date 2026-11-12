@@ -320,7 +320,96 @@ with method_tab:
         - **Measured quality:** RBF One-Class SVM led Average Precision (0.7665) and F1 (0.7334); Isolation Forest recorded AP 0.6736 and F1 0.6948. LOF led ROC-AUC (0.9087) but had lower AP/F1 (0.5687 / 0.5740).
         - **Per-attack caveat:** at 50k, SVM detected 0/126 FTP-Patator and 0/66 SSH-Patator; LOF detected 30/126 FTP-Patator and 57/66 SSH-Patator. All three detected 0/33 Bot and 0/30 Web Attack - Brute Force. Aggregate F1 does not imply coverage of every attack family.
         - **Existing integration:** the detection, event, graph and risk pipeline already consumes an Isolation Forest artifact. Replacing it requires end-to-end validation on metadata-rich traffic and target hardware.
-        - **Decision status:** retain Isolation Forest as the current integrated detector for its large measured throughput advantage and lower operational cost. Treat RBF One-Class SVM as the leading aggregate AP/F1 shadow candidate and LOF as a complementary ROC-AUC / SSH-Patator candidate—not as proven production replacements.
+        - **Decision status:** retain Isolation Forest as the current integrated detector for its measured throughput advantage, existing integration and lower operational cost—not because it wins AP/F1. Treat RBF One-Class SVM as the leading aggregate AP/F1 shadow candidate and LOF as a complementary ROC-AUC / SSH-Patator candidate—not as proven production replacements.
+        """
+    )
+
+
+    st.markdown("### Deployment decision: separate quality from operational fit")
+    decision_rows = [
+        {
+            "Decision dimension": "Average Precision / F1 on this CICIDS2017 test",
+            "Measured leader": "RBF One-Class SVM",
+            "Evidence at 50k": "AP 0.7665 · F1 0.7334",
+            "Interpretation": "Best aggregate flow-quality candidate in this experiment; not an automatic deployment winner.",
+        },
+        {
+            "Decision dimension": "ROC-AUC at 25k / 50k",
+            "Measured leader": "LOF",
+            "Evidence at 50k": "ROC-AUC 0.9087",
+            "Interpretation": "Better overall ranking by ROC-AUC, but lower AP/F1 at the selected operating point.",
+        },
+        {
+            "Decision dimension": "Fit and test-scoring cost at 50k",
+            "Measured leader": "Isolation Forest",
+            "Evidence at 50k": "0.411 s fit · 0.104 s / 15k rows",
+            "Interpretation": "About 47.4× faster fit and 20.3× faster scoring than exact RBF One-Class SVM on this runner.",
+        },
+        {
+            "Decision dimension": "Existing application integration",
+            "Measured leader": "Isolation Forest",
+            "Evidence at 50k": "Current detector artifact feeds detection → events → graph → risk",
+            "Interpretation": "Changing the detector also requires end-to-end revalidation of downstream outputs.",
+        },
+        {
+            "Decision dimension": "Production / external-network validation",
+            "Measured leader": "None",
+            "Evidence at 50k": "No temporal holdout, target-hardware test or independent network dataset",
+            "Interpretation": "No algorithm is production-validated by this experiment.",
+        },
+    ]
+    st.dataframe(pd.DataFrame(decision_rows), use_container_width=True, hide_index=True)
+
+    st.markdown("### Why the SVM leaderboard is not the deployment decision")
+    st.markdown(
+        """
+        The SVM's AP/F1 advantage is real **for this benchmark protocol**; it must remain visible.
+        The limitation is interpreting that result as a deployment guarantee:
+
+        - CICIDS2017 has about **15.09% attack flows**, and the 15k test sample preserves approximately that prevalence. Average Precision and precision depend on class prevalence; they cannot be copied unchanged into a network where malicious flows are much rarer.
+        - Every detector was thresholded for a **5% benign calibration FPR**. That operating point can still create a large alert burden at network scale.
+        - A single aggregate AP/F1 number does not describe attack-family blind spots. At 50k, SVM detected 0/42 unique FTP-Patator and 0/22 SSH-Patator test flows; LOF detected some of both. IF also missed both groups in this test.
+        - This experiment reuses one test sample across seeds and has no temporal/five-tuple separation. It is a controlled CICIDS2017 sensitivity study, not an external-network trial.
+        """
+    )
+
+    prevalence_rows = [
+        {
+            "Assumed attack prevalence": "15.09% · benchmark",
+            "IF projected precision": "70.5%",
+            "SVM projected precision": "72.3%",
+            "IF false alerts / 1M flows": "43,243",
+            "SVM false alerts / 1M flows": "43,154",
+        },
+        {
+            "Assumed attack prevalence": "1.0% · hypothetical",
+            "IF projected precision": "12.0%",
+            "SVM projected precision": "12.9%",
+            "IF false alerts / 1M flows": "50,419",
+            "SVM false alerts / 1M flows": "50,315",
+        },
+        {
+            "Assumed attack prevalence": "0.1% · hypothetical",
+            "IF projected precision": "1.33%",
+            "SVM projected precision": "1.45%",
+            "IF false alerts / 1M flows": "50,877",
+            "SVM false alerts / 1M flows": "50,772",
+        },
+    ]
+    st.markdown("#### Illustrative alert-quality sensitivity to attack prevalence")
+    st.dataframe(pd.DataFrame(prevalence_rows), use_container_width=True, hide_index=True)
+    st.caption(
+        "Illustration only—not observed deployment results. Projected precision uses the measured 50k mean TPR/FPR "
+        "for each model and Bayes' rule, assuming those class-conditional rates remain unchanged as prevalence shifts. "
+        "False alerts per million are FPR × benign flows. A real deployment can have different TPR/FPR due to domain shift."
+    )
+    st.markdown(
+        """
+        **Selection:** retain Isolation Forest as the current integrated detector because it is much cheaper to fit and
+        score and is already wired into the downstream application. Run SVM as a shadow candidate for aggregate
+        flow-quality improvement, and retain LOF as a complementary comparison. Do not promote any candidate until
+        it is tested at much lower FPR targets with a substantially larger benign calibration set, realistic event
+        prevalence, temporal/connection-aware holdouts, target-hardware throughput and downstream incident outcomes.
         """
     )
 
