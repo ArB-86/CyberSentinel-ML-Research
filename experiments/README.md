@@ -104,13 +104,7 @@ the cleaned Parquet, which does not retain the required timestamps and host
 metadata):
 
 ```powershell
-.\.venv\Scripts\python.exe experiments\temporal_threshold_optimization.py \
-  --data-dir data\cicids2017_metadata \
-  --outdir experiments\results\temporal-threshold-v1 \
-  --train-rows 25000 \
-  --validation-rows 120000 \
-  --test-rows 0 \
-  --target-fpr 0.01
+.\.venv\Scripts\python.exe experiments\temporal_threshold_optimization.py --data-dir data\cicids2017_metadata --outdir experiments\results\temporal-threshold-v1 --train-rows 25000 --validation-rows 120000 --test-rows 0 --target-fpr 0.01
 ```
 
 The script parses CICIDS timestamps day-first (so 03/07/2017 means 3 July),
