@@ -194,14 +194,21 @@ def parse_csv_grid(value: str, cast, argument: str):
     return result
 
 
-def load_temporal_csvs(data_dir: Path):
-    """Load feature arrays and metadata while enforcing a consistent feature schema."""
+def load_temporal_csvs(data_dir: Path, *, return_metadata: bool = False):
+    """Load feature arrays and optionally aligned flow metadata.
+
+    When return_metadata=True, the final returned DataFrame is row-aligned with
+    the feature/label arrays and contains only timestamp and flow identifiers
+    needed for causal behavioural features. Existing callers retain the original
+    seven-value return contract.
+    """
     paths = sorted(data_dir.glob("*.csv"))
     if not paths:
         raise FileNotFoundError(f"No CICIDS2017 CSV files found in {data_dir}")
 
     feature_columns: list[str] | None = None
     feature_parts, hash_parts, label_parts, day_parts = [], [], [], []
+    metadata_parts = []
     rows_read = 0
     rows_dropped_fully_blank = 0
 
@@ -223,6 +230,8 @@ def load_temporal_csvs(data_dir: Path):
             raise ValueError(f"{path.name} contains no non-empty data rows.")
 
         required = {"timestamp", "label"}
+        if return_metadata:
+            required.update({"src_ip", "dst_ip", "dst_port", "protocol"})
         missing = required.difference(work.columns)
         if missing:
             raise ValueError(f"{path.name} is missing required columns: {sorted(missing)}")
@@ -266,6 +275,15 @@ def load_temporal_csvs(data_dir: Path):
         hash_parts.append(hashes)
         label_parts.append(labels.to_numpy(dtype=str))
         day_parts.append(timestamps.dt.strftime("%Y-%m-%d").to_numpy(dtype=str))
+        if return_metadata:
+            flow_metadata = pd.DataFrame({
+                "timestamp": timestamps.to_numpy(),
+                "src_ip": work["src_ip"].astype("string").str.strip().fillna("__MISSING__"),
+                "dst_ip": work["dst_ip"].astype("string").str.strip().fillna("__MISSING__"),
+                "dst_port": pd.to_numeric(work["dst_port"], errors="coerce"),
+                "protocol": work["protocol"].astype("string").str.strip().fillna("__MISSING__"),
+            })
+            metadata_parts.append(flow_metadata)
         rows_read += len(work)
         del raw, work, numeric
 
@@ -280,7 +298,13 @@ def load_temporal_csvs(data_dir: Path):
         f"{x.shape[1]} numeric features | {len(np.unique(days))} capture dates.",
         flush=True,
     )
-    return x, hashes, labels, y, days, feature_columns, rows_dropped_fully_blank
+    result = (x, hashes, labels, y, days, feature_columns, rows_dropped_fully_blank)
+    if return_metadata:
+        aligned_metadata = pd.concat(metadata_parts, ignore_index=True)
+        if len(aligned_metadata) != len(x):
+            raise RuntimeError("Flow metadata lost row alignment with numeric features.")
+        return (*result, aligned_metadata)
+    return result
 
 
 def fit_score_if(
