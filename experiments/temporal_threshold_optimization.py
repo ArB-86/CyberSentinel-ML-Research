@@ -166,11 +166,25 @@ def load_temporal_csvs(data_dir: Path):
     feature_columns: list[str] | None = None
     feature_parts, hash_parts, label_parts, day_parts = [], [], [], []
     rows_read = 0
+    rows_dropped_fully_blank = 0
 
     for path in paths:
         print(f"Reading {path.name}...", flush=True)
         raw = pd.read_csv(path, low_memory=False, encoding="latin1")
         work = normalize_columns(raw)
+
+        # CICIDS2017 mirrors sometimes pad a file with delimiter-only records.
+        # These rows have no values in any column: discard them, but never
+        # silently discard partially populated rows with missing timestamps/labels.
+        empty_rows = work.isna().all(axis=1)
+        empty_count = int(empty_rows.sum())
+        if empty_count:
+            rows_dropped_fully_blank += empty_count
+            print(f"  Skipping {empty_count:,} fully empty rows.", flush=True)
+            work = work.loc[~empty_rows].copy()
+        if work.empty:
+            raise ValueError(f"{path.name} contains no non-empty data rows.")
+
         required = {"timestamp", "label"}
         missing = required.difference(work.columns)
         if missing:
@@ -224,11 +238,12 @@ def load_temporal_csvs(data_dir: Path):
     days = np.concatenate(day_parts)
     y = (np.char.lower(labels) != "benign").astype(np.int8)
     print(
-        f"Loaded {rows_read:,} rows | {x.shape[1]} numeric features | "
-        f"{len(np.unique(days))} capture dates.",
+        f"Loaded {rows_read:,} non-empty rows | "
+        f"dropped {rows_dropped_fully_blank:,} fully empty rows | "
+        f"{x.shape[1]} numeric features | {len(np.unique(days))} capture dates.",
         flush=True,
     )
-    return x, hashes, labels, y, days, feature_columns
+    return x, hashes, labels, y, days, feature_columns, rows_dropped_fully_blank
 
 
 def fit_score_if(
@@ -351,7 +366,9 @@ def main() -> None:
     started_total = time.perf_counter()
     output = Path(args.outdir)
     output.mkdir(parents=True, exist_ok=True)
-    x, hashes, labels, y, days, feature_columns = load_temporal_csvs(Path(args.data_dir))
+    (
+        x, hashes, labels, y, days, feature_columns, rows_dropped_fully_blank,
+    ) = load_temporal_csvs(Path(args.data_dir))
     train_days, validation_day, test_day = chronological_days(days)
 
     train_period_mask = np.isin(days, train_days)
@@ -587,6 +604,7 @@ def main() -> None:
     summary = {
         "dataset": str(Path(args.data_dir)),
         "rows_loaded": int(len(x)),
+        "rows_dropped_fully_blank": int(rows_dropped_fully_blank),
         "numeric_features": int(x.shape[1]),
         "training_days": train_days,
         "validation_day": validation_day,
