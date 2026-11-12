@@ -318,7 +318,7 @@ with method_tab:
         """
         - **Measured 50k cost:** Isolation Forest fit in 0.411 s and scored the shared 15k test batch in 0.104 s. RBF One-Class SVM took 19.484 s to fit and 2.106 s to score; LOF took 7.576 s to fit and 2.313 s to score. These are means on one GitHub Actions runner, not deployment-hardware guarantees.
         - **Measured quality:** RBF One-Class SVM led Average Precision (0.7665) and F1 (0.7334); Isolation Forest recorded AP 0.6736 and F1 0.6948. LOF led ROC-AUC (0.9087) but had lower AP/F1 (0.5687 / 0.5740).
-        - **Per-attack caveat:** at 50k, SVM detected 0/126 FTP-Patator and 0/66 SSH-Patator; LOF detected 30/126 FTP-Patator and 57/66 SSH-Patator. All three detected 0/33 Bot and 0/30 Web Attack - Brute Force. Aggregate F1 does not imply coverage of every attack family.
+        - **Per-attack caveat:** at 50k, SVM had 0% recall on 42 unique FTP-Patator and 22 unique SSH-Patator test rows; LOF achieved 23.8% and 86.4% recall respectively. All three models had 0% recall on the 11 Bot and 10 Web Attack - Brute Force rows. Aggregate F1 does not imply coverage of every attack family.
         - **Existing integration:** the detection, event, graph and risk pipeline already consumes an Isolation Forest artifact. Replacing it requires end-to-end validation on metadata-rich traffic and target hardware.
         - **Decision status:** retain Isolation Forest as the current integrated detector for its measured throughput advantage, existing integration and lower operational cost—not because it wins AP/F1. Treat RBF One-Class SVM as the leading aggregate AP/F1 shadow candidate and LOF as a complementary ROC-AUC / SSH-Patator candidate—not as proven production replacements.
         """
