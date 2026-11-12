@@ -89,6 +89,43 @@ def chronological_days(days: np.ndarray) -> tuple[list[str], str, str]:
     return unique_days[:-2], unique_days[-2], unique_days[-1]
 
 
+
+
+def rolling_forward_splits(days: np.ndarray, n_folds: int | None = None) -> list[dict]:
+    """Build expanding-window train / next-day validation / following-day test folds.
+
+    For five CICIDS2017 capture days this yields:
+      1) Monday -> Tuesday -> Wednesday
+      2) Monday-Tuesday -> Wednesday -> Thursday
+      3) Monday-Wednesday -> Thursday -> Friday
+    """
+    unique_days = sorted(set(map(str, np.asarray(days).tolist())))
+    available = len(unique_days) - 2
+    if available < 1:
+        raise ValueError(
+            "Rolling temporal validation requires at least three distinct dates; "
+            f"found {unique_days}."
+        )
+    if n_folds is None:
+        n_folds = available
+    if n_folds < 1:
+        raise ValueError("n_folds must be at least 1.")
+    if n_folds > available:
+        raise ValueError(
+            f"Requested {n_folds} folds but only {available} are possible "
+            f"with {len(unique_days)} capture dates."
+        )
+    return [
+        {
+            "fold": fold_index + 1,
+            "training_days": unique_days[: fold_index + 1],
+            "validation_day": unique_days[fold_index + 1],
+            "test_day": unique_days[fold_index + 2],
+        }
+        for fold_index in range(n_folds)
+    ]
+
+
 def first_position_per_hash(positions: np.ndarray, hashes: np.ndarray) -> np.ndarray:
     """Keep one earliest row for each exact feature hash, preserving row order."""
     positions = np.asarray(positions, dtype=np.int64)
@@ -286,96 +323,32 @@ def fit_baseline_models(
         z_validation = scaler.transform(x_validation)
         z_test = scaler.transform(x_test)
 
-        if name == "LOF_novelty":
-            model = LocalOutlierFactor(
-                n_neighbors=min(lof_neighbors, len(z_train) - 1),
-                novelty=True,
-                contamination="auto",
-                n_jobs=-1,
-            )
-        else:
-            model = OneClassSVM(
-                kernel="rbf", nu=svm_nu, gamma="scale",
-                cache_size=svm_cache_mb,
-            )
-
-        started = time.perf_counter()
-        model.fit(z_train)
-        fit_seconds = time.perf_counter() - started
-        started = time.perf_counter()
-        if name == "LOF_novelty":
-            val_scores = -model.score_samples(z_validation)
-        else:
-            val_scores = -model.decision_function(z_validation).reshape(-1)
-        validation_score_seconds = time.perf_counter() - started
-
-        baselines[name] = {
-            "model": model,
-            "scaler": scaler,
-            "validation_scores": val_scores,
-            "fit_seconds": fit_seconds,
-            "validation_score_seconds": validation_score_seconds,
-            "z_test": z_test,
-        }
-        print(
-            f"Fitted {name}: {fit_seconds:.2f}s; "
-            f"validation scoring {validation_score_seconds:.2f}s",
-            flush=True,
-        )
-    return baselines
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--data-dir", required=True, help="Folder containing the 8 metadata-rich CICIDS2017 CSVs.")
-    parser.add_argument("--outdir", default="experiments/results/temporal-threshold-v1")
-    parser.add_argument("--train-rows", type=int, default=25_000,
-                        help="Maximum unique benign training flows shared by every model.")
-    parser.add_argument("--validation-rows", type=int, default=120_000,
-                        help="Binary-stratified validation cap; 0 uses the full validation day.")
-    parser.add_argument("--test-rows", type=int, default=0,
-                        help="Binary-stratified test cap; 0 uses the full final day.")
-    parser.add_argument("--target-fpr", type=float, default=0.01,
-                        help="Primary validation FPR budget used to select IF hyperparameters.")
-    parser.add_argument("--fpr-grid", default="0.005,0.01,0.02,0.05",
-                        help="Validation-only threshold sweep, e.g. 0.005,0.01,0.02,0.05.")
-    parser.add_argument("--trees-grid", default="100,200")
-    parser.add_argument("--max-samples-grid", default="256,512,1024")
-    parser.add_argument("--max-features-grid", default="0.8,1.0")
-    parser.add_argument("--lof-neighbors", type=int, default=35)
-    parser.add_argument("--svm-nu", type=float, default=0.05)
-    parser.add_argument("--svm-cache-mb", type=float, default=512)
-    parser.add_argument("--seed", type=int, default=42)
-    args = parser.parse_args()
-
-    if args.train_rows < 100 or args.validation_rows < 0 or args.test_rows < 0:
-        raise ValueError("train-rows must be >=100; validation/test row limits cannot be negative.")
-    if not 0.0 < args.target_fpr < 0.5:
-        raise ValueError("target-fpr must be between 0 and 0.5.")
-    trees_grid = parse_csv_grid(args.trees_grid, int, "trees-grid")
-    samples_grid = parse_csv_grid(args.max_samples_grid, int, "max-samples-grid")
-    features_grid = parse_csv_grid(args.max_features_grid, float, "max-features-grid")
-    fpr_grid = sorted(set(parse_csv_grid(args.fpr_grid, float, "fpr-grid") + [args.target_fpr]))
-    if any(v <= 0.0 or v >= 0.5 for v in fpr_grid):
-        raise ValueError("Every FPR grid value must be between 0 and 0.5.")
-    if any(v <= 0 for v in trees_grid + samples_grid):
-        raise ValueError("Trees and max-samples grid values must be positive.")
-    if any(v <= 0.0 or v > 1.0 for v in features_grid):
-        raise ValueError("max-features grid values must be in (0, 1].")
-
-    started_total = time.perf_counter()
-    output = Path(args.outdir)
-    output.mkdir(parents=True, exist_ok=True)
-    (
-        x, hashes, labels, y, days, feature_columns, rows_dropped_fully_blank,
-    ) = load_temporal_csvs(Path(args.data_dir))
-    train_days, validation_day, test_day = chronological_days(days)
+        if namedef evaluate_rolling_fold(
+    fold_plan: dict,
+    x: np.ndarray,
+    hashes: np.ndarray,
+    labels: np.ndarray,
+    y: np.ndarray,
+    days: np.ndarray,
+    feature_columns: list[str],
+    output: Path,
+    args: argparse.Namespace,
+    fpr_grid: list[float],
+    configs: list[dict],
+) -> dict:
+    """Fit on prior benign traffic, calibrate on the next day, and test on the following day."""
+    fold_id = int(fold_plan["fold"])
+    train_days = fold_plan["training_days"]
+    validation_day = fold_plan["validation_day"]
+    test_day = fold_plan["test_day"]
+    fold_output = output / f"fold_{fold_id}"
+    fold_output.mkdir(parents=True, exist_ok=True)
 
     train_period_mask = np.isin(days, train_days)
     validation_period_mask = days == validation_day
     test_period_mask = days == test_day
 
-    # Remove feature-identical rows from later periods; the earliest occurrence wins.
+    # A feature hash is assigned to its earliest temporal partition only.
     train_period_hashes = np.unique(hashes[train_period_mask])
     train_benign_positions = np.flatnonzero(train_period_mask & (y == 0))
     train_benign_positions = first_position_per_hash(train_benign_positions, hashes)
@@ -393,20 +366,32 @@ def main() -> None:
     ]
 
     if len(train_benign_positions) < 100:
-        raise ValueError("Too few unique benign flows in the chronological training period.")
-    if not len(validation_positions) or len(np.unique(y[validation_positions])) < 2:
-        raise ValueError("Validation day must contain both benign and attack flows after duplicate filtering.")
-    if not len(test_positions) or len(np.unique(y[test_positions])) < 2:
-        raise ValueError("Final test day must contain both benign and attack flows after duplicate filtering.")
+        raise ValueError(
+            f"Fold {fold_id} has too few unique benign training flows: "
+            f"{len(train_benign_positions)}."
+        )
+    if not len(validation_positions) or np.unique(y[validation_positions]).size != 2:
+        raise ValueError(
+            f"Fold {fold_id} validation day {validation_day} must contain both classes "
+            "after duplicate filtering."
+        )
+    if not len(test_positions) or np.unique(y[test_positions]).size != 2:
+        raise ValueError(
+            f"Fold {fold_id} test day {test_day} must contain both classes "
+            "after duplicate filtering."
+        )
 
-    rng = np.random.default_rng(args.seed)
+    fold_seed = int(args.seed) + fold_id * 100
+    rng = np.random.default_rng(fold_seed)
     train_n = min(args.train_rows, len(train_benign_positions))
-    train_positions = np.sort(rng.choice(train_benign_positions, size=train_n, replace=False))
+    train_positions = np.sort(
+        rng.choice(train_benign_positions, size=train_n, replace=False)
+    )
     validation_positions = sample_binary_stratified(
-        validation_positions, y, args.validation_rows, args.seed + 1
+        validation_positions, y, args.validation_rows, fold_seed + 1
     )
     test_positions = sample_binary_stratified(
-        test_positions, y, args.test_rows, args.seed + 2
+        test_positions, y, args.test_rows, fold_seed + 2
     )
 
     x_train_raw = x[train_positions]
@@ -416,14 +401,14 @@ def main() -> None:
     y_test = y[test_positions]
     labels_test = labels[test_positions]
 
-    # All preprocessing is fitted on benign training rows only.
+    # Fit all preprocessing on the benign training sample only.
     imputer = SimpleImputer(strategy="median", keep_empty_features=True)
     x_train = imputer.fit_transform(x_train_raw)
     x_validation = imputer.transform(x_validation_raw)
     x_test = imputer.transform(x_test_raw)
 
     print(
-        f"Date split: train={train_days[0]}..{train_days[-1]} "
+        f"\nFOLD {fold_id}: train={train_days[0]}..{train_days[-1]} "
         f"({len(train_days)} day(s)); validation={validation_day}; test={test_day}",
         flush=True,
     )
@@ -433,35 +418,35 @@ def main() -> None:
         flush=True,
     )
 
-    # Validation grid: tune IF configuration by recall at the primary FPR budget.
+    # Select IF configuration using validation labels at the predeclared FPR budget.
     validation_benign_scores: dict[str, np.ndarray] = {}
     grid_rows = []
     best_key = None
     best_if = None
     default_if = None
-    default_config = {"n_estimators": 200, "max_samples": 1024, "max_features": 1.0}
+    default_config = {
+        "n_estimators": 200,
+        "max_samples": 1024,
+        "max_features": 1.0,
+    }
 
-    configs = [
-        {"n_estimators": int(t), "max_samples": int(s), "max_features": float(f)}
-        for t, s, f in itertools.product(trees_grid, samples_grid, features_grid)
-    ]
     for config in configs:
         model, val_scores, fit_s, val_score_s = fit_score_if(
-            x_train, x_validation, imputer, config, args.seed
+            x_train, x_validation, imputer, config, fold_seed
         )
-        threshold = threshold_at_fpr(
-            val_scores[y_validation == 0], args.target_fpr
-        )
+        threshold = threshold_at_fpr(val_scores[y_validation == 0], args.target_fpr)
         metrics = binary_metrics(y_validation, val_scores, threshold)
-        row = {
+        grid_rows.append({
+            "fold": fold_id,
+            "validation_day": validation_day,
+            "test_day": test_day,
             **config,
             "threshold": threshold,
             "validation_fit_seconds": fit_s,
             "validation_score_seconds": val_score_s,
             "target_fpr": args.target_fpr,
             **metrics,
-        }
-        grid_rows.append(row)
+        })
         key = (
             metrics["recall"],
             metrics["f1"],
@@ -479,24 +464,20 @@ def main() -> None:
             validation_benign_scores["IsolationForest_default"] = val_scores
             default_if_fit_seconds = fit_s
         print(
-            f"IF grid {config}: validation recall={metrics['recall']:.4f}, "
+            f"  IF {config}: validation recall={metrics['recall']:.4f}, "
             f"FPR={metrics['fpr']:.4f}, F1={metrics['f1']:.4f}",
             flush=True,
         )
 
     if best_if is None:
-        raise RuntimeError("Isolation Forest grid search did not produce a fitted model.")
+        raise RuntimeError(f"Fold {fold_id}: IF grid produced no fitted model.")
     if default_if is None:
-        # A user-supplied grid may omit the canonical baseline. Fit it explicitly.
         default_if, default_scores, default_if_fit_seconds, _ = fit_score_if(
-            x_train, x_validation, imputer, default_config, args.seed
+            x_train, x_validation, imputer, default_config, fold_seed
         )
         validation_benign_scores["IsolationForest_default"] = default_scores
 
-    grid_frame = pd.DataFrame(grid_rows).sort_values(
-        ["recall", "f1", "average_precision"], ascending=False
-    )
-    grid_frame.to_csv(output / "isolation_forest_validation_grid.csv", index=False)
+    grid_frame = pd.DataFrame(grid_rows)
 
     baselines = fit_baseline_models(
         x_train, x_validation, x_test,
@@ -505,7 +486,7 @@ def main() -> None:
     validation_benign_scores["LOF_novelty"] = baselines["LOF_novelty"]["validation_scores"]
     validation_benign_scores["RBF_OneClassSVM"] = baselines["RBF_OneClassSVM"]["validation_scores"]
 
-    # Score the held-out final day only after all choices are frozen.
+    # Score this fold's test date only after configurations and thresholds are frozen.
     test_scores: dict[str, np.ndarray] = {}
     scoring_seconds: dict[str, float] = {}
 
@@ -522,31 +503,44 @@ def main() -> None:
         if name == "LOF_novelty":
             test_scores[name] = -info["model"].score_samples(info["z_test"])
         else:
-            test_scores[name] = -info["model"].decision_function(info["z_test"]).reshape(-1)
+            test_scores[name] = -info["model"].decision_function(
+                info["z_test"]
+            ).reshape(-1)
         scoring_seconds[name] = time.perf_counter() - score_start
 
-    # Thresholds are derived only from validation-benign scores; test labels never tune them.
-    validation_sweep_rows, test_metric_rows, per_attack_rows = [], [], []
+    validation_rows, test_rows, attack_rows = [], [], []
     primary_thresholds = {}
     for model_name, val_scores in validation_benign_scores.items():
         for fpr_budget in fpr_grid:
             threshold = threshold_at_fpr(val_scores[y_validation == 0], fpr_budget)
             val_metric = binary_metrics(y_validation, val_scores, threshold)
-            val_row = {
-                "model": model_name, "target_fpr": fpr_budget,
-                "threshold": threshold, **val_metric,
-            }
-            validation_sweep_rows.append(val_row)
+            validation_rows.append({
+                "fold": fold_id,
+                "validation_day": validation_day,
+                "test_day": test_day,
+                "model": model_name,
+                "target_fpr": fpr_budget,
+                "threshold": threshold,
+                **val_metric,
+            })
 
             test_metric = binary_metrics(y_test, test_scores[model_name], threshold)
-            test_row = {
-                "model": model_name, "target_fpr": fpr_budget,
+            test_rows.append({
+                "fold": fold_id,
+                "training_start_day": train_days[0],
+                "training_end_day": train_days[-1],
+                "validation_day": validation_day,
+                "test_day": test_day,
+                "model": model_name,
+                "target_fpr": fpr_budget,
                 "validation_threshold": threshold,
                 "validation_measured_fpr": val_metric["fpr"],
                 "test_scoring_seconds": scoring_seconds[model_name],
+                "training_rows": int(len(train_positions)),
+                "validation_rows": int(len(validation_positions)),
                 **test_metric,
-            }
-            test_metric_rows.append(test_row)
+            })
+
             if np.isclose(fpr_budget, args.target_fpr):
                 primary_thresholds[model_name] = threshold
                 for attack_name in sorted(set(labels_test.tolist())):
@@ -555,7 +549,10 @@ def main() -> None:
                     mask = labels_test == attack_name
                     detected = int(np.sum(test_scores[model_name][mask] >= threshold))
                     support = int(mask.sum())
-                    per_attack_rows.append({
+                    attack_rows.append({
+                        "fold": fold_id,
+                        "validation_day": validation_day,
+                        "test_day": test_day,
                         "model": model_name,
                         "target_fpr": fpr_budget,
                         "attack_type": attack_name,
@@ -565,28 +562,19 @@ def main() -> None:
                         "recall": detected / support if support else float("nan"),
                     })
 
-    pd.DataFrame(validation_sweep_rows).to_csv(
-        output / "validation_threshold_sweep.csv", index=False
-    )
-    test_frame = pd.DataFrame(test_metric_rows)
-    test_frame.to_csv(output / "temporal_test_metrics.csv", index=False)
-    pd.DataFrame(per_attack_rows).to_csv(
-        output / "per_attack_recall_at_target_fpr.csv", index=False
-    )
-
-    tuned_thresholds = {
+    thresholds = {
         str(fpr): threshold_at_fpr(
             validation_benign_scores["IsolationForest_tuned"][y_validation == 0], fpr
         )
         for fpr in fpr_grid
     }
     joblib.dump({
-        "artifact_version": 1,
+        "artifact_version": 2,
         "model_name": "IsolationForest",
         "model": best_if,
         "imputer": imputer,
         "feature_columns": feature_columns,
-        "thresholds_by_validation_fpr": tuned_thresholds,
+        "thresholds_by_validation_fpr": thresholds,
         "primary_target_fpr": args.target_fpr,
         "primary_threshold": primary_thresholds["IsolationForest_tuned"],
         "score_direction": "higher score is more anomalous",
@@ -596,48 +584,279 @@ def main() -> None:
         "training_rows": int(len(train_positions)),
         "hyperparameters": best_config,
         "threshold_source": "validation benign-only scores",
-    }, output / "isolation_forest_temporally_tuned.joblib")
+        "fold": fold_id,
+    }, fold_output / "isolation_forest_temporally_tuned.joblib")
 
-    primary = test_frame[np.isclose(test_frame["target_fpr"], args.target_fpr)].copy()
-    primary = primary.sort_values("recall", ascending=False)
-    winner = primary.iloc[0].to_dict()
+    primary_rows = [
+        row for row in test_rows if np.isclose(row["target_fpr"], args.target_fpr)
+    ]
+    fold_winner = max(primary_rows, key=lambda row: row["recall"])
+    label_counts = {
+        str(k): int(v) for k, v in pd.Series(labels_test).value_counts().items()
+    }
+    fit_times = {
+        "LOF_novelty": baselines["LOF_novelty"]["fit_seconds"],
+        "RBF_OneClassSVM": baselines["RBF_OneClassSVM"]["fit_seconds"],
+        "IsolationForest_tuned": best_if_fit_seconds,
+        "IsolationForest_default": default_if_fit_seconds,
+    }
+    fold_summary = {
+        "fold": fold_id,
+        "training_days": train_days,
+        "validation_day": validation_day,
+        "test_day": test_day,
+        "unique_benign_training_candidates": int(len(train_benign_positions)),
+        "training_rows_benign_unique": int(len(train_positions)),
+        "validation_rows": int(len(validation_positions)),
+        "test_rows": int(len(test_positions)),
+        "test_attack_prevalence": float(y_test.mean()),
+        "test_label_counts": label_counts,
+        "selected_isolation_forest_config": best_config,
+        "test_winner_by_recall_at_target_fpr": {
+            "model": fold_winner["model"],
+            "recall": fold_winner["recall"],
+            "precision": fold_winner["precision"],
+            "f1": fold_winner["f1"],
+            "fpr": fold_winner["fpr"],
+        },
+        "fit_times_seconds": fit_times,
+        "test_scoring_times_seconds": scoring_seconds,
+    }
+
+    print(
+        pd.DataFrame(primary_rows)[[
+            "model", "precision", "recall", "f1", "fpr",
+            "average_precision", "roc_auc",
+        ]].sort_values("recall", ascending=False).to_string(index=False),
+        flush=True,
+    )
+    print(
+        f"Fold {fold_id} IF config: {best_config}; "
+        f"highest test recall: {fold_winner['model']}",
+        flush=True,
+    )
+
+    return {
+        "grid": grid_frame,
+        "validation": pd.DataFrame(validation_rows),
+        "test": pd.DataFrame(test_rows),
+        "per_attack": pd.DataFrame(attack_rows),
+        "summary": fold_summary,
+    }
+
+
+def summarize_rolling_metrics(test_frame: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Return fold-macro metrics and pooled confusion-count metrics.
+
+    AP and ROC-AUC are reported as fold-macro means only; they are not computed
+    from concatenated scores because anomaly-score scales differ by fitted fold.
+    """
+    metric_columns = [
+        "precision", "recall", "f1", "fpr",
+        "average_precision", "roc_auc",
+    ]
+    macro_rows = []
+    pooled_rows = []
+    for (model, target_fpr), group in test_frame.groupby(["model", "target_fpr"]):
+        macro_row = {
+            "model": model,
+            "target_fpr": float(target_fpr),
+            "folds": int(group["fold"].nunique()),
+        }
+        for metric in metric_columns:
+            values = group[metric].astype(float)
+            macro_row[f"{metric}_mean"] = float(values.mean())
+            macro_row[f"{metric}_std"] = float(values.std(ddof=1)) if len(values) > 1 else 0.0
+        macro_rows.append(macro_row)
+
+        tn = int(group["tn"].sum())
+        fp = int(group["fp"].sum())
+        fn = int(group["fn"].sum())
+        tp = int(group["tp"].sum())
+        precision = tp / (tp + fp) if tp + fp else 0.0
+        recall = tp / (tp + fn) if tp + fn else 0.0
+        f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+        fpr = fp / (fp + tn) if fp + tn else float("nan")
+        pooled_rows.append({
+            "model": model,
+            "target_fpr": float(target_fpr),
+            "folds": int(group["fold"].nunique()),
+            "precision_pooled": precision,
+            "recall_pooled": recall,
+            "f1_pooled": f1,
+            "fpr_pooled": fpr,
+            "false_alerts_per_million_benign_pooled": fpr * 1_000_000,
+            "tn": tn, "fp": fp, "fn": fn, "tp": tp,
+            "support_benign": tn + fp,
+            "support_attack": tp + fn,
+        })
+    return pd.DataFrame(macro_rows), pd.DataFrame(pooled_rows)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--data-dir", required=True, help="Folder containing the metadata-rich CICIDS2017 CSVs.")
+    parser.add_argument("--outdir", default="experiments/results/temporal-rolling-v1")
+    parser.add_argument("--folds", type=int, default=3,
+                        help="Number of expanding-window train/validation/test folds (default: 3).")
+    parser.add_argument("--train-rows", type=int, default=25_000,
+                        help="Maximum unique benign training flows shared by every model in each fold.")
+    parser.add_argument("--validation-rows", type=int, default=120_000,
+                        help="Binary-stratified validation cap; 0 uses the full validation day.")
+    parser.add_argument("--test-rows", type=int, default=0,
+                        help="Binary-stratified test cap; 0 uses the full test day.")
+    parser.add_argument("--target-fpr", type=float, default=0.01,
+                        help="Primary validation FPR budget used to select IF hyperparameters.")
+    parser.add_argument("--fpr-grid", default="0.005,0.01,0.02,0.05",
+                        help="Validation-only threshold sweep, e.g. 0.005,0.01,0.02,0.05.")
+    parser.add_argument("--trees-grid", default="100,200")
+    parser.add_argument("--max-samples-grid", default="256,512,1024")
+    parser.add_argument("--max-features-grid", default="0.8,1.0")
+    parser.add_argument("--lof-neighbors", type=int, default=35)
+    parser.add_argument("--svm-nu", type=float, default=0.05)
+    parser.add_argument("--svm-cache-mb", type=float, default=512)
+    parser.add_argument("--seed", type=int, default=42)
+    args = parser.parse_args()
+
+    if args.train_rows < 100 or args.validation_rows < 0 or args.test_rows < 0:
+        raise ValueError("train-rows must be >=100; validation/test row limits cannot be negative.")
+    if not 0.0 < args.target_fpr < 0.5:
+        raise ValueError("target-fpr must be between 0 and 0.5.")
+    if args.folds < 1:
+        raise ValueError("folds must be at least 1.")
+
+    trees_grid = parse_csv_grid(args.trees_grid, int, "trees-grid")
+    samples_grid = parse_csv_grid(args.max_samples_grid, int, "max-samples-grid")
+    features_grid = parse_csv_grid(args.max_features_grid, float, "max-features-grid")
+    fpr_grid = sorted(set(
+        parse_csv_grid(args.fpr_grid, float, "fpr-grid") + [args.target_fpr]
+    ))
+    if any(v <= 0.0 or v >= 0.5 for v in fpr_grid):
+        raise ValueError("Every FPR grid value must be between 0 and 0.5.")
+    if any(v <= 0 for v in trees_grid + samples_grid):
+        raise ValueError("Trees and max-samples grid values must be positive.")
+    if any(v <= 0.0 or v > 1.0 for v in features_grid):
+        raise ValueError("max-features grid values must be in (0, 1].")
+
+    configs = [
+        {"n_estimators": int(t), "max_samples": int(s), "max_features": float(f)}
+        for t, s, f in itertools.product(trees_grid, samples_grid, features_grid)
+    ]
+    started_total = time.perf_counter()
+    output = Path(args.outdir)
+    output.mkdir(parents=True, exist_ok=True)
+
+    (
+        x, hashes, labels, y, days, feature_columns, rows_dropped_fully_blank,
+    ) = load_temporal_csvs(Path(args.data_dir))
+    fold_plans = rolling_forward_splits(days, args.folds)
+    print(f"Rolling forward-chaining folds: {len(fold_plans)}", flush=True)
+    for plan in fold_plans:
+        print(
+            f"  Fold {plan['fold']}: train={plan['training_days'][0]}.."
+            f"{plan['training_days'][-1]}, validation={plan['validation_day']}, "
+            f"test={plan['test_day']}",
+            flush=True,
+        )
+
+    results = []
+    for plan in fold_plans:
+        results.append(evaluate_rolling_fold(
+            plan, x, hashes, labels, y, days, feature_columns,
+            output, args, fpr_grid, configs,
+        ))
+
+    grid_frame = pd.concat([item["grid"] for item in results], ignore_index=True)
+    validation_frame = pd.concat([item["validation"] for item in results], ignore_index=True)
+    test_frame = pd.concat([item["test"] for item in results], ignore_index=True)
+    attack_frame = pd.concat([item["per_attack"] for item in results], ignore_index=True)
+
+    grid_frame.sort_values(
+        ["fold", "recall", "f1", "average_precision"],
+        ascending=[True, False, False, False],
+    ).to_csv(output / "rolling_if_validation_grid.csv", index=False)
+    validation_frame.to_csv(
+        output / "rolling_validation_threshold_sweep.csv", index=False
+    )
+    test_frame.to_csv(output / "rolling_test_metrics.csv", index=False)
+    attack_frame.to_csv(output / "rolling_per_attack_recall.csv", index=False)
+
+    macro_frame, pooled_frame = summarize_rolling_metrics(test_frame)
+    macro_frame.to_csv(output / "rolling_macro_metrics.csv", index=False)
+    pooled_frame.to_csv(output / "rolling_pooled_confusion_metrics.csv", index=False)
+
     summary = {
         "dataset": str(Path(args.data_dir)),
         "rows_loaded": int(len(x)),
         "rows_dropped_fully_blank": int(rows_dropped_fully_blank),
         "numeric_features": int(x.shape[1]),
-        "training_days": train_days,
-        "validation_day": validation_day,
-        "test_day": test_day,
         "timestamp_parse": "pandas format=mixed, dayfirst=True",
-        "duplicate_policy": "exact numeric-feature hashes retained in earliest chronological partition only",
-        "training_rows_benign_unique": int(len(train_positions)),
-        "validation_rows": int(len(validation_positions)),
-        "test_rows": int(len(test_positions)),
-        "test_attack_prevalence": float(y_test.mean()),
-        "test_label_counts": {
-            str(k): int(v) for k, v in pd.Series(labels_test).value_counts().items()
-        },
+        "duplicate_policy": (
+            "exact numeric-feature hashes retained in their earliest chronological "
+            "train/validation/test partition only"
+        ),
+        "fold_design": (
+            "expanding-window forward chaining: prior days train, next day validation, "
+            "following day untouched test"
+        ),
+        "fold_count": len(fold_plans),
         "target_fpr": args.target_fpr,
         "fpr_grid": fpr_grid,
-        "if_grid_candidates": len(configs),
-        "selected_isolation_forest_config": best_config,
-        "selected_if_validation_fit_seconds": best_if_fit_seconds,
-        "default_if_validation_fit_seconds": default_if_fit_seconds,
-        "same_training_rows_for_all_models": True,
-        "threshold_selection": "validation-benign-only empirical upper tail; no test labels used",
-        "hyperparameter_selection": "maximum validation attack recall at target FPR; ties by F1, AP, then fit time",
-        "test_winner_at_target_fpr": {
-            "model": winner["model"],
-            "recall": winner["recall"],
-            "precision": winner["precision"],
-            "f1": winner["f1"],
-            "fpr": winner["fpr"],
-        },
-        "test_metrics_primary_fpr": primary.to_dict(orient="records"),
-        "fit_times_seconds": {
-            "LOF_novelty": baselines["LOF_novelty"]["fit_seconds"],
-            "RBF_OneClassSVM": baselines["RBF_OneClassSVM"]["fit_seconds"],
+        "if_grid_candidates_per_fold": len(configs),
+        "same_training_rows_for_all_models_within_each_fold": True,
+        "threshold_selection": (
+            "validation-benign-only empirical upper tail within each fold; test labels "
+            "never used for threshold selection"
+        ),
+        "hyperparameter_selection": (
+            "per-fold maximum validation attack recall at target FPR; ties by F1, "
+            "average precision, then fit time"
+        ),
+        "folds": [item["summary"] for item in results],
+        "macro_metrics_by_model_and_fpr": macro_frame.to_dict(orient="records"),
+        "pooled_confusion_metrics_by_model_and_fpr": pooled_frame.to_dict(orient="records"),
+        "metric_aggregation_note": (
+            "Precision/recall/F1/FPR pooled from summed confusion counts are also reported. "
+            "AP and ROC-AUC are fold-macro means only because fitted-fold anomaly score "
+            "scales are not assumed comparable."
+        ),
+        "total_elapsed_seconds": time.perf_counter() - started_total,
+        "interpretation_warning": (
+            "These are three forward-chaining holdouts from one CICIDS2017 capture. "
+            "The folds expose temporal and attack-family shift but are not independent "
+            "datasets or proof of generalization to another network. Thresholds are "
+            "calibrated per validation date and can exceed their nominal FPR on a later "
+            "test date. Precision/AP depend on each test window's attack prevalence."
+        ),
+    }
+    summary_path = output / "rolling_temporal_summary.json"
+    summary_path.write_text(json.dumps(summary, indent=2, default=str), encoding="utf-8")
+
+    primary = test_frame[np.isclose(test_frame["target_fpr"], args.target_fpr)].copy()
+    print("\nROLLING TEMPORAL TEST — per fold at validation-calibrated FPR budget", flush=True)
+    print(primary[[
+        "fold", "validation_day", "test_day", "model", "precision", "recall",
+        "f1", "fpr", "average_precision", "roc_auc",
+    ]].sort_values(["fold", "recall"], ascending=[True, False]).to_string(index=False))
+    print("\nFOLD-MACRO SUMMARY", flush=True)
+    primary_macro = macro_frame[np.isclose(macro_frame["target_fpr"], args.target_fpr)]
+    print(primary_macro[[
+        "model", "precision_mean", "precision_std", "recall_mean", "recall_std",
+        "f1_mean", "f1_std", "fpr_mean", "average_precision_mean", "roc_auc_mean",
+    ]].sort_values("f1_mean", ascending=False).to_string(index=False))
+    print("\nPOOLED CONFUSION-COUNT SUMMARY", flush=True)
+    primary_pooled = pooled_frame[np.isclose(pooled_frame["target_fpr"], args.target_fpr)]
+    print(primary_pooled[[
+        "model", "precision_pooled", "recall_pooled", "f1_pooled", "fpr_pooled",
+        "false_alerts_per_million_benign_pooled", "support_benign", "support_attack",
+    ]].sort_values("f1_pooled", ascending=False).to_string(index=False))
+    print(f"\nSummary: {summary_path.resolve()}", flush=True)
+    print(f"Outputs: {output.resolve()}", flush=True)
+
+
+if __name__ == "__main__":
+    main()
+s["RBF_OneClassSVM"]["fit_seconds"],
             "IsolationForest_tuned": best_if_fit_seconds,
             "IsolationForest_default": default_if_fit_seconds,
         },
