@@ -397,7 +397,7 @@ def evaluate_fold(
             labels_test=labels_test,
             feature_columns=feature_columns,
             target_fpr=args.target_fpr,
-            seed=args.seed + fold_id * 100 + variant_index,
+            seed=args.seed + fold_id * 100,
             fold_output=fold_output,
         )
         record.update({
