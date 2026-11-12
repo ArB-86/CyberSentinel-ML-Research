@@ -219,3 +219,37 @@ Outputs:
 This is a feature ablation, not a promised improvement. Compare per-attack
 recall alongside precision, F1 and actual test FPR. These three folds all come
 from one CICIDS2017 capture and do not establish cross-network generalization.
+
+
+## Isolation Forest causal host-behaviour features
+
+After the feature-representation ablation, run the IF-only causal behaviour
+experiment. It compares the same raw 80 flow features against source-host,
+destination-host, source-destination-pair and combined behavioural history
+features on the same rolling temporal folds.
+
+    .\.venv\Scripts\python.exe experiments\isolation_forest_behavioral.py --data-dir data\cicids2017_metadata --outdir experiments\results\isolation-forest-behavior-v1 --folds 3 --train-rows 25000 --validation-rows 120000 --test-rows 0 --target-fpr 0.01
+
+The behavioural features are computed without labels and only from flows with
+strictly earlier timestamps. Simultaneous flows share the same prior state.
+Features include prior source flow counts, source's previously seen destination
+IPs and ports, time since prior activity, prior inbound flow/source counts at
+the destination, prior repeated source-destination pair counts, and source plus
+protocol history. History is cumulative from the beginning of the capture;
+this permits a test-day flow to use earlier observed traffic, including the
+preceding validation day, without reading validation labels.
+
+All variants use the same benign training rows and fixed Isolation Forest
+configuration. Each variant calibrates its threshold independently on
+validation-benign scores only. The later test day is evaluated once after the
+threshold is frozen.
+
+Outputs:
+- if_behavior_test_metrics.csv — per-fold raw baseline and behavioural feature-set test metrics.
+- if_behavior_per_attack_recall.csv — attack-family recall/support for every variant.
+- fold_1/, fold_2/, fold_3/ — fold-specific model artifacts with feature specifications.
+- if_behavior_summary.json — feature policy, fold details, metrics and limitations.
+
+Host/IP history can be capture-specific. Improvement on CICIDS2017 is not proof
+that the same host behaviour transfers to a new network. Compare untouched
+test-day FPR and per-attack recall before considering any feature set.
