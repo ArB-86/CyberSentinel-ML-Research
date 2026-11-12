@@ -1,0 +1,71 @@
+name: CICIDS2017 hardened scaling rerun
+
+on:
+  pull_request:
+    branches:
+      - research/project-hardening
+    paths:
+      - .github/workflows/cicids2017-hardened-rerun.yml
+
+permissions:
+  contents: read
+
+jobs:
+  scaling-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Check out the hardened research branch snapshot
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Download and verify the exact processed dataset
+        env:
+          DATASET_URL: https://github.com/ShireenKachroo/CyberSentinel/releases/download/v1.0.1/cleaned_cicids2017.parquet
+          EXPECTED_SHA256: 9401495356b1b6f360d6aebf0ad7ddc18a39cbf02c02f7461338dea02a747146
+          EXPECTED_BYTES: "257156788"
+        run: |
+          set -euo pipefail
+          mkdir -p data
+          curl --fail --location --retry 5 --retry-delay 3 --connect-timeout 30 \
+            "$DATASET_URL" -o data/cleaned_cicids2017.parquet
+          echo "$EXPECTED_SHA256  data/cleaned_cicids2017.parquet" | sha256sum --check -
+          ACTUAL_BYTES="$(stat -c '%s' data/cleaned_cicids2017.parquet)"
+          test "$ACTUAL_BYTES" = "$EXPECTED_BYTES"
+          echo "Verified bytes: $ACTUAL_BYTES"
+          echo "Verified SHA-256: $EXPECTED_SHA256"
+
+      - name: Install benchmark dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy==2.4.6 pandas==3.1.1 scikit-learn==1.9.1 pyarrow matplotlib
+          python --version
+          python -m pip freeze > experiments/results/scaling-validation-v1/environment.txt
+
+      - name: Run paired 5k / 25k / 50k validation
+        run: |
+          python experiments/compare_model_scales.py \
+            --data data/cleaned_cicids2017.parquet \
+            --outdir experiments/results/scaling-validation-v1 \
+            --seeds 42,43,44 \
+            --train-sizes 5000,25000,50000 \
+            --folds 7 \
+            --split-seed 42 \
+            --calibration-rows 5000 \
+            --evaluation-rows 15000 \
+            --target-fpr 0.05
+
+      - name: Upload reproducible experiment outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: cicids2017-hardened-scaling-validation-${{ github.run_id }}
+          path: |
+            experiments/results/scaling-validation-v1/
+          if-no-files-found: error
+          retention-days: 30
