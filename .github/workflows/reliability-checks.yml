@@ -48,6 +48,7 @@ jobs:
           python experiments/compare_model_scales.py --help
           python experiments/temporal_threshold_optimization.py --help
           python experiments/event_correlation_sensitivity.py --help
+          python experiments/isolation_forest_behavioral.py --help
 
       - name: Run regression tests
         run: pytest -q
