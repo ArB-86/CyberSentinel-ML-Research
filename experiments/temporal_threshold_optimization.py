@@ -323,7 +323,46 @@ def fit_baseline_models(
         z_validation = scaler.transform(x_validation)
         z_test = scaler.transform(x_test)
 
-        if namedef evaluate_rolling_fold(
+        if name == "LOF_novelty":
+            model = LocalOutlierFactor(
+                n_neighbors=min(lof_neighbors, len(z_train) - 1),
+                novelty=True,
+                contamination="auto",
+                n_jobs=-1,
+            )
+        else:
+            model = OneClassSVM(
+                kernel="rbf", nu=svm_nu, gamma="scale",
+                cache_size=svm_cache_mb,
+            )
+
+        started = time.perf_counter()
+        model.fit(z_train)
+        fit_seconds = time.perf_counter() - started
+        started = time.perf_counter()
+        if name == "LOF_novelty":
+            val_scores = -model.score_samples(z_validation)
+        else:
+            val_scores = -model.decision_function(z_validation).reshape(-1)
+        validation_score_seconds = time.perf_counter() - started
+
+        baselines[name] = {
+            "model": model,
+            "scaler": scaler,
+            "validation_scores": val_scores,
+            "fit_seconds": fit_seconds,
+            "validation_score_seconds": validation_score_seconds,
+            "z_test": z_test,
+        }
+        print(
+            f"Fitted {name}: {fit_seconds:.2f}s; "
+            f"validation scoring {validation_score_seconds:.2f}s",
+            flush=True,
+        )
+    return baselines
+
+
+def evaluate_rolling_fold(
     fold_plan: dict,
     x: np.ndarray,
     hashes: np.ndarray,
