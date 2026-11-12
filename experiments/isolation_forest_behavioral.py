@@ -121,7 +121,9 @@ def _history_table(
             new_peer_counts, on=keys, how="left", sort=False, validate="one_to_one"
         )
         events = events.sort_values(keys, kind="mergesort").reset_index(drop=True)
-        new_peer_counts_at_time = events["new_peer_count"].fillna(0.0)
+        # A timestamp with no first-seen peer must contribute zero to the
+        # cumulative state; leaving NaN here would poison the shifted row.
+        events["new_peer_count"] = events["new_peer_count"].fillna(0.0)
         peer_metric = f"{prefix}_prior_unique_{peer_column}_count"
         # Shift the cumulative first-seen peer counts by one event row.
         # This is the strictly-prior cardinality at the current timestamp.
