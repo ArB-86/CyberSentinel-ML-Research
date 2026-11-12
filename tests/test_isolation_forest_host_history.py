@@ -55,13 +55,14 @@ def test_feature_builder_excludes_current_minute_and_is_causal():
     assert features.loc[4, "src_destination_port_contacts_prev_1m"] == 1
     assert features.loc[4, "src_bytes_prev_1m"] == 70
     assert features.loc[4, "src_flows_prev_5m"] == 4
-    assert features.loc[4, "src_destination_ip_contacts_per_minute_sum_prev_5m"] == 3
+    assert features.loc[4, "src_destination_ip_contacts_per_minute_sum_prev_5m"] == 2
     assert features.loc[4, "src_destination_port_contacts_per_minute_sum_prev_5m"] == 3
     assert features.loc[4, "src_bytes_prev_5m"] == 100
 
-    # At 08:06, the 08:00 bucket has expired from the previous 5-minute window.
-    assert features.loc[5, "src_flows_prev_5m"] == 0
-    assert features.loc[5, "dst_flows_prev_5m"] == 0
+    # At 08:06, the 08:00 bucket has expired; 08:01 and 08:02 remain.
+    assert features.loc[5, "src_flows_prev_1m"] == 0
+    assert features.loc[5, "src_flows_prev_5m"] == 3
+    assert features.loc[5, "dst_flows_prev_5m"] == 3
 
 
 def test_behavioral_feature_builder_rejects_misaligned_arrays():
