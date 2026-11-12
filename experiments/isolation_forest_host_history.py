@@ -177,6 +177,11 @@ def load_behavioral_dataset(data_dir: Path):
         dst_port_parts.append(dst_port.to_numpy(dtype=np.int32))
         byte_columns = _matching_numeric_columns(numeric.columns, byte_aliases)
         packet_columns = _matching_numeric_columns(numeric.columns, packet_aliases)
+        if not byte_columns or not packet_columns:
+            raise ValueError(
+                f"{path.name} must contain numeric forward/backward packet-byte totals "
+                "to build host traffic-volume history features."
+            )
         byte_parts.append(_sum_numeric_columns(numeric, byte_columns))
         packet_parts.append(_sum_numeric_columns(numeric, packet_columns))
         rows_loaded += len(work)
