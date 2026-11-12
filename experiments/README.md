@@ -175,3 +175,47 @@ results unchanged. Adopt a transformed candidate only if its untouched test
 results improve the relevant attack-family coverage without unacceptable FPR
 regression across folds. A gain on one CICIDS2017 capture is not evidence of
 generalization to another network.
+
+
+## Isolation Forest causal host-history feature experiment
+
+The preceding ablation found that changing per-flow feature distributions did
+not consistently improve attack-family recall. This IF-only experiment tests
+whether host behaviour over time adds information beyond the current flow's
+80 numeric features.
+
+Run from the repository root:
+
+    .\.venv\Scripts\python.exe experiments\isolation_forest_host_history.py --data-dir data\cicids2017_metadata --outdir experiments\results\isolation-forest-host-history-v1 --folds 3 --train-rows 25000 --validation-rows 120000 --test-rows 0 --target-fpr 0.01
+
+The experiment compares two models using the same folds, training rows,
+validation/test rows, Isolation Forest configuration, and threshold budget:
+- IF_raw_baseline — the existing numeric flow features.
+- IF_raw_plus_host_history — the same flow features plus 18 host-history features.
+
+History features are built from completed one-minute buckets only. A flow in
+minute T sees previous completed 1-minute and 5-minute windows; every rolling
+window is closed on the left, so the current minute and future traffic are
+excluded. Source-host features include prior flow counts, destination-IP and
+destination-port contact counts, bytes and packets. Destination-host features
+include inbound flow counts, distinct source-IP contacts, bytes and packets.
+The five-minute contact sums add per-minute cardinalities, so a host/port seen
+in multiple minutes can be counted more than once. IP addresses are grouping
+keys only; raw IP values are never detector inputs.
+
+Traffic history is computed from unlabeled past flows, including earlier
+validation/test windows, which reflects a stateful online detector. The model
+itself is fitted only on benign training rows. Each model gets its own threshold
+calibrated from validation-benign scores only; the frozen threshold is then
+evaluated on the later untouched test day.
+
+Outputs:
+- if_host_history_validation.csv — validation metrics for both feature sets.
+- if_host_history_test_metrics.csv — untouched temporal test metrics.
+- if_host_history_per_attack_recall.csv — attack-family recall and support.
+- fold_1/, fold_2/, fold_3/ — fold-specific engineered IF artifacts.
+- if_host_history_summary.json — feature definitions, fold metrics and caveats.
+
+This is a feature ablation, not a promised improvement. Compare per-attack
+recall alongside precision, F1 and actual test FPR. These three folds all come
+from one CICIDS2017 capture and do not establish cross-network generalization.
