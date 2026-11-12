@@ -78,9 +78,9 @@ def test_temporal_csv_loader_keeps_numeric_features_and_correct_dates(tmp_path):
     data_dir = tmp_path / "cicids"
     data_dir.mkdir()
     dates = [
-        ("Monday.csv", "03/07/2017"),
-        ("Thursday.csv", "06/07/2017"),
-        ("Friday.csv", "07/07/2017"),
+        ("01_Monday.csv", "03/07/2017"),
+        ("02_Thursday.csv", "06/07/2017"),
+        ("03_Friday.csv", "07/07/2017"),
     ]
     for filename, date in dates:
         pd.DataFrame({
