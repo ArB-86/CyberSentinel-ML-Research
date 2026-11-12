@@ -97,39 +97,49 @@ Outputs:
 
 This is a **structural sensitivity** experiment only. Without analyst-labelled incident/stage ground truth it does not measure event precision/recall, causal reconstruction or which setting is correct. Run on the full detector-flagged metadata-rich export; do not treat a prefix-limited smoke-test file as representative.
 
-## Temporal validation and Isolation Forest tuning
+## Rolling temporal validation and Isolation Forest tuning
 
 Run this experiment on the original metadata-rich CICIDS2017 CSV archive (not
 the cleaned Parquet, which does not retain the required timestamps and host
 metadata):
 
-```powershell
-.\.venv\Scripts\python.exe experiments\temporal_threshold_optimization.py --data-dir data\cicids2017_metadata --outdir experiments\results\temporal-threshold-v1 --train-rows 25000 --validation-rows 120000 --test-rows 0 --target-fpr 0.01
-```
+\`\`\`powershell
+.\.venv\Scripts\python.exe experiments\temporal_threshold_optimization.py --data-dir data\cicids2017_metadata --outdir experiments\results\temporal-rolling-v1 --folds 3 --train-rows 25000 --validation-rows 120000 --test-rows 0 --target-fpr 0.01
+\`\`\`
 
-The script parses CICIDS timestamps day-first (so 03/07/2017 means 3 July),
-uses all earlier capture days for benign-only fitting, the penultimate day for
-hyperparameter/threshold selection, and the final day as an untouched temporal
-test. Exact duplicate numeric-feature rows are retained in their earliest
-chronological partition only. All detectors use the same benign training rows.
+The default three folds use expanding-window forward chaining:
 
-Isolation Forest searches the configured grid of tree count, max_samples and
-max_features. It selects the configuration with the highest validation attack
-recall at the primary FPR budget (ties: F1, AP, then fit time). LOF novelty and
-RBF One-Class SVM are fitted as comparators. Thresholds at 0.5%, 1%, 2% and 5%
-FPR are set from validation-benign scores only, then frozen for final test
-evaluation. No test label is used for tuning.
+| Fold | Benign-only training period | Validation / threshold calibration | Untouched test |
+|---|---|---|---|
+| 1 | Monday (3 July) | Tuesday (4 July) | Wednesday (5 July) |
+| 2 | Monday–Tuesday | Wednesday (5 July) | Thursday (6 July) |
+| 3 | Monday–Wednesday | Thursday (6 July) | Friday (7 July) |
+
+The script parses CICIDS timestamps day-first (so 03/07/2017 means 3 July).
+Exact duplicate numeric-feature rows are retained in their earliest temporal
+partition only. The same benign training rows are used by all four detectors
+within a fold. The \`--folds\` option may be reduced for a shorter run, but cannot
+exceed the number of possible forward-chaining windows.
+
+Within each fold:
+- Isolation Forest searches the configured tree-count, max-samples and max-features grid. The selected configuration maximizes validation attack recall at the primary FPR budget (ties: F1, AP, then fit time).
+- Novelty LOF and RBF One-Class SVM are fitted on the same benign training sample.
+- Thresholds at 0.5%, 1%, 2% and 5% FPR are calibrated from validation-benign scores only, then frozen for that fold's later test day.
+- Test labels are never used for model or threshold selection. Actual test FPR is measured and may exceed the validation budget under temporal distribution shift.
 
 Outputs:
-- `isolation_forest_validation_grid.csv` — IF hyperparameter search.
-- `validation_threshold_sweep.csv` — validation metrics at each FPR budget.
-- `temporal_test_metrics.csv` — final later-day comparison at identical frozen thresholds.
-- `per_attack_recall_at_target_fpr.csv` — attack-class recall and support at the primary FPR.
-- `isolation_forest_temporally_tuned.joblib` — selected IF model, imputer and validation thresholds.
-- `temporal_validation_summary.json` — split dates, selected configuration, test result and run metadata.
+- \`rolling_if_validation_grid.csv\` — all IF configurations and validation metrics per fold.
+- \`rolling_validation_threshold_sweep.csv\` — validation metrics at each FPR budget.
+- \`rolling_test_metrics.csv\` — per-fold later-day metrics at frozen thresholds.
+- \`rolling_per_attack_recall.csv\` — attack-family recall and support per fold.
+- \`rolling_macro_metrics.csv\` — fold-macro mean and standard deviation by detector/FPR.
+- \`rolling_pooled_confusion_metrics.csv\` — precision, recall, F1 and FPR from summed confusion counts; AP/ROC-AUC are intentionally not pooled across score scales.
+- \`fold_1/\`, \`fold_2/\`, \`fold_3/\` — fold-specific tuned Isolation Forest artifacts.
+- \`rolling_temporal_summary.json\` — fold dates, row counts, test prevalence, selected configurations, metrics and interpretation limits.
 
-The final test date is one chronological CICIDS2017 holdout, not independent
-evidence across networks or future years. Precision/AP depend on test prevalence;
-with `--test-rows 0`, the full final capture day is evaluated. The script never
-forces Isolation Forest to win: report the detector that actually leads at the
-chosen false-positive budget.
+The three test windows come from one CICIDS2017 capture, not three independent
+datasets. They provide a stronger temporal-shift check than a single holdout,
+but do not prove generalization to another network or future years. Precision
+and AP depend on each test window's attack prevalence. Do not call a detector
+the overall winner from one metric alone; inspect per-fold false-positive
+rates, recall and attack-family coverage together.
