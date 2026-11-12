@@ -143,3 +143,35 @@ but do not prove generalization to another network or future years. Precision
 and AP depend on each test window's attack prevalence. Do not call a detector
 the overall winner from one metric alone; inspect per-fold false-positive
 rates, recall and attack-family coverage together.
+
+
+## Isolation Forest feature-representation ablation
+
+After the rolling experiment shows weak coverage for Web Attacks and PortScan,
+run a targeted IF-only ablation. It keeps the same rolling folds, benign-only
+training policy, duplicate filtering and validation-benign threshold
+calibration, while comparing raw features with signed-log and quantile
+representations. Quantile transforms are fitted on the benign training sample
+only; no validation or test distribution is used to fit them.
+
+    .\.venv\Scripts\python.exe experiments\isolation_forest_ablation.py --data-dir data\cicids2017_metadata --outdir experiments\results\isolation-forest-ablation-v1 --folds 3 --train-rows 25000 --validation-rows 120000 --test-rows 0 --target-fpr 0.01
+
+The ablation compares four feature representations (raw, signed_log1p,
+quantile_uniform, quantile_normal) across a small IF configuration set,
+including the prior raw-feature default and larger per-tree subsamples. Each
+fold selects one candidate using validation attack recall at the fixed FPR
+budget (ties by F1, AP, then fit time). It then reports the untouched test-day
+metrics for that selected candidate and the raw default baseline.
+
+Outputs:
+- if_ablation_validation_grid.csv — all representation/configuration validation results.
+- if_ablation_test_metrics.csv — frozen baseline and validation-selected test results.
+- if_ablation_per_attack_recall.csv — per-family test recall/support for those results.
+- fold_1/, fold_2/, fold_3/ — selected fold-specific IF artifacts.
+- if_ablation_summary.json — fold definitions, choices, metrics and caveats.
+
+This is an ablation, not a promised improvement. Keep the original rolling
+results unchanged. Adopt a transformed candidate only if its untouched test
+results improve the relevant attack-family coverage without unacceptable FPR
+regression across folds. A gain on one CICIDS2017 capture is not evidence of
+generalization to another network.
