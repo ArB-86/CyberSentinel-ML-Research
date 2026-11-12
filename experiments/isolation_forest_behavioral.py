@@ -123,11 +123,14 @@ def _history_table(
         events = events.sort_values(keys, kind="mergesort").reset_index(drop=True)
         new_peer_counts_at_time = events["new_peer_count"].fillna(0.0)
         peer_metric = f"{prefix}_prior_unique_{peer_column}_count"
+        # Shift the cumulative first-seen peer counts by one event row.
+        # This is the strictly-prior cardinality at the current timestamp.
+        # Using cumsum().shift() avoids index-alignment surprises when pandas
+        # groupby/merge operations preserve non-consecutive row indices.
         events[peer_metric] = (
             events.groupby(entity_columns, sort=False, dropna=False)[
                 "new_peer_count"
-            ].cumsum()
-            - new_peer_counts_at_time
+            ].transform(lambda values: values.cumsum().shift(1).fillna(0.0))
         )
         events = events.drop(columns=["new_peer_count"])
         feature_names.append(peer_metric)
