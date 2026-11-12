@@ -8,6 +8,8 @@ from experiments.temporal_threshold_optimization import (
     parse_cicids_timestamps,
     sample_binary_stratified,
     threshold_at_fpr,
+    rolling_forward_splits,
+    summarize_rolling_metrics,
 )
 
 
@@ -144,3 +146,72 @@ def test_temporal_csv_loader_does_not_hide_partially_populated_bad_rows(tmp_path
 
     with pytest.raises(ValueError, match="timestamps failed"):
         load_temporal_csvs(data_dir)
+
+
+
+def test_rolling_forward_splits_make_three_expanding_windows():
+    days = np.array([
+        "2017-07-03", "2017-07-04", "2017-07-05",
+        "2017-07-06", "2017-07-07",
+    ])
+    folds = rolling_forward_splits(days, n_folds=3)
+
+    assert folds == [
+        {
+            "fold": 1,
+            "training_days": ["2017-07-03"],
+            "validation_day": "2017-07-04",
+            "test_day": "2017-07-05",
+        },
+        {
+            "fold": 2,
+            "training_days": ["2017-07-03", "2017-07-04"],
+            "validation_day": "2017-07-05",
+            "test_day": "2017-07-06",
+        },
+        {
+            "fold": 3,
+            "training_days": ["2017-07-03", "2017-07-04", "2017-07-05"],
+            "validation_day": "2017-07-06",
+            "test_day": "2017-07-07",
+        },
+    ]
+
+
+def test_rolling_forward_splits_reject_invalid_fold_counts():
+    days = np.array(["2017-07-03", "2017-07-04", "2017-07-05"])
+    with pytest.raises(ValueError, match="at least 1"):
+        rolling_forward_splits(days, n_folds=0)
+    with pytest.raises(ValueError, match="only 1 are possible"):
+        rolling_forward_splits(days, n_folds=2)
+
+
+def test_rolling_metric_summary_uses_pooled_confusion_counts_and_fold_macro_auc():
+    frame = pd.DataFrame([
+        {
+            "fold": 1, "model": "LOF_novelty", "target_fpr": 0.01,
+            "precision": 0.5, "recall": 0.5, "f1": 0.5, "fpr": 0.1,
+            "average_precision": 0.6, "roc_auc": 0.7,
+            "tn": 90, "fp": 10, "fn": 50, "tp": 50,
+        },
+        {
+            "fold": 2, "model": "LOF_novelty", "target_fpr": 0.01,
+            "precision": 0.8, "recall": 0.4, "f1": 0.5333333333, "fpr": 0.05,
+            "average_precision": 0.8, "roc_auc": 0.9,
+            "tn": 190, "fp": 10, "fn": 60, "tp": 40,
+        },
+    ])
+
+    macro, pooled = summarize_rolling_metrics(frame)
+    macro_row = macro.iloc[0]
+    pooled_row = pooled.iloc[0]
+
+    assert macro_row["folds"] == 2
+    assert macro_row["average_precision_mean"] == pytest.approx(0.7)
+    assert macro_row["roc_auc_mean"] == pytest.approx(0.8)
+    assert pooled_row["tn"] == 280
+    assert pooled_row["fp"] == 20
+    assert pooled_row["fn"] == 110
+    assert pooled_row["tp"] == 90
+    assert pooled_row["recall_pooled"] == pytest.approx(90 / 200)
+    assert pooled_row["fpr_pooled"] == pytest.approx(20 / 300)
