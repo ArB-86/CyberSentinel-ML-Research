@@ -71,3 +71,40 @@ def test_metrics_use_the_supplied_fixed_threshold():
     assert metrics["recall"] == pytest.approx(1.0)
     assert metrics["precision"] == pytest.approx(1.0)
     assert metrics["fpr"] == pytest.approx(0.0)
+
+def test_temporal_csv_loader_keeps_numeric_features_and_correct_dates(tmp_path):
+    from experiments.temporal_threshold_optimization import load_temporal_csvs
+
+    data_dir = tmp_path / "cicids"
+    data_dir.mkdir()
+    dates = [
+        ("Monday.csv", "03/07/2017"),
+        ("Thursday.csv", "06/07/2017"),
+        ("Friday.csv", "07/07/2017"),
+    ]
+    for filename, date in dates:
+        pd.DataFrame({
+            "Timestamp": [f"{date} 08:00:00", f"{date} 08:01:00"],
+            "Source IP": ["10.0.0.1", "10.0.0.2"],
+            "Destination IP": ["10.0.0.3", "10.0.0.4"],
+            "Protocol": [6, 17],
+            "Source Port": [1000, 2000],
+            "Destination Port": [80, 53],
+            "Flow Duration": [100.0, 200.0],
+            "Label": ["BENIGN", "DDoS"],
+        }).to_csv(data_dir / filename, index=False)
+
+    x, hashes, labels, y, days, features = load_temporal_csvs(data_dir)
+
+    assert x.shape == (6, 4)
+    assert len(hashes) == 6
+    assert y.tolist() == [0, 1, 0, 1, 0, 1]
+    assert days.tolist() == [
+        "2017-07-03", "2017-07-03",
+        "2017-07-06", "2017-07-06",
+        "2017-07-07", "2017-07-07",
+    ]
+    assert "timestamp" not in features
+    assert "label" not in features
+    assert "Flow Duration" in features
+    assert "Source Port" in features
