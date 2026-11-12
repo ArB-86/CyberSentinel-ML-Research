@@ -85,6 +85,9 @@ def test_temporal_loader_can_return_aligned_flow_metadata(tmp_path):
             "Flow Duration": [100.0, 200.0],
             "Label": ["BENIGN", "DDoS"],
         })
+        if filename == "02_Thursday.csv":
+            blank = pd.DataFrame([{column: np.nan for column in frame.columns}])
+            frame = pd.concat([blank, frame], ignore_index=True)
         frame.to_csv(data_dir / filename, index=False)
 
     result = load_temporal_csvs(data_dir, return_metadata=True)
