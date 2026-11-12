@@ -107,4 +107,4 @@ def test_temporal_csv_loader_keeps_numeric_features_and_correct_dates(tmp_path):
     assert "timestamp" not in features
     assert "label" not in features
     assert "Flow Duration" in features
-    assert "Source Port" in features
+    assert "src_port" in features
