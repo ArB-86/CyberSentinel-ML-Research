@@ -16,7 +16,7 @@ def _toy_history():
         "2017-07-03 08:01:30",
         "2017-07-03 08:02:00",
         "2017-07-03 08:06:00",
-    ]).astype("int64").to_numpy()
+    ]).to_numpy(dtype="datetime64[ns]").astype(np.int64, copy=False)
     return {
         "timestamps_ns": timestamps,
         "src_codes": np.array([0, 0, 0, 0, 0, 0], dtype=np.int32),
