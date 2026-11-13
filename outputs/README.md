@@ -10,8 +10,8 @@ Use metadata-rich CICIDS2017 CSV files with timestamps, source/destination addre
 python attack_graph/if_attack_graph_pipeline.py /path/to/metadata-rich-csvs \
   --mode benchmark \
   --output-dir outputs \
-  --benign-sample-n 500000 \
-  --calibration-rows 5000 \
+  --benign-sample-n 25000 \
+  --calibration-rows 120000 \
   --evaluation-rows 160000 \
   --calibration-quantile 0.01
 ```
