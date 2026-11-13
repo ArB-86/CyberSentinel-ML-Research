@@ -340,8 +340,8 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.markdown(
-    '<div class="callout"><b>Random Forest is a separate supervised test.</b> '
-    'It learns from labelled attack examples. Isolation Forest, LOF and One-Class SVM in the main chart '
+    '<div class="callout"><b>Random Forest was shown in an earlier, separate pilot.</b> '
+    'That pilot used labelled attack examples. Isolation Forest, LOF and One-Class SVM in this chart '
     'learn from normal traffic only. Mixing Random Forest into this chart would not be a fair like-for-like comparison.</div>',
     unsafe_allow_html=True,
 )
