@@ -9,6 +9,8 @@ import streamlit as st
 from utils.cache_keys import file_cache_signature
 from utils.dashboard_data import (
     build_attack_distribution,
+    build_reference_traffic_counts,
+    build_traffic_counts,
     load_reference_attack_distribution,
 )
 
@@ -168,6 +170,11 @@ ROOT = Path(__file__).resolve().parent
 DATA_PATH = ROOT / "data" / "cleaned_cicids2017.parquet"
 REFERENCE_DISTRIBUTION_PATH = ROOT / "research" / "cicids2017_attack_distribution.csv"
 
+# Final cleaned CICIDS2017 row count recorded by notebooks/dataset_preprocessing.ipynb.
+# Attack rows are derived from the checked-in 14-class reference CSV; benign rows
+# are calculated as total rows minus attack rows.
+REFERENCE_TOTAL_FLOWS = 2_228_970
+
 OUTPUT_DIR = ROOT / "outputs"
 
 EVENTS_PATH = OUTPUT_DIR / "attack_events.csv"
@@ -259,39 +266,38 @@ events_df = load_attack_events(file_cache_signature(EVENTS_PATH))
 # DATASET STATISTICS
 # ============================================================
 
-benchmark_evaluation_available = (
-    pipeline_summary.get("mode", "benchmark") == "benchmark"
-    and isinstance(pipeline_summary.get("evaluation_metrics"), dict)
-    and bool(pipeline_summary.get("evaluation_metrics"))
-)
+# Use local ground-truth labels when the cleaned Parquet is available.
+# Otherwise, derive the full-dataset profile from the checked-in reference
+# attack counts and the verified cleaned row count. This is dataset metadata,
+# not a count of predictions from the current unlabeled inference batch.
+local_traffic_counts = build_traffic_counts(labels_df)
 
-if (
-    benchmark_evaluation_available
-    and labels_df is not None
-    and "Label" in labels_df.columns
-):
-    labels = labels_df["Label"].astype("string").str.strip().dropna()
-    labels = labels[labels.ne("")]
-    total_flows = int(len(labels))
-    benign_mask = labels.str.casefold().eq("benign")
-    benign_flows = int(benign_mask.sum())
-    attack_flows = total_flows - benign_flows
-else:
-    # Benchmark metrics describe the current labelled evaluation run only.
-    total_flows = benign_flows = attack_flows = None
-
-# Prefer the local full dataset when present. If it is absent, use the
-# checked-in counts captured by the preprocessing notebook after cleaning.
-# The fallback is explicitly identified as a reference profile, never as
-# detections from the current unlabeled inference batch.
-if labels_df is not None and "Label" in labels_df.columns:
+if local_traffic_counts is not None:
+    traffic_counts = local_traffic_counts
     attack_distribution = build_attack_distribution(labels_df)
-    attack_distribution_source = "Local cleaned CICIDS2017 ground-truth labels"
+    traffic_profile_source = "Local cleaned CICIDS2017 ground-truth labels"
+    traffic_profile_kind = "Local dataset profile"
 else:
     attack_distribution = load_reference_distribution(
         file_cache_signature(REFERENCE_DISTRIBUTION_PATH)
     )
-    attack_distribution_source = "Verified CICIDS2017 preprocessing reference"
+    traffic_counts = build_reference_traffic_counts(
+        attack_distribution,
+        REFERENCE_TOTAL_FLOWS,
+    )
+    traffic_profile_source = "Verified CICIDS2017 preprocessing reference"
+    traffic_profile_kind = "Checked-in reference profile"
+
+if traffic_counts is not None:
+    total_flows = traffic_counts["total_flows"]
+    benign_flows = traffic_counts["benign_flows"]
+    attack_flows = traffic_counts["attack_flows"]
+else:
+    total_flows = benign_flows = attack_flows = None
+
+traffic_profile_description = (
+    "Dataset-level ground-truth composition; not current inference predictions"
+)
 
 
 # ============================================================
@@ -404,7 +410,7 @@ with st.sidebar:
 
             <div class="green"
                  style="font-weight:800;font-size:.76rem">
-                ● {"DATA READY" if labels_df is not None else "WAITING FOR DATA"}
+                ● {"LOCAL DATASET" if local_traffic_counts is not None else "REFERENCE PROFILE" if traffic_counts is not None else "DATA UNAVAILABLE"}
             </div>
 
             <div style="
@@ -412,7 +418,7 @@ with st.sidebar:
                 font-size:.7rem;
                 margin-top:6px;
             ">
-                {"CICIDS2017 · {:,} flows".format(total_flows) if total_flows is not None else "CICIDS2017 dataset not loaded"}
+                {"CICIDS2017 · {:,} flows".format(total_flows) if total_flows is not None else "CICIDS2017 counts unavailable"}
             </div>
 
         </div>
@@ -501,15 +507,35 @@ st.markdown(
 
 cols = st.columns(4)
 
+metric_source_description = (
+    "Local cleaned CICIDS2017 labels"
+    if local_traffic_counts is not None
+    else "Verified full-dataset reference; not current inference rows"
+)
+
 metric_data = [
-    ("Network Flows", f"{total_flows:,}" if total_flows is not None else "N/A" if pipeline_summary.get("mode") == "unlabeled_inference" else "Not loaded",
-     "Current labelled benchmark rows; not shown for unlabeled inference"),
-    ("Benign Flows", f"{benign_flows:,}" if benign_flows is not None else "N/A" if pipeline_summary.get("mode") == "unlabeled_inference" else "Not loaded",
-     "Ground-truth benchmark labels only"),
-    ("Attack Flows", f"{attack_flows:,}" if attack_flows is not None else "N/A" if pipeline_summary.get("mode") == "unlabeled_inference" else "Not loaded",
-     "Ground-truth benchmark labels only"),
-    ("Attack Rate", f"{attack_flows / total_flows * 100:.2f}%" if total_flows else "N/A",
-     "Benchmark label rate; unavailable during inference"),
+    (
+        "Network Flows",
+        f"{total_flows:,}" if total_flows is not None else "Unavailable",
+        metric_source_description,
+    ),
+    (
+        "Benign Flows",
+        f"{benign_flows:,}" if benign_flows is not None else "Unavailable",
+        "Ground-truth benign rows · " + metric_source_description,
+    ),
+    (
+        "Attack Flows",
+        f"{attack_flows:,}" if attack_flows is not None else "Unavailable",
+        "Ground-truth attack rows · " + metric_source_description,
+    ),
+    (
+        "Attack Rate",
+        f"{attack_flows / total_flows * 100:.2f}%"
+        if total_flows and attack_flows is not None
+        else "Unavailable",
+        "Share of attack-labelled rows in the dataset profile",
+    ),
 ]
 
 
@@ -664,47 +690,50 @@ chart_col, pipeline_col = st.columns(
 
 with chart_col:
 
-    fig = go.Figure(
-        go.Pie(
-            labels=["Benign", "Attack"],
-            values=[
-                benign_flows,
-                attack_flows
-            ],
-            hole=0.68,
-            textinfo="percent",
-            hovertemplate=(
-                "%{label}: %{value:,}"
-                "<extra></extra>"
-            ),
+    st.markdown("#### Benign vs Attack Composition")
+
+    if (
+        benign_flows is not None
+        and attack_flows is not None
+        and (benign_flows + attack_flows) > 0
+    ):
+        fig = go.Figure(
+            go.Pie(
+                labels=["Benign", "Attack"],
+                values=[benign_flows, attack_flows],
+                hole=0.68,
+                textinfo="percent",
+                hovertemplate=(
+                    "%{label}: %{value:,} flows"
+                    "<extra></extra>"
+                ),
+            )
         )
-    )
 
-    fig.update_layout(
-        height=330,
-        margin=dict(
-            l=5,
-            r=5,
-            t=5,
-            b=5
-        ),
-        paper_bgcolor="rgba(0,0,0,0)",
-        font=dict(
-            color="#dce7f2"
-        ),
-        legend=dict(
-            orientation="h",
-            y=-0.05,
-        ),
-    )
+        fig.update_layout(
+            height=330,
+            margin=dict(l=5, r=5, t=5, b=5),
+            paper_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#dce7f2"),
+            legend=dict(orientation="h", y=-0.05),
+        )
 
-    st.plotly_chart(
-        fig,
-        use_container_width=True,
-        config={
-            "displayModeBar": False
-        },
-    )
+        st.plotly_chart(
+            fig,
+            use_container_width=True,
+            config={"displayModeBar": False},
+        )
+        st.caption(
+            f"{traffic_profile_kind}: {traffic_profile_source}. "
+            "This is the cleaned CICIDS2017 dataset's ground-truth "
+            "composition, not predictions from the current inference batch."
+        )
+    else:
+        st.info(
+            "Traffic composition is unavailable because neither local "
+            "ground-truth labels nor the checked-in reference profile "
+            "could be loaded."
+        )
 
 
 # ============================================================
