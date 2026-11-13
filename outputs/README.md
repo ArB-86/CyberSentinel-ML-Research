@@ -13,7 +13,7 @@ python attack_graph/if_attack_graph_pipeline.py /path/to/metadata-rich-csvs \
   --benign-sample-n 500000 \
   --calibration-rows 5000 \
   --evaluation-rows 160000 \
-  --calibration-quantile 0.05
+  --calibration-quantile 0.01
 ```
 
 By default, the pipeline reads all rows. A positive `--nrows` is only for quick smoke tests; reading a prefix of each file is not suitable for temporal or incident analysis.
@@ -25,7 +25,7 @@ The fit, calibration and evaluation roles are separated by exact numeric-feature
 - calibration: benign-only held-out groups for the threshold;
 - evaluation: held-out benign groups plus attack rows whose exact feature hash does not occur in fit/calibration.
 
-The median imputer and Isolation Forest are fitted on the benign training sample only. The benchmark output includes a reusable `isolation_forest_model.joblib` artifact containing the fitted detector, imputer, feature order, benign-calibrated threshold and calibration score quantiles. **Joblib artifacts are executable pickle-based files; load only artifacts from a trusted project environment.**
+The default final detector is one Isolation Forest using the raw numeric flow features plus 18 causal host-history features. Source/destination IPs are grouping keys only; IP addresses are not passed to the model. History aggregates use completed one-minute buckets and previous 1-minute/5-minute windows, excluding the current minute. The median imputer and Isolation Forest are fitted on benign training rows only. The default threshold is the lower 1% quantile of held-out benign calibration scores; this is a calibration target, not a guarantee of the same FPR on future traffic. The benchmark output includes a reusable version-2 `isolation_forest_model.joblib` artifact containing the fitted detector, imputer, raw and host-history feature schema, benign-calibrated threshold and score quantiles. Version-1 raw-only artifacts remain supported for inference. **Joblib artifacts are executable pickle-based files; load only artifacts from a trusted project environment.**
 
 ## 2. Score unlabeled network traffic (inference mode)
 
@@ -40,12 +40,13 @@ python attack_graph/if_attack_graph_pipeline.py /path/to/unlabeled-flow-csvs \
 
 Inference mode:
 - does not require or read ground-truth labels;
-- applies the stored imputer and feature order from training;
+- rebuilds the same causal host-history features from the complete supplied batch of metadata-rich CSVs;
+- applies the stored imputer and exact feature order from training;
 - applies the stored threshold calibrated on benign validation traffic;
 - uses only `predicted_anomaly` to select suspicious flows;
 - leaves attack type as `Unclassified` unless a separate classifier supplies `predicted_attack_type`.
 
-Inference requires the same numeric feature schema and the metadata fields needed for event grouping (timestamp, source/destination and protocol). Missing or incompatible feature columns cause an explicit error rather than a silent feature substitution.
+Inference requires the same numeric feature schema plus timestamp, source IP, destination IP, destination port, and forward/backward byte and packet totals. Missing or incompatible feature columns cause an explicit error rather than silent substitution. Host-history inference is batch-oriented: supply the earlier traffic needed to populate 1-minute/5-minute history. Rolling state is not persisted between separate CLI invocations, so this is not yet a live streaming detector.
 
 ## 3. Generated files
 
