@@ -366,10 +366,6 @@ with st.sidebar:
         label="Risk Assessment",
     )
 
-    st.markdown(
-        '<div class="smallcaps" style="margin-top:18px">Project</div>',
-        unsafe_allow_html=True,
-    )
 
     # st.page_link(
     #     "pages/ai_investigation.py",
