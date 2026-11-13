@@ -204,6 +204,17 @@ def _benign_three_way_split(
     return train_positions, calibration_positions, test_positions
 
 
+def parse_metadata_timestamps(values: pd.Series) -> pd.Series:
+    """Parse CICIDS metadata timestamps as day-first, including mixed ISO inputs."""
+    return pd.to_datetime(
+        values.astype("string").str.strip(),
+        errors="coerce",
+        utc=True,
+        format="mixed",
+        dayfirst=True,
+    )
+
+
 def _chronological_benign_split(
     benign_positions: np.ndarray,
     hashes: np.ndarray,
@@ -217,7 +228,7 @@ def _chronological_benign_split(
     when fewer than three distinct calendar days exist; callers must then
     label the fallback as a non-temporal duplicate-group split.
     """
-    parsed = pd.to_datetime(timestamps, errors="coerce", utc=True, format="mixed")
+    parsed = parse_metadata_timestamps(timestamps)
     if parsed.isna().any():
         raise ValueError("Benchmark mode requires valid timestamps on every flow row.")
     day_values = parsed.dt.floor("D")
@@ -373,9 +384,7 @@ def run(
         raise ValueError("Benchmark mode contains missing ground-truth labels; clean or exclude those rows first.")
     if "timestamp" not in work.columns:
         raise ValueError("Benchmark mode requires a timestamp column for chronological holdout and event reconstruction.")
-    parsed_timestamps = pd.to_datetime(
-        work["timestamp"], errors="coerce", utc=True, format="mixed"
-    )
+    parsed_timestamps = parse_metadata_timestamps(work["timestamp"])
     if parsed_timestamps.isna().any():
         raise ValueError(
             f"Benchmark mode found {int(parsed_timestamps.isna().sum())} invalid timestamps. "
