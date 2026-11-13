@@ -133,6 +133,47 @@ st.markdown(
         margin-top: 3px;
     }
 
+    .fs-limits {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+    .fs-limit {
+        display: flex;
+        align-items: flex-start;
+        gap: 11px;
+        min-width: 0;
+        padding: 12px 13px;
+        border: 1px solid #26374b;
+        border-radius: 10px;
+        background: #0d1722;
+    }
+    .fs-limit-num {
+        display: flex;
+        flex: 0 0 27px;
+        align-items: center;
+        justify-content: center;
+        width: 27px;
+        height: 27px;
+        border-radius: 8px;
+        background: #172333;
+        color: #91a9c1;
+        font-size: .65rem;
+        font-weight: 850;
+    }
+    .fs-limit-title {
+        color: #e6eef7;
+        font-size: .78rem;
+        font-weight: 800;
+        line-height: 1.3;
+    }
+    .fs-limit-copy {
+        color: #91a2b5;
+        font-size: .72rem;
+        line-height: 1.45;
+        margin-top: 4px;
+    }
+
     .fs-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -301,7 +342,7 @@ st.markdown(
 
     .fs-build {
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(5, minmax(0, 1fr));
         gap: 10px;
     }
     .fs-build-step {
@@ -347,6 +388,7 @@ st.markdown(
         .fs-pipeline-step:after { display: none; }
         .fs-card { padding: 16px 14px; }
         .fs-card-details { grid-template-columns: 1fr; }
+        .fs-limits { grid-template-columns: 1fr; }
         .fs-card-summary { min-height: 0; }
         .fs-card-state { font-size: .52rem; padding: 4px 6px; }
         .fs-hero { padding: 20px; }
@@ -379,10 +421,10 @@ st.markdown(
     <div class="fs-hero">
       <div class="fs-hero-title">Make detection more reliable. Then make it smarter.</div>
       <div class="fs-hero-copy">
-        Four changes: improve alerts, check event groups, identify attack types,
-        and move from uploaded files towards live network monitoring.
+        First prove that detection and event grouping are reliable. Then add attack-type
+        identification, saved history across batches, and continuous flow monitoring.
       </div>
-      <div class="fs-hero-tag">4 PLANNED IMPROVEMENTS · NOT BUILT YET</div>
+      <div class="fs-hero-tag">5 PRACTICAL IMPROVEMENTS · FUTURE WORK</div>
     </div>
     """,
     unsafe_allow_html=True,
@@ -391,29 +433,91 @@ st.markdown(
 st.markdown(
     """
     <div class="fs-section-head">
-      <div class="fs-section-title">CyberSentinel today</div>
-      <div class="fs-section-note">Current app flow</div>
+      <div class="fs-section-title">What the project does today</div>
+      <div class="fs-section-note">Current system</div>
     </div>
     <div class="fs-pipeline">
       <div class="fs-pipeline-step">
         <div class="fs-pipeline-num">01</div>
         <div class="fs-pipeline-name">Traffic file</div>
-        <div class="fs-pipeline-sub">Upload network flows</div>
+        <div class="fs-pipeline-sub">Upload flow CSV files</div>
       </div>
       <div class="fs-pipeline-step">
         <div class="fs-pipeline-num">02</div>
         <div class="fs-pipeline-name">Find unusual flows</div>
-        <div class="fs-pipeline-sub">Isolation Forest</div>
+        <div class="fs-pipeline-sub">Isolation Forest model</div>
       </div>
       <div class="fs-pipeline-step">
         <div class="fs-pipeline-num">03</div>
-        <div class="fs-pipeline-name">Connect events</div>
+        <div class="fs-pipeline-name">Group related activity</div>
         <div class="fs-pipeline-sub">Time and shared hosts</div>
       </div>
       <div class="fs-pipeline-step">
         <div class="fs-pipeline-num">04</div>
-        <div class="fs-pipeline-name">Investigate</div>
-        <div class="fs-pipeline-sub">Risk and AI evidence</div>
+        <div class="fs-pipeline-name">Review the activity</div>
+        <div class="fs-pipeline-sub">Graph, risk and AI evidence</div>
+      </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+
+st.markdown(
+    """
+    <div class="fs-section-head">
+      <div class="fs-section-title">Current limitations</div>
+      <div class="fs-section-note">What the system cannot do reliably yet</div>
+    </div>
+    <div class="fs-limits">
+      <div class="fs-limit">
+        <div class="fs-limit-num">01</div>
+        <div>
+          <div class="fs-limit-title">CSV files only</div>
+          <div class="fs-limit-copy">The app analyses uploaded network-flow files. It is not connected to a live network feed.</div>
+        </div>
+      </div>
+      <div class="fs-limit">
+        <div class="fs-limit-num">02</div>
+        <div>
+          <div class="fs-limit-title">No saved history between separate runs</div>
+          <div class="fs-limit-copy">Host activity is rebuilt from the files supplied in a run. It is not carried forward automatically to the next batch.</div>
+        </div>
+      </div>
+      <div class="fs-limit">
+        <div class="fs-limit-num">03</div>
+        <div>
+          <div class="fs-limit-title">No attack-family prediction</div>
+          <div class="fs-limit-copy">The detector flags unusual traffic; it does not reliably name it as DDoS, a port scan or brute force.</div>
+        </div>
+      </div>
+      <div class="fs-limit">
+        <div class="fs-limit-num">04</div>
+        <div>
+          <div class="fs-limit-title">Event groups are not confirmed incidents</div>
+          <div class="fs-limit-copy">Time and host links create possible groups. They still need comparison with reviewed incident evidence.</div>
+        </div>
+      </div>
+      <div class="fs-limit">
+        <div class="fs-limit-num">05</div>
+        <div>
+          <div class="fs-limit-title">Risk scores are only guides</div>
+          <div class="fs-limit-copy">The current score uses rules. It is not a proven probability of attack or a validated measure of incident severity.</div>
+        </div>
+      </div>
+      <div class="fs-limit">
+        <div class="fs-limit-num">06</div>
+        <div>
+          <div class="fs-limit-title">More real-network testing is needed</div>
+          <div class="fs-limit-copy">CICIDS2017 is the main benchmark. Performance on independent networks has not yet been established.</div>
+        </div>
+      </div>
+      <div class="fs-limit">
+        <div class="fs-limit-num">07</div>
+        <div>
+          <div class="fs-limit-title">No automatic blocking</div>
+          <div class="fs-limit-copy">AI-assisted findings need human review. The system does not block traffic or isolate devices automatically.</div>
+        </div>
       </div>
     </div>
     """,
@@ -423,55 +527,66 @@ st.markdown(
 roadmap = [
     {
         "num": "01",
-        "kind": "DETECTION",
-        "state": "EXISTING TEST",
-        "title": "Alerts that work on different days",
-        "summary": "An alert setting may work well one day and create too many false alerts the next.",
-        "flow": ["Past days", "Test alert settings", "Count mistakes"],
-        "today": "Isolation Forest and a date-based test script are already in the project.",
-        "next": "Run the test across several time periods. Count normal traffic flagged by mistake and attacks missed.",
-        "output": "See which alert setting stays reliable on later days.",
+        "kind": "DETECTION VALIDATION",
+        "state": "MORE TESTING",
+        "title": "Test on later and unseen network traffic",
+        "summary": "A detector can look good on one dataset and still make too many mistakes on a different network.",
+        "flow": ["Later traffic", "Independent test", "Measure errors"],
+        "today": "A time-based test path exists, but full-scale testing and testing on an independent network are still missing.",
+        "next": "Run the full metadata-rich data through time-ordered tests. Add host or attack-scenario holdouts where possible. Report false alarms, missed attacks and per-attack results.",
+        "output": "Evidence of how well detection holds up on traffic the model has not seen.",
     },
     {
         "num": "02",
-        "kind": "INVESTIGATION",
+        "kind": "INCIDENT VALIDATION",
         "state": "REVIEW NEEDED",
-        "title": "Event groups that make sense",
-        "summary": "Events can be connected by host and time, but that does not prove they belong to one incident.",
-        "flow": ["System groups events", "Reviewer checks", "Fix weak links"],
-        "today": "The project already groups suspicious flows and connects related events.",
-        "next": "Have a reviewer mark sample event pairs as related or unrelated. Check where the system joins the wrong events or misses a link.",
-        "output": "Know how often the event groups match a human review.",
+        "title": "Check whether event groups are correct",
+        "summary": "Putting events together does not prove that they belong to the same real incident.",
+        "flow": ["Grouped events", "Compare with review", "Measure mistakes"],
+        "today": "The system links events by time and shared hosts. These are possible relationships, not confirmed incidents.",
+        "next": "Run the grouping tests on the full traffic data and compare groups with documented attack scenarios and analyst-reviewed examples. Count wrong joins and missed links.",
+        "output": "Measured evidence of when event grouping works and where it needs improvement.",
     },
     {
         "num": "03",
-        "kind": "ATTACK DETECTION",
+        "kind": "ATTACK CLASSIFICATION",
         "state": "NEW MODEL",
-        "title": "Show the likely attack type",
-        "summary": "The current model says a flow is unusual. It does not name the attack.",
-        "flow": ["Unusual flow", "Second model", "DDoS / Scan / Unknown"],
-        "today": "Isolation Forest flags unusual traffic; it does not classify DDoS, port scans or brute force.",
-        "next": "Train a separate model on labelled examples. Test each attack type and show 'Unknown' when the result is weak.",
-        "output": "Show 'Unusual' and 'Possible attack type' as two separate results.",
+        "title": "Identify the likely attack type",
+        "summary": "The current detector finds unusual traffic but does not tell the analyst which attack it may be.",
+        "flow": ["Unusual flow", "Classify traffic", "Type or unknown"],
+        "today": "Isolation Forest flags unusual flows. There is no separate trained model that predicts an attack family.",
+        "next": "Train a multi-class model on labelled examples. Report results for each attack type and show 'Unknown' when confidence is too low.",
+        "output": "Show the possible attack family separately from the unusual-traffic alert.",
     },
     {
         "num": "04",
+        "kind": "INCREMENTAL BATCHES",
+        "state": "NEW FEATURE",
+        "title": "Remember host activity between CSV batches",
+        "summary": "Each separate run should not need every earlier file just to rebuild recent host history.",
+        "flow": ["New CSV batch", "Load saved history", "Score new flows"],
+        "today": "Host-history features are rebuilt from the files in one run. Recent host state is not saved between separate runs.",
+        "next": "Save recent host history between runs, process only new rows, and handle repeated or late-arriving records safely.",
+        "output": "Process successive CSV batches without replaying all previous files.",
+    },
+    {
+        "num": "05",
         "kind": "LIVE MONITORING",
-        "state": "NEW MODULE",
-        "title": "Monitor network traffic as it arrives",
-        "summary": "Today, CyberSentinel checks uploaded CSV files. It does not watch incoming traffic continuously.",
-        "flow": ["Live flow feed", "Score new flows", "Live dashboard"],
-        "today": "The app reads network-flow records from files. It has no live traffic source or continuous input loop.",
-        "next": "Connect a network-flow source, receive new records as they arrive, keep recent host history and score only new flows.",
-        "output": "A live-updating prototype that shows new suspicious activity without waiting for a full CSV batch.",
+        "state": "NEW PIPELINE",
+        "title": "Monitor incoming network traffic live",
+        "summary": "Move from analysing uploaded files to analysing new network-flow records as they arrive.",
+        "flow": ["Live flow feed", "Score new flows", "Update dashboard"],
+        "today": "There is no connected live flow source or continuous processing loop.",
+        "next": "Connect a NetFlow, IPFIX or Zeek flow feed. Reuse saved host history, score incoming flows and update the dashboard and alerts.",
+        "output": "A working prototype that displays suspicious activity as new flow records arrive.",
     },
 ]
 
 st.markdown(
     """
     <div class="fs-section-head">
-      <div class="fs-section-title">What to build next</div>
-      <div class="fs-section-note">Current work → next change → result</div>
+      <div class="fs-section-title">Practical future scope</div>
+      <div class="fs-section-note">Only work that closes a current project gap</div>
     </div>
     """,
     unsafe_allow_html=True,
@@ -497,43 +612,50 @@ def render_roadmap_card(item):
       <div class="fs-mini-flow">{flow_html}</div>
       <div class="fs-card-details">
         <div class="fs-detail">
-          <div class="fs-detail-label">ALREADY HERE</div>
+          <div class="fs-detail-label">CURRENT LIMITATION</div>
           <div class="fs-detail-copy">{escape(item["today"])}</div>
         </div>
         <div class="fs-detail">
-          <div class="fs-detail-label">NEXT CHANGE</div>
+          <div class="fs-detail-label">WHAT WE WILL DO</div>
           <div class="fs-detail-copy">{escape(item["next"])}</div>
         </div>
       </div>
       <div class="fs-output">
-        <span class="fs-output-label">RESULT</span>
+        <span class="fs-output-label">BENEFIT</span>
         <span>{escape(item["output"])}</span>
       </div>
     </div>
     """
 
 
-# Native Streamlit columns control the card layout; st.html renders each card
-# as a real HTML fragment instead of passing the whole grid through Markdown.
+# Keep the fifth card centered so the final row stays balanced.
 for row_start in range(0, len(roadmap), 2):
-    left, right = st.columns(2, gap="medium")
-    for col, item in zip((left, right), roadmap[row_start:row_start + 2]):
-        with col:
-            st.html(render_roadmap_card(item))
+    row_items = roadmap[row_start:row_start + 2]
+    if len(row_items) == 1:
+        left, center, right = st.columns([1, 2, 1], gap="medium")
+        with center:
+            st.html(render_roadmap_card(row_items[0]))
+    else:
+        left, right = st.columns(2, gap="medium")
+        with left:
+            st.html(render_roadmap_card(row_items[0]))
+        with right:
+            st.html(render_roadmap_card(row_items[1]))
 
 st.markdown(
     """
     <div class="fs-section-head">
-      <div class="fs-section-title">Build order</div>
+      <div class="fs-section-title">Recommended build order</div>
+      <div class="fs-section-note">Validation first, live operation last</div>
     </div>
     <div class="fs-build">
       <div class="fs-build-step">
         <div class="fs-build-num">1</div>
-        <div class="fs-build-name">Test detection</div>
+        <div class="fs-build-name">Validate detection</div>
       </div>
       <div class="fs-build-step">
         <div class="fs-build-num">2</div>
-        <div class="fs-build-name">Review event groups</div>
+        <div class="fs-build-name">Validate event groups</div>
       </div>
       <div class="fs-build-step">
         <div class="fs-build-num">3</div>
@@ -541,11 +663,15 @@ st.markdown(
       </div>
       <div class="fs-build-step">
         <div class="fs-build-num">4</div>
-        <div class="fs-build-name">Build live monitoring</div>
+        <div class="fs-build-name">Save batch history</div>
+      </div>
+      <div class="fs-build-step">
+        <div class="fs-build-num">5</div>
+        <div class="fs-build-name">Connect live flows</div>
       </div>
     </div>
     <div class="fs-note">
-      These are planned changes. The current app does not block attacks or monitor a live network continuously.
+      These five items are future work, not current features. Incremental batch processing comes before live monitoring because live monitoring needs saved, continuously updated host history.
     </div>
     """,
     unsafe_allow_html=True,
