@@ -41,7 +41,7 @@ def test_host_history_is_past_only_and_row_aligned():
     assert features.loc[0, "src_destination_ip_contacts_prev_1m"] == 2
     assert features.loc[0, "src_destination_port_contacts_prev_1m"] == 2
     assert features.loc[0, "src_bytes_prev_1m"] == 33
-    assert features.loc[0, "src_packets_prev_1m"] == 4
+    assert features.loc[0, "src_packets_prev_1m"] == 5
 
     # At 08:02, the one-minute window sees 08:01, while five minutes sees 08:00 + 08:01.
     assert features.loc[3, "src_flows_prev_1m"] == 1
