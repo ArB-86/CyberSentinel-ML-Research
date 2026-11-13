@@ -242,14 +242,18 @@ def _rolling_host_features(
                 result[output_column] = np.zeros(0, dtype=np.float32)
         return result
 
-    timestamps = ordered["bucket"].astype("int64").to_numpy(dtype=np.int64)
+    # pandas 3.x may infer datetime64[us] for to_datetime(..., unit="m").
+    # Normalize explicitly so timestamp integers and window widths share ns.
+    timestamps = ordered["bucket"].to_numpy(
+        dtype="datetime64[ns]"
+    ).astype(np.int64, copy=False)
     values = ordered[metric_columns].to_numpy(dtype=np.float64, copy=True)
     grouped_positions = ordered.groupby(
         host_column, sort=False, dropna=False
     ).indices.values()
 
     for window_label, window in (("1m", "1min"), ("5m", "5min")):
-        window_ns = int(pd.Timedelta(window).value)
+        window_ns = MINUTE_NS if window_label == "1m" else 5 * MINUTE_NS
         window_values = np.zeros(
             (len(ordered), len(metric_columns)), dtype=np.float64
         )
