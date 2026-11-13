@@ -7,6 +7,7 @@ from utils.dashboard_data import (
     build_reference_traffic_counts,
     build_traffic_counts,
     load_reference_attack_distribution,
+    load_reference_traffic_summary,
 )
 
 
@@ -118,3 +119,24 @@ def test_build_reference_traffic_counts_rejects_invalid_or_inconsistent_inputs()
         pd.DataFrame({"Attack Type": ["DoS Hulk"], "Flows": ["bad"]}), 20
     ) is None
     assert build_reference_traffic_counts(pd.DataFrame(), 20) is None
+
+
+
+def test_checked_in_traffic_summary_matches_all_attack_family_counts():
+    root = Path(__file__).resolve().parents[1]
+    summary = load_reference_traffic_summary(
+        root / "research" / "cicids2017_traffic_summary.csv"
+    )
+    attacks = load_reference_attack_distribution(
+        root / "research" / "cicids2017_attack_distribution.csv"
+    )
+
+    assert summary == {
+        "Total Flows": 2_228_970,
+        "Benign Flows": 1_892_671,
+        "Attack Flows": 336_299,
+    }
+    assert int(attacks["Flows"].sum()) == summary["Attack Flows"]
+    assert summary["Total Flows"] == (
+        summary["Benign Flows"] + summary["Attack Flows"]
+    )
