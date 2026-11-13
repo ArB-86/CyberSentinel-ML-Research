@@ -139,10 +139,14 @@ st.markdown(
         gap: 15px;
     }
     .fs-card {
+        box-sizing: border-box;
         position: relative;
-        overflow: hidden;
+        display: block;
+        width: 100%;
         min-width: 0;
+        height: 100%;
         padding: 19px 20px 17px;
+        overflow: hidden;
         border: 1px solid #293e53;
         border-radius: 14px;
         background: linear-gradient(145deg, #101b28 0%, #0b131d 78%);
@@ -160,7 +164,8 @@ st.markdown(
     .fs-card-head {
         display: flex;
         align-items: center;
-        gap: 11px;
+        gap: 10px;
+        min-width: 0;
     }
     .fs-card-num {
         display: flex;
@@ -176,21 +181,27 @@ st.markdown(
         font-weight: 850;
     }
     .fs-card-kind {
+        min-width: 0;
         color: #79a7ce;
         font-size: .62rem;
         font-weight: 850;
-        letter-spacing: .13em;
+        letter-spacing: .11em;
+        line-height: 1.3;
+        overflow-wrap: anywhere;
     }
     .fs-card-state {
+        flex: 0 0 auto;
         margin-left: auto;
         padding: 5px 8px;
         border: 1px solid #34485b;
         border-radius: 6px;
         color: #a6b5c5;
-        font-size: .58rem;
+        font-size: .57rem;
         font-weight: 800;
-        letter-spacing: .08em;
-        white-space: nowrap;
+        letter-spacing: .06em;
+        line-height: 1.2;
+        text-align: center;
+        white-space: normal;
     }
     .fs-card-title {
         color: #f0f5fb;
@@ -208,22 +219,28 @@ st.markdown(
     }
     .fs-mini-flow {
         display: flex;
-        align-items: center;
+        align-items: stretch;
         gap: 6px;
+        width: 100%;
         margin: 15px 0 14px;
     }
     .fs-mini-node {
+        display: flex;
         flex: 1 1 0;
+        align-items: center;
+        justify-content: center;
         min-width: 0;
-        padding: 9px 7px;
+        min-height: 43px;
+        padding: 8px 6px;
         border: 1px solid #263c51;
         border-radius: 8px;
         background: #0a141f;
         color: #c8d7e6;
-        font-size: .68rem;
+        font-size: .66rem;
         font-weight: 750;
         line-height: 1.3;
         text-align: center;
+        overflow-wrap: anywhere;
     }
     .fs-mini-arrow {
         flex: 0 0 auto;
@@ -233,10 +250,13 @@ st.markdown(
     }
     .fs-card-details {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: stretch;
         gap: 10px;
+        width: 100%;
     }
     .fs-detail {
+        box-sizing: border-box;
         min-width: 0;
         padding: 11px 12px;
         border: 1px solid #25384a;
@@ -252,13 +272,15 @@ st.markdown(
     }
     .fs-detail-copy {
         color: #cbd7e3;
-        font-size: .75rem;
+        font-size: .74rem;
         line-height: 1.5;
+        overflow-wrap: anywhere;
     }
     .fs-output {
         display: flex;
         gap: 9px;
         align-items: flex-start;
+        min-width: 0;
         margin-top: 12px;
         padding: 10px 12px;
         border: 1px solid #24483e;
@@ -320,15 +342,13 @@ st.markdown(
         line-height: 1.5;
     }
 
-    @media (max-width: 900px) {
-        .fs-grid { grid-template-columns: 1fr; }
-        .fs-card-summary { min-height: 0; }
-    }
     @media (max-width: 650px) {
         .fs-pipeline, .fs-build { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .fs-pipeline-step:after { display: none; }
+        .fs-card { padding: 16px 14px; }
         .fs-card-details { grid-template-columns: 1fr; }
-        .fs-card-state { font-size: .53rem; }
+        .fs-card-summary { min-height: 0; }
+        .fs-card-state { font-size: .52rem; padding: 4px 6px; }
         .fs-hero { padding: 20px; }
     }
     </style>
@@ -457,8 +477,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-cards_html = ['<div class="fs-grid">']
-for item in roadmap:
+def render_roadmap_card(item):
     flow_html = (
         f'<div class="fs-mini-node">{escape(item["flow"][0])}</div>'
         f'<div class="fs-mini-arrow">›</div>'
@@ -466,36 +485,41 @@ for item in roadmap:
         f'<div class="fs-mini-arrow">›</div>'
         f'<div class="fs-mini-node">{escape(item["flow"][2])}</div>'
     )
-    cards_html.append(
-        f"""
-        <section class="fs-card">
-          <div class="fs-card-head">
-            <div class="fs-card-num">{escape(item["num"])}</div>
-            <div class="fs-card-kind">{escape(item["kind"])}</div>
-            <div class="fs-card-state">{escape(item["state"])}</div>
-          </div>
-          <div class="fs-card-title">{escape(item["title"])}</div>
-          <div class="fs-card-summary">{escape(item["summary"])}</div>
-          <div class="fs-mini-flow">{flow_html}</div>
-          <div class="fs-card-details">
-            <div class="fs-detail">
-              <div class="fs-detail-label">ALREADY HERE</div>
-              <div class="fs-detail-copy">{escape(item["today"])}</div>
-            </div>
-            <div class="fs-detail">
-              <div class="fs-detail-label">NEXT CHANGE</div>
-              <div class="fs-detail-copy">{escape(item["next"])}</div>
-            </div>
-          </div>
-          <div class="fs-output">
-            <span class="fs-output-label">RESULT</span>
-            <span>{escape(item["output"])}</span>
-          </div>
-        </section>
-        """
-    )
-cards_html.append("</div>")
-st.markdown("".join(cards_html), unsafe_allow_html=True)
+    return f"""
+    <div class="fs-card">
+      <div class="fs-card-head">
+        <div class="fs-card-num">{escape(item["num"])}</div>
+        <div class="fs-card-kind">{escape(item["kind"])}</div>
+        <div class="fs-card-state">{escape(item["state"])}</div>
+      </div>
+      <div class="fs-card-title">{escape(item["title"])}</div>
+      <div class="fs-card-summary">{escape(item["summary"])}</div>
+      <div class="fs-mini-flow">{flow_html}</div>
+      <div class="fs-card-details">
+        <div class="fs-detail">
+          <div class="fs-detail-label">ALREADY HERE</div>
+          <div class="fs-detail-copy">{escape(item["today"])}</div>
+        </div>
+        <div class="fs-detail">
+          <div class="fs-detail-label">NEXT CHANGE</div>
+          <div class="fs-detail-copy">{escape(item["next"])}</div>
+        </div>
+      </div>
+      <div class="fs-output">
+        <span class="fs-output-label">RESULT</span>
+        <span>{escape(item["output"])}</span>
+      </div>
+    </div>
+    """
+
+
+# Native Streamlit columns control the card layout; st.html renders each card
+# as a real HTML fragment instead of passing the whole grid through Markdown.
+for row_start in range(0, len(roadmap), 2):
+    left, right = st.columns(2, gap="medium")
+    for col, item in zip((left, right), roadmap[row_start:row_start + 2]):
+        with col:
+            st.html(render_roadmap_card(item))
 
 st.markdown(
     """
