@@ -506,9 +506,6 @@ st.markdown(
         </div>
       </div>
     </div>
-    <div class="fs-note">
-      Risk scores are rule-based guidance, not attack probabilities. AI-assisted findings need human review; the system does not automatically block traffic.
-    </div>
     """,
     unsafe_allow_html=True,
 )
