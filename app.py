@@ -906,7 +906,7 @@ else:
     )
 
     st.caption(
-        f"{attack_distribution_source}. Counts are dataset-level "
+        f"{traffic_profile_source}. Counts are dataset-level "
         "ground-truth labels, not predictions from the current "
         "unlabeled inference batch."
     )
