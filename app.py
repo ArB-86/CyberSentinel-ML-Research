@@ -7,6 +7,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from utils.cache_keys import file_cache_signature
+from utils.dashboard_data import build_attack_distribution
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -256,20 +257,19 @@ if (
     and labels_df is not None
     and "Label" in labels_df.columns
 ):
-    labels = labels_df["Label"].astype(str).str.strip()
+    labels = labels_df["Label"].astype("string").str.strip().dropna()
+    labels = labels[labels.ne("")]
     total_flows = int(len(labels))
-    benign_flows = int((labels.str.casefold() == "benign").sum())
+    benign_mask = labels.str.casefold().eq("benign")
+    benign_flows = int(benign_mask.sum())
     attack_flows = total_flows - benign_flows
-    attack_distribution = (
-        labels[labels.str.casefold() != "benign"]
-        .value_counts()
-        .rename_axis("Attack Type")
-        .reset_index(name="Flows")
-    )
 else:
-    # Benchmark labels do not describe the current unlabeled inference run.
+    # Benchmark metrics describe the current labelled evaluation run only.
     total_flows = benign_flows = attack_flows = None
-    attack_distribution = pd.DataFrame(columns=["Attack Type", "Flows"])
+
+# The cleaned CICIDS2017 labels are a dataset profile, not predictions from
+# the current inference batch. Keep this chart available during unlabeled runs.
+attack_distribution = build_attack_distribution(labels_df)
 
 
 # ============================================================
@@ -788,59 +788,83 @@ st.markdown(
 
 st.header("Attack Distribution")
 
-show = (
-    attack_distribution
-    .head(12)
-    .sort_values("Flows")
-)
+if labels_df is None:
+    if DATA_PATH.exists():
+        st.info(
+            "Attack distribution is unavailable because the cleaned "
+            "CICIDS2017 labels could not be loaded."
+        )
+    else:
+        st.info(
+            "Attack distribution is unavailable because "
+            "data/cleaned_cicids2017.parquet was not found."
+        )
+elif "Label" not in labels_df.columns:
+    st.info(
+        "Attack distribution is unavailable because the cleaned dataset "
+        "does not contain a Label column."
+    )
+elif attack_distribution.empty:
+    st.info(
+        "The cleaned CICIDS2017 dataset contains no non-benign labels "
+        "to display."
+    )
+else:
+    show = (
+        attack_distribution
+        .head(12)
+        .sort_values("Flows")
+    )
 
+    fig = px.bar(
+        show,
+        x="Flows",
+        y="Attack Type",
+        orientation="h",
+        text="Flows",
+    )
 
-fig = px.bar(
-    show,
-    x="Flows",
-    y="Attack Type",
-    orientation="h",
-    text="Flows",
-)
+    fig.update_traces(
+        marker_color="#49a8ff",
+        texttemplate="%{text:,}",
+        textposition="outside",
+        cliponaxis=False,
+    )
 
+    fig.update_layout(
+        height=max(360, 42 * len(show) + 80),
+        margin=dict(
+            l=0,
+            r=70,
+            t=10,
+            b=10
+        ),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="#0d151f",
+        font=dict(
+            color="#dce7f2"
+        ),
+        xaxis=dict(
+            gridcolor="#1f2d3d"
+        ),
+        yaxis=dict(
+            gridcolor="rgba(0,0,0,0)"
+        ),
+    )
 
-fig.update_traces(
-    marker_color="#49a8ff",
-    texttemplate="%{text:,}",
-    textposition="outside",
-    cliponaxis=False,
-)
+    st.plotly_chart(
+        fig,
+        use_container_width=True,
+        config={
+            "displayModeBar": False
+        },
+    )
 
-
-fig.update_layout(
-    height=430,
-    margin=dict(
-        l=0,
-        r=70,
-        t=10,
-        b=10
-    ),
-    paper_bgcolor="rgba(0,0,0,0)",
-    plot_bgcolor="#0d151f",
-    font=dict(
-        color="#dce7f2"
-    ),
-    xaxis=dict(
-        gridcolor="#1f2d3d"
-    ),
-    yaxis=dict(
-        gridcolor="rgba(0,0,0,0)"
-    ),
-)
-
-
-st.plotly_chart(
-    fig,
-    use_container_width=True,
-    config={
-        "displayModeBar": False
-    },
-)
+    st.caption(
+        "Ground-truth label counts from the cleaned CICIDS2017 dataset. "
+        "This is a dataset profile, not predictions from the current "
+        "unlabeled inference batch."
+    )
 
 
 # ============================================================
