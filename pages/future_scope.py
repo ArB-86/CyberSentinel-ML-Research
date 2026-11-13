@@ -127,8 +127,7 @@ for col, (number, title, detail) in zip(flow_cols, flow):
             unsafe_allow_html=True,
         )
 
-st.markdown("### Pick an improvement")
-st.caption("Open a topic to see what we have, what needs to change, and a simple example.")
+st.markdown("### Next improvements")
 
 roadmap = [
     {
@@ -200,8 +199,7 @@ for tab, item in zip(tabs, roadmap):
         )
 
 # Build order
-st.markdown("### In what order?")
-st.caption("First check the parts we already have. Then add new features.")
+st.markdown("### Build order")
 order = [
     ("FIRST", "Test detection", "Check it on different days."),
     ("SECOND", "Review event groups", "See whether related events are grouped correctly."),
