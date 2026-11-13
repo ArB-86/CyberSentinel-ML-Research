@@ -47,3 +47,10 @@ reference benign count by subtracting the sum of the 14 checked-in attack
 families from the verified total. These values describe the complete cleaned
 CICIDS2017 dataset profile, not a benchmark holdout, current inference batch,
 or live detection stream.
+
+
+The dashboard also keeps aggregate totals in
+`research/cicids2017_traffic_summary.csv` (2,228,970 total; 1,892,671
+benign; 336,299 attack). At runtime, the dashboard checks that the aggregate
+attack count agrees with the sum of the 14 attack-family counts before using
+the reference values for its KPI cards and benign-versus-attack pie chart.
