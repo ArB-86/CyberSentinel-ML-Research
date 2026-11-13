@@ -6,6 +6,7 @@ import pandas as pd
 
 
 DISTRIBUTION_COLUMNS = ["Attack Type", "Flows"]
+TRAFFIC_SUMMARY_COLUMNS = ["Metric", "Flows"]
 
 
 def build_attack_distribution(labels_df: pd.DataFrame | None) -> pd.DataFrame:
@@ -137,3 +138,48 @@ def build_reference_traffic_counts(
         "benign_flows": total - attacks,
         "attack_flows": attacks,
     }
+
+
+def load_reference_traffic_summary(path: str | Path) -> dict[str, int] | None:
+    """Load verified dataset-level CICIDS2017 traffic totals.
+
+    These counts describe the cleaned, labelled reference dataset. They are
+    not current inference-batch counts or model predictions.
+    """
+    source = Path(path)
+    if not source.is_file():
+        return None
+
+    frame = pd.read_csv(source)
+    if not set(TRAFFIC_SUMMARY_COLUMNS).issubset(frame.columns):
+        raise ValueError(
+            "Reference traffic summary must contain Metric and Flows columns."
+        )
+
+    metrics = frame["Metric"].astype("string").str.strip()
+    counts = pd.to_numeric(frame["Flows"], errors="coerce")
+    valid = (
+        metrics.notna()
+        & metrics.ne("")
+        & counts.notna()
+        & counts.ge(0)
+    )
+    cleaned = pd.DataFrame(
+        {
+            "Metric": metrics.loc[valid],
+            "Flows": counts.loc[valid].astype("int64"),
+        }
+    )
+    summary = dict(zip(cleaned["Metric"], cleaned["Flows"]))
+    required = {"Total Flows", "Benign Flows", "Attack Flows"}
+    if not required.issubset(summary):
+        raise ValueError(
+            "Reference traffic summary is missing required CICIDS2017 totals."
+        )
+
+    result = {key: int(summary[key]) for key in required}
+    if result["Total Flows"] != result["Benign Flows"] + result["Attack Flows"]:
+        raise ValueError(
+            "Reference traffic summary is inconsistent: total must equal benign plus attack flows."
+        )
+    return result
