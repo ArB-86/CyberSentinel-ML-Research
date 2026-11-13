@@ -39,3 +39,11 @@ are taken from the final cleaned-data label-count output in
 file is available; otherwise it displays this static CICIDS2017 dataset profile.
 The reference is not a live inference result and must not be interpreted as
 predictions from an unlabeled traffic batch.
+
+
+The same final cleaned label-count output contains **2,228,970 total flows**:
+**1,892,671 benign** and **336,299 attack** flows. The dashboard derives the
+reference benign count by subtracting the sum of the 14 checked-in attack
+families from the verified total. These values describe the complete cleaned
+CICIDS2017 dataset profile, not a benchmark holdout, current inference batch,
+or live detection stream.
