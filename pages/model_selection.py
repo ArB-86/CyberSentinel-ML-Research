@@ -1055,22 +1055,3 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-st.markdown(
-    '<div class="small-note"><b>Run artifact SHA-256:</b> '
-    '<span style="font-family:monospace;color:#c9d8e6">d4ac9de9011ad364620dfbd2a2e0e742b05d8b2e948dd1597c0559e006fc5513</span>'
-    '<br><b>Dataset SHA-256:</b> '
-    '<span style="font-family:monospace;color:#c9d8e6">9401495356b1b6f360d6aebf0ad7ddc18a39cbf02c02f7461338dea02a747146</span>'
-    '<br><b>Code snapshot:</b> research/project-hardening · be16972bbf039e8c9a38d4ab323a79a215225990'
-    '<br><b>Execution:</b> GitHub Actions run 43156530860 · completed successfully'
-    '</div>',
-    unsafe_allow_html=True,
-)
-
-st.markdown(
-    '<div class="small-note" style="margin-top:26px;padding-top:16px;border-top:1px solid #263a4e">'
-    'Benchmark scope: one CICIDS2017 processed dataset, one shared held-out test sample, fixed model configurations '
-    'and a nominal 5% benign-calibration threshold. The report records the limits of this split and the need for '
-    'temporal, cross-dataset and deployment-hardware validation.'
-    '</div>',
-    unsafe_allow_html=True,
-)
