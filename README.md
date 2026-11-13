@@ -30,7 +30,7 @@ Evidence-Backed Findings
 
 ## Core capabilities
 
-- Flow-level anomaly detection using Isolation Forest.
+- Flow-level anomaly detection using Isolation Forest with causal host-history features (completed prior-minute source/destination aggregates).
 - Event grouping and temporal correlation.
 - Graph representation of hosts, attack events, targets and observed relationships.
 - Heuristic event and candidate-incident triage indexes (not calibrated incident probabilities or validated severity scores).
@@ -167,7 +167,7 @@ A separate engineering pass addresses data leakage, held-out detection evaluatio
 - [Output workflows](outputs/README.md) — benchmark training, artifact creation, unlabeled inference, graph and risk-triage commands.
 - [Regression tests](tests/) — 39 unit/integration checks, plus compile and CLI smoke tests in GitHub Actions.
 
-Hardening changes are isolated to the `research/project-hardening` branch. The application still uses Isolation Forest; a calibrated artifact can now be applied to unlabeled flow exports in inference mode.
+Hardening changes are isolated to the `research/project-hardening` branch. The metadata-rich benchmark/inference pipeline now uses one Isolation Forest with raw numeric flow features plus 18 causal host-history features. The model is fitted on benign-only traffic, and its default threshold is calibrated on a held-out benign partition at a nominal 1% FPR target. This nominal target is not a guarantee under distribution shift. Batch inference requires timestamps, source/destination metadata, destination ports and packet/byte totals; persistent live-stream state is not yet implemented. See [the generated-output workflow](outputs/README.md) for exact training and inference commands.
 
 ## Research documentation
 
