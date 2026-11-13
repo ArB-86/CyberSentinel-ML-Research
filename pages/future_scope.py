@@ -467,58 +467,47 @@ st.markdown(
     """
     <div class="fs-section-head">
       <div class="fs-section-title">Current limitations</div>
-      <div class="fs-section-note">What the system cannot do reliably yet</div>
+      <div class="fs-section-note">The five main gaps we plan to fix</div>
     </div>
     <div class="fs-limits">
       <div class="fs-limit">
         <div class="fs-limit-num">01</div>
         <div>
-          <div class="fs-limit-title">CSV files only</div>
-          <div class="fs-limit-copy">The app analyses uploaded network-flow files. It is not connected to a live network feed.</div>
+          <div class="fs-limit-title">Needs more testing on new traffic</div>
+          <div class="fs-limit-copy">A test using later dates exists, but full testing and testing on a separate network are still needed.</div>
         </div>
       </div>
       <div class="fs-limit">
         <div class="fs-limit-num">02</div>
         <div>
-          <div class="fs-limit-title">No saved history between separate runs</div>
-          <div class="fs-limit-copy">Host activity is rebuilt from the files supplied in a run. It is not carried forward automatically to the next batch.</div>
+          <div class="fs-limit-title">Event groups are not verified</div>
+          <div class="fs-limit-copy">The system links activity by time and host, but we have not yet proved that each group matches a real incident.</div>
         </div>
       </div>
       <div class="fs-limit">
         <div class="fs-limit-num">03</div>
         <div>
-          <div class="fs-limit-title">No attack-family prediction</div>
-          <div class="fs-limit-copy">The detector flags unusual traffic; it does not reliably name it as DDoS, a port scan or brute force.</div>
+          <div class="fs-limit-title">Cannot identify the attack type</div>
+          <div class="fs-limit-copy">The detector marks unusual traffic but cannot name it as DDoS, a port scan or brute force.</div>
         </div>
       </div>
       <div class="fs-limit">
         <div class="fs-limit-num">04</div>
         <div>
-          <div class="fs-limit-title">Event groups are not confirmed incidents</div>
-          <div class="fs-limit-copy">Time and host links create possible groups. They still need comparison with reviewed incident evidence.</div>
+          <div class="fs-limit-title">History is not saved between batches</div>
+          <div class="fs-limit-copy">Each run rebuilds host history from the files it receives. It does not automatically remember the previous run.</div>
         </div>
       </div>
       <div class="fs-limit">
         <div class="fs-limit-num">05</div>
         <div>
-          <div class="fs-limit-title">Risk scores are only guides</div>
-          <div class="fs-limit-copy">The current score uses rules. It is not a proven probability of attack or a validated measure of incident severity.</div>
+          <div class="fs-limit-title">No live network feed</div>
+          <div class="fs-limit-copy">The app reads CSV files. It does not process new network-flow records as they arrive.</div>
         </div>
       </div>
-      <div class="fs-limit">
-        <div class="fs-limit-num">06</div>
-        <div>
-          <div class="fs-limit-title">More real-network testing is needed</div>
-          <div class="fs-limit-copy">CICIDS2017 is the main benchmark. Performance on independent networks has not yet been established.</div>
-        </div>
-      </div>
-      <div class="fs-limit">
-        <div class="fs-limit-num">07</div>
-        <div>
-          <div class="fs-limit-title">No automatic blocking</div>
-          <div class="fs-limit-copy">AI-assisted findings need human review. The system does not block traffic or isolate devices automatically.</div>
-        </div>
-      </div>
+    </div>
+    <div class="fs-note">
+      Risk scores are rule-based guidance, not attack probabilities. AI-assisted findings need human review; the system does not automatically block traffic.
     </div>
     """,
     unsafe_allow_html=True,
@@ -529,11 +518,11 @@ roadmap = [
         "num": "01",
         "kind": "DETECTION VALIDATION",
         "state": "MORE TESTING",
-        "title": "Test on later and unseen network traffic",
-        "summary": "A detector can look good on one dataset and still make too many mistakes on a different network.",
-        "flow": ["Later traffic", "Independent test", "Measure errors"],
-        "today": "A time-based test path exists, but full-scale testing and testing on an independent network are still missing.",
-        "next": "Run the full metadata-rich data through time-ordered tests. Add host or attack-scenario holdouts where possible. Report false alarms, missed attacks and per-attack results.",
+        "title": "Test detection on different days and networks",
+        "summary": "A detector may work on one dataset but make mistakes on traffic from another network.",
+        "flow": ["Different days", "New network", "Measure errors"],
+        "today": "A test using later dates exists, but full testing and testing on a separate network are still needed.",
+        "next": "Test the full flow dataset across different days, then test a separate network dataset. Where possible, keep test hosts or attack scenarios out of training. Measure false alarms, missed attacks and results for each attack type.",
         "output": "Evidence of how well detection holds up on traffic the model has not seen.",
     },
     {
@@ -544,7 +533,7 @@ roadmap = [
         "summary": "Putting events together does not prove that they belong to the same real incident.",
         "flow": ["Grouped events", "Compare with review", "Measure mistakes"],
         "today": "The system links events by time and shared hosts. These are possible relationships, not confirmed incidents.",
-        "next": "Run the grouping tests on the full traffic data and compare groups with documented attack scenarios and analyst-reviewed examples. Count wrong joins and missed links.",
+        "next": "Run grouping tests on the full dataset. Compare groups with known attack scenarios and examples checked by an analyst. Count events wrongly joined and related events kept apart.",
         "output": "Measured evidence of when event grouping works and where it needs improvement.",
     },
     {
@@ -555,29 +544,29 @@ roadmap = [
         "summary": "The current detector finds unusual traffic but does not tell the analyst which attack it may be.",
         "flow": ["Unusual flow", "Classify traffic", "Type or unknown"],
         "today": "Isolation Forest flags unusual flows. There is no separate trained model that predicts an attack family.",
-        "next": "Train a multi-class model on labelled examples. Report results for each attack type and show 'Unknown' when confidence is too low.",
+        "next": "Train a separate model using labelled examples. Measure results for each attack type and show 'Unknown' when the model is not confident.",
         "output": "Show the possible attack family separately from the unusual-traffic alert.",
     },
     {
         "num": "04",
         "kind": "INCREMENTAL BATCHES",
         "state": "NEW FEATURE",
-        "title": "Remember host activity between CSV batches",
-        "summary": "Each separate run should not need every earlier file just to rebuild recent host history.",
+        "title": "Keep host history between CSV batches",
+        "summary": "A new batch should not need every old file just to remember recent host activity.",
         "flow": ["New CSV batch", "Load saved history", "Score new flows"],
         "today": "Host-history features are rebuilt from the files in one run. Recent host state is not saved between separate runs.",
-        "next": "Save recent host history between runs, process only new rows, and handle repeated or late-arriving records safely.",
+        "next": "Save recent host activity after each run. For the next CSV, process only new rows, skip duplicates and handle records that arrive late.",
         "output": "Process successive CSV batches without replaying all previous files.",
     },
     {
         "num": "05",
         "kind": "LIVE MONITORING",
         "state": "NEW PIPELINE",
-        "title": "Monitor incoming network traffic live",
+        "title": "Monitor live network traffic",
         "summary": "Move from analysing uploaded files to analysing new network-flow records as they arrive.",
         "flow": ["Live flow feed", "Score new flows", "Update dashboard"],
         "today": "There is no connected live flow source or continuous processing loop.",
-        "next": "Connect a NetFlow, IPFIX or Zeek flow feed. Reuse saved host history, score incoming flows and update the dashboard and alerts.",
+        "next": "Connect a live flow source such as NetFlow, IPFIX or Zeek logs. Process each new record, reuse saved host history and update the dashboard and alerts.",
         "output": "A working prototype that displays suspicious activity as new flow records arrive.",
     },
 ]
