@@ -627,13 +627,6 @@ def section(title: str, hint: str = "") -> None:
 st.markdown('<div class="eyebrow">CYBERSENTINEL · MODEL SELECTION STUDY</div>', unsafe_allow_html=True)
 st.title("Model Selection & Evidence")
 st.markdown(
-    '<p class="page-subtitle">Three unsupervised detectors were trained and compared on the same '
-    'CICIDS2017 evaluation setup. This page shows the training protocol, measured results, '
-    'runtime comparison and research sources behind the methods.</p>',
-    unsafe_allow_html=True,
-)
-
-st.markdown(
     """
     <div class="hero">
       <div class="hero-kicker">MODEL USED IN THE CURRENT APPLICATION</div>
