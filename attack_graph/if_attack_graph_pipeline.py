@@ -944,7 +944,7 @@ if __name__ == "__main__":
         "--calibration-quantile",
         type=float,
         default=0.01,
-        help="Lower benign score quantile used as the anomaly threshold (default: 1% calibration FPR target).",
+        help="Lower benign score quantile used as the anomaly threshold (default: 0.01).",
     )
     parser.add_argument("--time-window-seconds", type=int, default=60)
     parser.add_argument("--max-sequence-gap-seconds", type=int, default=300)
