@@ -175,6 +175,24 @@ def test_chronological_split_holds_out_later_days_and_duplicate_hashes():
     assert result["benign_calibration_rows_excluded_for_earlier_duplicate_hash"] == 1
 
 
+def test_cicids_day_first_timestamps_keep_july_calendar_dates():
+    timestamps = pd.Series([
+        "03/07/2017 08:00:00", "03/07/2017 09:00:00",
+        "04/07/2017 08:00:00", "04/07/2017 09:00:00",
+        "05/07/2017 08:00:00", "05/07/2017 09:00:00",
+    ])
+    positions = pd.Series(range(6)).to_numpy()
+    hashes = pd.Series(range(6)).to_numpy(dtype="uint64")
+
+    result = _chronological_benign_split(positions, hashes, timestamps)
+
+    assert result is not None
+    assert result["train_day_start"].startswith("2017-07-03")
+    assert result["train_day_end"].startswith("2017-07-03")
+    assert result["calibration_day_start"].startswith("2017-07-04")
+    assert result["evaluation_day_start"].startswith("2017-07-05")
+
+
 def test_chronological_split_uses_explicit_fallback_for_single_day():
     timestamps = pd.Series([
         "2026-01-01T00:00:00Z", "2026-01-01T01:00:00Z",
