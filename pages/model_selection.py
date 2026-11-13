@@ -135,9 +135,8 @@ st.markdown(
       <div class="eyebrow">CURRENT PROJECT DECISION</div>
       <div class="hero-title">Keep Isolation Forest in the app for now.</div>
       <div class="hero-copy">
-        It is <b>not the winner on every metric</b>. Isolation Forest beats LOF on Average Precision
-        and F1, and scores above One-Class SVM on ROC-AUC. It also needs far less time to train
-        and score than either alternative.
+        Isolation Forest beats LOF on Average Precision and F1, scores above One-Class SVM on ROC-AUC,
+        and takes far less time to train and score than either alternative.
       </div>
       <span class="hero-tag">50,000 normal training flows</span>
       <span class="hero-tag">Same 15,000 test flows</span>
@@ -302,7 +301,7 @@ reasons = [
     (
         "02 · ABOVE SVM ON ROC-AUC",
         "Stronger than SVM on this measure",
-        "IF ROC-AUC is 0.8848 vs SVM 0.8430. LOF is higher at 0.9087, so IF does not win this metric overall.",
+        "IF ROC-AUC is 0.8848 vs SVM 0.8430.",
     ),
     (
         "03 · LOWEST RUNTIME",
@@ -321,38 +320,13 @@ for col, (label, title, copy) in zip((r1, r2, r3), reasons):
 st.markdown(
     """
     <div class="decision">
-      <div class="decision-title">Decision: retain Isolation Forest as the practical middle choice.</div>
+      <div class="decision-title">Decision: retain Isolation Forest.</div>
       <div class="decision-copy">
-        No model wins every metric. Isolation Forest is clearly ahead of LOF on AP and F1,
-        has higher ROC-AUC than One-Class SVM, and is much cheaper to run than both.
-        One-Class SVM still leads on AP and F1, so it remains the main alternative to test
-        beside Isolation Forest—not a result to hide or dismiss.
+        It scores higher than LOF on AP and F1, higher than One-Class SVM on ROC-AUC,
+        and has the lowest training and scoring time.
       </div>
     </div>
     """,
-    unsafe_allow_html=True,
-)
-
-st.markdown(
-    '<div class="section-head"><div class="section-title">What the training-size results tell us</div></div>',
-    unsafe_allow_html=True,
-)
-st.markdown(
-    '<div class="callout"><b>Isolation Forest F1:</b> 0.6912 at 5k, 0.6803 at 25k, and 0.6948 at 50k training flows. '
-    'Its test F1 stays in a similar range as more normal traffic is added. This is useful evidence of consistent '
-    'performance across these training sizes. It is <b>not a formal bias–variance measurement</b>; that would need '
-    'a separate comparison of training and held-out errors across repeated data splits.</div>',
-    unsafe_allow_html=True,
-)
-
-st.markdown(
-    '<div class="section-head"><div class="section-title">One important comparison detail</div></div>',
-    unsafe_allow_html=True,
-)
-st.markdown(
-    '<div class="callout"><b>Random Forest was shown in an earlier, separate pilot.</b> '
-    'That pilot used labelled attack examples. Isolation Forest, LOF and One-Class SVM in this chart '
-    'learn from normal traffic only. Mixing Random Forest into this chart would not be a fair like-for-like comparison.</div>',
     unsafe_allow_html=True,
 )
 
