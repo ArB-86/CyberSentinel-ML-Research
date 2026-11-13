@@ -4,6 +4,8 @@ import pandas as pd
 
 from utils.dashboard_data import (
     build_attack_distribution,
+    build_reference_traffic_counts,
+    build_traffic_counts,
     load_reference_attack_distribution,
 )
 
@@ -73,3 +75,46 @@ def test_reference_attack_distribution_excludes_invalid_rows(tmp_path):
     result = load_reference_attack_distribution(path)
 
     assert result.to_dict("records") == [{"Attack Type": "DoS", "Flows": 12}]
+
+
+
+def test_build_traffic_counts_from_local_ground_truth_labels():
+    frame = pd.DataFrame(
+        {"Label": ["BENIGN", "DoS Hulk", "Bot", " benign ", None, "", "  "]}
+    )
+
+    assert build_traffic_counts(frame) == {
+        "total_flows": 4,
+        "benign_flows": 2,
+        "attack_flows": 2,
+    }
+
+
+def test_build_traffic_counts_returns_none_without_valid_labels():
+    assert build_traffic_counts(None) is None
+    assert build_traffic_counts(pd.DataFrame({"Flow ID": ["a"]})) is None
+    assert build_traffic_counts(pd.DataFrame({"Label": [None, "", " "]})) is None
+
+
+def test_build_reference_traffic_counts_derives_benign_rows():
+    attacks = pd.DataFrame(
+        {"Attack Type": ["DoS Hulk", "Bot"], "Flows": [12, 3]}
+    )
+
+    assert build_reference_traffic_counts(attacks, 20) == {
+        "total_flows": 20,
+        "benign_flows": 5,
+        "attack_flows": 15,
+    }
+
+
+def test_build_reference_traffic_counts_rejects_invalid_or_inconsistent_inputs():
+    attacks = pd.DataFrame(
+        {"Attack Type": ["DoS Hulk", "Bot"], "Flows": [12, 3]}
+    )
+    assert build_reference_traffic_counts(attacks, 10) is None
+    assert build_reference_traffic_counts(attacks, 0) is None
+    assert build_reference_traffic_counts(
+        pd.DataFrame({"Attack Type": ["DoS Hulk"], "Flows": ["bad"]}), 20
+    ) is None
+    assert build_reference_traffic_counts(pd.DataFrame(), 20) is None
