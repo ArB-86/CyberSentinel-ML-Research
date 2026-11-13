@@ -1,5 +1,6 @@
 import json
 
+import joblib
 import pandas as pd
 
 from attack_graph.if_attack_graph_pipeline import (
@@ -52,6 +53,9 @@ def test_metadata_pipeline_runs_with_train_only_imputation(tmp_path):
             "Protocol": 6,
             "Flow Duration": float(i + 1) if i != 3 else None,
             "Total Fwd Packets": 2 + (i % 7),
+            "Total Backward Packets": 1 + (i % 3),
+            "Total Length of Fwd Packets": float(100 + i),
+            "Total Length of Bwd Packets": float(50 + i),
             "Label": label,
         })
     pd.DataFrame(rows).to_csv(data_dir / "flows.csv", index=False)
@@ -86,6 +90,13 @@ def test_metadata_pipeline_runs_with_train_only_imputation(tmp_path):
 
     model_artifact = output_dir / "isolation_forest_model.joblib"
     assert model_artifact.exists()
+    artifact = joblib.load(model_artifact)
+    assert artifact["artifact_version"] == 2
+    assert artifact["feature_mode"] == "raw_plus_causal_host_history_v1"
+    assert len(artifact["behavioral_feature_columns"]) == 18
+    assert len(artifact["feature_columns"]) == (
+        len(artifact["base_feature_columns"]) + 18
+    )
 
     # A separate production-style CSV without Label must be scoreable with the
     # persisted model, imputer, feature order and benign-calibrated threshold.
@@ -111,6 +122,10 @@ def test_metadata_pipeline_runs_with_train_only_imputation(tmp_path):
     assert inference_summary["mode"] == "unlabeled_inference"
     assert inference_summary["ground_truth_labels_required"] is False
     assert inference_summary["ground_truth_labels_used"] is False
+    assert inference_summary["model_feature_mode"] == (
+        "raw_plus_causal_host_history_v1"
+    )
+    assert inference_summary["behavioral_feature_count"] == 18
     assert not (inference_output / "detection_metrics.json").exists()
     assert not (inference_output / "per_attack_detection_evaluation.csv").exists()
     assert (inference_output / "event_risk_scores.csv").exists()
