@@ -455,7 +455,7 @@ st.markdown(
     .paper-link:hover { text-decoration:underline; color:#c1e5ff !important; }
     .proof-links {
         display:grid;
-        grid-template-columns:repeat(3,minmax(0,1fr));
+        grid-template-columns:repeat(4,minmax(0,1fr));
         gap:12px;
         margin:14px 0;
     }
@@ -490,6 +490,7 @@ st.markdown(
         .proof-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
         .pipeline { grid-template-columns:repeat(3,minmax(0,1fr)); }
         .model-grid { grid-template-columns:1fr; }
+        .proof-links { grid-template-columns:repeat(2,minmax(0,1fr)); }
         .model-description { max-width:none; }
     }
     @media (max-width:760px) {
@@ -1044,6 +1045,12 @@ st.markdown(
         </a>
         <p>GitHub Actions completed successfully on 12 November 2026. CSV metrics and run metadata are attached as an artifact.</p>
       </div>
+      <div class="proof-link-card">
+        <a href="https://github.com/ArB-86/CyberSentinel-ML-Research/blob/research/hardened-model-selection-results/research/LITERATURE_REVIEW.md" target="_blank" rel="noopener noreferrer">
+          Full literature review ↗
+        </a>
+        <p>Research notes for Isolation Forest, LOF, One-Class SVM and network-intrusion evaluation.</p>
+      </div>
     </div>
     """,
     unsafe_allow_html=True,
@@ -1051,7 +1058,9 @@ st.markdown(
 st.markdown(
     '<div class="small-note"><b>Run artifact SHA-256:</b> '
     '<span style="font-family:monospace;color:#c9d8e6">d4ac9de9011ad364620dfbd2a2e0e742b05d8b2e948dd1597c0559e006fc5513</span>'
-    '<br><b>Dataset:</b> cleaned CICIDS2017 Parquet · SHA-256 verified before execution'
+    '<br><b>Dataset SHA-256:</b> '
+    '<span style="font-family:monospace;color:#c9d8e6">9401495356b1b6f360d6aebf0ad7ddc18a39cbf02c02f7461338dea02a747146</span>'
+    '<br><b>Code snapshot:</b> research/project-hardening · be16972bbf039e8c9a38d4ab323a79a215225990'
     '<br><b>Execution:</b> GitHub Actions run 43156530860 · completed successfully'
     '</div>',
     unsafe_allow_html=True,
