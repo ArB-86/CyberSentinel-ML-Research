@@ -28,3 +28,14 @@ The preprocessing notebook is [`notebooks/dataset_preprocessing.ipynb`](notebook
 - Do not include live credentials, personally identifying traffic metadata, or access tokens in committed files.
 - Preserve the original CICIDS2017 labels for evaluation, while excluding labels from the unsupervised feature matrix.
 - Record preprocessing steps, feature selection, dataset version and checksum with each experiment.
+
+## Dashboard attack-distribution reference
+
+The dashboard includes a small, checked-in reference table at
+`research/cicids2017_attack_distribution.csv`. Its 14 attack-family counts
+are taken from the final cleaned-data label-count output in
+`notebooks/dataset_preprocessing.ipynb` (after duplicate removal), and sum to
+336,299 attack rows. The dashboard prefers the local Parquet labels when that
+file is available; otherwise it displays this static CICIDS2017 dataset profile.
+The reference is not a live inference result and must not be interpreted as
+predictions from an unlabeled traffic batch.
