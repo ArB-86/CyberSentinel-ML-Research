@@ -68,3 +68,72 @@ def load_reference_attack_distribution(path: str | Path) -> pd.DataFrame:
         .sort_values("Flows", ascending=False)
         .reset_index(drop=True)
     )
+
+
+
+def build_traffic_counts(labels_df: pd.DataFrame | None) -> dict[str, int] | None:
+    """Count benign and attack rows from cleaned ground-truth labels."""
+    if labels_df is None or "Label" not in labels_df.columns:
+        return None
+
+    labels = labels_df["Label"].astype("string").str.strip().dropna()
+    labels = labels[labels.ne("")]
+    if labels.empty:
+        return None
+
+    benign_mask = labels.str.casefold().eq("benign")
+    total_flows = int(len(labels))
+    benign_flows = int(benign_mask.sum())
+    return {
+        "total_flows": total_flows,
+        "benign_flows": benign_flows,
+        "attack_flows": total_flows - benign_flows,
+    }
+
+
+def build_reference_traffic_counts(
+    attack_distribution: pd.DataFrame | None,
+    total_flows: int,
+) -> dict[str, int] | None:
+    """Derive a full-dataset traffic profile from verified attack counts.
+
+    The reference attack CSV contains the 14 non-benign classes. The total
+    cleaned row count is recorded from the preprocessing notebook. Benign
+    rows are derived as total rows minus the sum of the attack classes.
+    """
+    if (
+        attack_distribution is None
+        or attack_distribution.empty
+        or not {"Attack Type", "Flows"}.issubset(attack_distribution.columns)
+    ):
+        return None
+
+    try:
+        total = int(total_flows)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    if total <= 0 or total != total_flows:
+        return None
+
+    names = attack_distribution["Attack Type"].astype("string").str.strip()
+    values = pd.to_numeric(attack_distribution["Flows"], errors="coerce")
+    valid = (
+        names.notna()
+        & names.ne("")
+        & ~names.str.casefold().eq("benign")
+        & values.notna()
+        & values.ge(0)
+        & values.eq(values.round())
+    )
+    if not bool(valid.all()):
+        return None
+
+    attacks = int(values.sum())
+    if attacks <= 0 or attacks > total:
+        return None
+
+    return {
+        "total_flows": total,
+        "benign_flows": total - attacks,
+        "attack_flows": attacks,
+    }
