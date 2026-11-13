@@ -200,8 +200,6 @@ with st.sidebar:
 
     st.markdown('<div class="smallcaps" style="margin-top:18px">Agentic Investigation & Risk Assessment</div>', unsafe_allow_html=True)
     st.page_link("pages/risk_assessment.py", label="Risk Assessment")
-    st.markdown('<div class="eyebrow" style="margin-top:16px">Project</div>', unsafe_allow_html=True)
-    st.page_link("pages/future_scope.py", label="Future Scope")
 
     st.divider()
 
