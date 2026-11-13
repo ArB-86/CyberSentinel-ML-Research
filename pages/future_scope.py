@@ -94,7 +94,7 @@ with st.sidebar:
     st.page_link("pages/future_scope.py", label="Future Scope")
 
 # Header
-st.markdown('<div class="fs-kicker">CYBERSENTINEL · WHAT'S NEXT</div>', unsafe_allow_html=True)
+st.markdown('<div class="fs-kicker">CYBERSENTINEL · WHAT&#39;S NEXT</div>', unsafe_allow_html=True)
 st.title("Future Scope")
 st.markdown(
     """
