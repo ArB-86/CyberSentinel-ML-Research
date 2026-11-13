@@ -172,7 +172,10 @@ def load_behavioral_dataset(data_dir: Path):
         hash_parts.append(hashes)
         label_parts.append(labels.to_numpy(dtype=str))
         day_parts.append(timestamps.dt.strftime("%Y-%m-%d").to_numpy(dtype=str))
-        timestamp_parts.append(timestamps.astype("int64").to_numpy(dtype=np.int64))
+        # Pandas 3.x may infer second/microsecond datetime resolution; normalize to ns.
+        timestamp_parts.append(
+            timestamps.to_numpy(dtype="datetime64[ns]").astype(np.int64, copy=False)
+        )
         src_ip_parts.append(src_ip.to_numpy(dtype=object))
         dst_ip_parts.append(dst_ip.to_numpy(dtype=object))
         dst_port_parts.append(dst_port.to_numpy(dtype=np.int32))
