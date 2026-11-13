@@ -7,7 +7,10 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from utils.cache_keys import file_cache_signature
-from utils.dashboard_data import build_attack_distribution
+from utils.dashboard_data import (
+    build_attack_distribution,
+    load_reference_attack_distribution,
+)
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -163,6 +166,7 @@ st.markdown(
 ROOT = Path(__file__).resolve().parent
 
 DATA_PATH = ROOT / "data" / "cleaned_cicids2017.parquet"
+REFERENCE_DISTRIBUTION_PATH = ROOT / "research" / "cicids2017_attack_distribution.csv"
 
 OUTPUT_DIR = ROOT / "outputs"
 
@@ -190,6 +194,15 @@ def load_label_column(cache_signature):
         )
     except Exception:
         return None
+
+
+@st.cache_data
+def load_reference_distribution(cache_signature):
+    """Load verified CICIDS2017 reference label counts."""
+    try:
+        return load_reference_attack_distribution(REFERENCE_DISTRIBUTION_PATH)
+    except (OSError, ValueError, pd.errors.ParserError):
+        return pd.DataFrame(columns=["Attack Type", "Flows"])
 
 
 @st.cache_data
@@ -267,9 +280,18 @@ else:
     # Benchmark metrics describe the current labelled evaluation run only.
     total_flows = benign_flows = attack_flows = None
 
-# The cleaned CICIDS2017 labels are a dataset profile, not predictions from
-# the current inference batch. Keep this chart available during unlabeled runs.
-attack_distribution = build_attack_distribution(labels_df)
+# Prefer the local full dataset when present. If it is absent, use the
+# checked-in counts captured by the preprocessing notebook after cleaning.
+# The fallback is explicitly identified as a reference profile, never as
+# detections from the current unlabeled inference batch.
+if labels_df is not None and "Label" in labels_df.columns:
+    attack_distribution = build_attack_distribution(labels_df)
+    attack_distribution_source = "Local cleaned CICIDS2017 ground-truth labels"
+else:
+    attack_distribution = load_reference_distribution(
+        file_cache_signature(REFERENCE_DISTRIBUTION_PATH)
+    )
+    attack_distribution_source = "Verified CICIDS2017 preprocessing reference"
 
 
 # ============================================================
@@ -788,33 +810,14 @@ st.markdown(
 
 st.header("Attack Distribution")
 
-if labels_df is None:
-    if DATA_PATH.exists():
-        st.info(
-            "Attack distribution is unavailable because the cleaned "
-            "CICIDS2017 labels could not be loaded."
-        )
-    else:
-        st.info(
-            "Attack distribution is unavailable because "
-            "data/cleaned_cicids2017.parquet was not found."
-        )
-elif "Label" not in labels_df.columns:
+if attack_distribution.empty:
     st.info(
-        "Attack distribution is unavailable because the cleaned dataset "
-        "does not contain a Label column."
-    )
-elif attack_distribution.empty:
-    st.info(
-        "The cleaned CICIDS2017 dataset contains no non-benign labels "
-        "to display."
+        "Attack distribution is unavailable. The local cleaned dataset "
+        "and the checked-in CICIDS2017 reference profile could not be loaded."
     )
 else:
-    show = (
-        attack_distribution
-        .head(12)
-        .sort_values("Flows")
-    )
+    # Show every known attack family, including low-frequency classes.
+    show = attack_distribution.sort_values("Flows", ascending=True)
 
     fig = px.bar(
         show,
@@ -832,10 +835,10 @@ else:
     )
 
     fig.update_layout(
-        height=max(360, 42 * len(show) + 80),
+        height=max(430, 36 * len(show) + 110),
         margin=dict(
             l=0,
-            r=70,
+            r=80,
             t=10,
             b=10
         ),
@@ -861,8 +864,8 @@ else:
     )
 
     st.caption(
-        "Ground-truth label counts from the cleaned CICIDS2017 dataset. "
-        "This is a dataset profile, not predictions from the current "
+        f"{attack_distribution_source}. Counts are dataset-level "
+        "ground-truth labels, not predictions from the current "
         "unlabeled inference batch."
     )
 
