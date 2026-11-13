@@ -315,12 +315,12 @@ def run(
     data_dir: str,
     output_dir: str,
     nrows: int = 0,
-    benign_sample_n: int = 500_000,
+    benign_sample_n: int = 25_000,
     n_estimators: int = 200,
     calibration_quantile: float = 0.01,
     time_window_seconds: int = 60,
     max_sequence_gap_seconds: int = 300,
-    calibration_rows: int = 5_000,
+    calibration_rows: int = 120_000,
     evaluation_rows: int = 160_000,
 ) -> None:
     """Run held-out CICIDS2017 detection and graph construction.
@@ -938,7 +938,7 @@ if __name__ == "__main__":
         "--nrows", type=int, default=0,
         help="Default 0 reads every row. Positive value is a per-file prefix cap for smoke tests only."
     )
-    parser.add_argument("--benign-sample-n", type=int, default=500_000)
+    parser.add_argument("--benign-sample-n", type=int, default=25_000)
     parser.add_argument("--n-estimators", type=int, default=200)
     parser.add_argument(
         "--calibration-quantile",
@@ -948,7 +948,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--time-window-seconds", type=int, default=60)
     parser.add_argument("--max-sequence-gap-seconds", type=int, default=300)
-    parser.add_argument("--calibration-rows", type=int, default=5_000)
+    parser.add_argument("--calibration-rows", type=int, default=120_000)
     parser.add_argument("--evaluation-rows", type=int, default=160_000)
     args = parser.parse_args()
     if args.mode == "benchmark":
