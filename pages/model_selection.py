@@ -135,9 +135,9 @@ st.markdown(
       <div class="eyebrow">CURRENT PROJECT DECISION</div>
       <div class="hero-title">Keep Isolation Forest in the app for now.</div>
       <div class="hero-copy">
-        It is <b>not the most accurate model</b> in this test. One-Class SVM scored higher on
-        Average Precision and F1, while LOF scored higher on ROC-AUC. Isolation Forest stays
-        because it is already connected to the app and is much faster to train and score.
+        It is <b>not the winner on every metric</b>. Isolation Forest beats LOF on Average Precision
+        and F1, and scores above One-Class SVM on ROC-AUC. It also needs far less time to train
+        and score than either alternative.
       </div>
       <span class="hero-tag">50,000 normal training flows</span>
       <span class="hero-tag">Same 15,000 test flows</span>
@@ -288,18 +288,27 @@ st.plotly_chart(style_chart(trend, 365), use_container_width=True, config={"disp
 st.caption("Isolation Forest stays around 0.68–0.69 F1 as the training set grows. One-Class SVM stays higher at about 0.73. Error bars show the spread across the 3 repeat runs.")
 
 st.markdown(
-    '<div class="section-head"><div class="section-title">Why we keep Isolation Forest in the current app</div>'
-    '<div class="section-hint">The actual reasons from this project</div></div>',
+    '<div class="section-head"><div class="section-title">Why Isolation Forest is a practical choice</div>'
+    '<div class="section-hint">Reasons backed by the 50k benchmark results</div></div>',
     unsafe_allow_html=True,
 )
 r1, r2, r3 = st.columns(3, gap="medium")
 reasons = [
-    ("01 · ALREADY CONNECTED", "Works with the current pipeline",
-     "The app already uses Isolation Forest to score flows before event grouping, graph building and investigation."),
-    ("02 · LOWEST RUNTIME", "Much faster at 50k rows",
-     "It trains in 0.411 seconds and scores the 15k test sample in 0.104 seconds on the benchmark runner."),
-    ("03 · KNOWN BASELINE", "A measured starting point",
-     "Its results stay in a similar range as training data grows. We can compare future changes against this fixed baseline."),
+    (
+        "01 · BETTER THAN LOF",
+        "Higher AP and F1",
+        "At 50k rows, IF scores AP 0.6736 vs LOF 0.5687, and F1 0.6948 vs 0.5740.",
+    ),
+    (
+        "02 · ABOVE SVM ON ROC-AUC",
+        "Stronger than SVM on this measure",
+        "IF ROC-AUC is 0.8848 vs SVM 0.8430. LOF is higher at 0.9087, so IF does not win this metric overall.",
+    ),
+    (
+        "03 · LOWEST RUNTIME",
+        "Much faster to train and score",
+        "IF trains in 0.411 s vs LOF 7.576 s and SVM 19.484 s. It scores 15k flows in 0.104 s vs 2.313 s and 2.106 s.",
+    ),
 ]
 for col, (label, title, copy) in zip((r1, r2, r3), reasons):
     with col:
@@ -312,11 +321,12 @@ for col, (label, title, copy) in zip((r1, r2, r3), reasons):
 st.markdown(
     """
     <div class="decision">
-      <div class="decision-title">Decision: keep Isolation Forest; test One-Class SVM beside it.</div>
+      <div class="decision-title">Decision: retain Isolation Forest as the practical middle choice.</div>
       <div class="decision-copy">
-        The results do not prove that Isolation Forest is the most accurate. They show that it is
-        much cheaper to run and is already part of the app. One-Class SVM is the strongest accuracy
-        candidate in this test, so it should be tested in parallel before any replacement.
+        No model wins every metric. Isolation Forest is clearly ahead of LOF on AP and F1,
+        has higher ROC-AUC than One-Class SVM, and is much cheaper to run than both.
+        One-Class SVM still leads on AP and F1, so it remains the main alternative to test
+        beside Isolation Forest—not a result to hide or dismiss.
       </div>
     </div>
     """,
@@ -324,14 +334,14 @@ st.markdown(
 )
 
 st.markdown(
-    '<div class="section-head"><div class="section-title">About the bias–variance claim</div></div>',
+    '<div class="section-head"><div class="section-title">What the training-size results tell us</div></div>',
     unsafe_allow_html=True,
 )
 st.markdown(
-    '<div class="callout"><b>We have not measured bias and variance separately.</b> '
-    'The current experiment measures test scores across training sizes and repeat runs. '
-    'That is useful evidence of performance and stability, but it is not a formal bias–variance proof. '
-    'So the honest reason for keeping Isolation Forest is its measured speed and current integration—not a bias–variance claim.</div>',
+    '<div class="callout"><b>Isolation Forest F1:</b> 0.6912 at 5k, 0.6803 at 25k, and 0.6948 at 50k training flows. '
+    'Its test F1 stays in a similar range as more normal traffic is added. This is useful evidence of consistent '
+    'performance across these training sizes. It is <b>not a formal bias–variance measurement</b>; that would need '
+    'a separate comparison of training and held-out errors across repeated data splits.</div>',
     unsafe_allow_html=True,
 )
 
