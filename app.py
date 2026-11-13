@@ -12,6 +12,7 @@ from utils.dashboard_data import (
     build_reference_traffic_counts,
     build_traffic_counts,
     load_reference_attack_distribution,
+    load_reference_traffic_summary as read_reference_traffic_summary,
 )
 
 from dotenv import load_dotenv
@@ -169,11 +170,7 @@ ROOT = Path(__file__).resolve().parent
 
 DATA_PATH = ROOT / "data" / "cleaned_cicids2017.parquet"
 REFERENCE_DISTRIBUTION_PATH = ROOT / "research" / "cicids2017_attack_distribution.csv"
-
-# Final cleaned CICIDS2017 row count recorded by notebooks/dataset_preprocessing.ipynb.
-# Attack rows are derived from the checked-in 14-class reference CSV; benign rows
-# are calculated as total rows minus attack rows.
-REFERENCE_TOTAL_FLOWS = 2_228_970
+REFERENCE_TRAFFIC_SUMMARY_PATH = ROOT / "research" / "cicids2017_traffic_summary.csv"
 
 OUTPUT_DIR = ROOT / "outputs"
 
@@ -210,6 +207,15 @@ def load_reference_distribution(cache_signature):
         return load_reference_attack_distribution(REFERENCE_DISTRIBUTION_PATH)
     except (OSError, ValueError, pd.errors.ParserError):
         return pd.DataFrame(columns=["Attack Type", "Flows"])
+
+
+@st.cache_data
+def load_reference_traffic_summary_data(cache_signature):
+    """Load verified full-dataset benign/attack totals for dashboard fallback."""
+    try:
+        return read_reference_traffic_summary(REFERENCE_TRAFFIC_SUMMARY_PATH)
+    except (OSError, ValueError, pd.errors.ParserError):
+        return None
 
 
 @st.cache_data
@@ -281,10 +287,22 @@ else:
     attack_distribution = load_reference_distribution(
         file_cache_signature(REFERENCE_DISTRIBUTION_PATH)
     )
-    traffic_counts = build_reference_traffic_counts(
-        attack_distribution,
-        REFERENCE_TOTAL_FLOWS,
+    reference_summary = load_reference_traffic_summary_data(
+        file_cache_signature(REFERENCE_TRAFFIC_SUMMARY_PATH)
     )
+    traffic_counts = None
+    if reference_summary is not None:
+        # Cross-check the aggregate summary against the sum of all 14 attack
+        # families so stale or mismatched reference files are never combined.
+        derived_counts = build_reference_traffic_counts(
+            attack_distribution,
+            reference_summary["Total Flows"],
+        )
+        if derived_counts is not None and (
+            derived_counts["benign_flows"] == reference_summary["Benign Flows"]
+            and derived_counts["attack_flows"] == reference_summary["Attack Flows"]
+        ):
+            traffic_counts = derived_counts
     traffic_profile_source = "Verified CICIDS2017 preprocessing reference"
     traffic_profile_kind = "Checked-in reference profile"
 
@@ -294,11 +312,6 @@ if traffic_counts is not None:
     attack_flows = traffic_counts["attack_flows"]
 else:
     total_flows = benign_flows = attack_flows = None
-
-traffic_profile_description = (
-    "Dataset-level ground-truth composition; not current inference predictions"
-)
-
 
 # ============================================================
 # PIPELINE OUTPUT STATISTICS
