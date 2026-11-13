@@ -50,6 +50,8 @@ with st.sidebar:
     st.page_link("pages/incident_investigation.py", label="Incident Investigation")
     st.page_link("pages/attack_graph.py", label="Attack Graph")
     st.page_link("pages/risk_assessment.py", label="Risk Assessment")
+    st.markdown('<div class="eyebrow" style="margin-top:16px">Project</div>', unsafe_allow_html=True)
+    st.page_link("pages/future_scope.py", label="Future Scope")
 
 # ---------------------------------------------------------------------
 # Hardened paired CICIDS2017 benchmark: means +/- sample SD, 3 seeds.
