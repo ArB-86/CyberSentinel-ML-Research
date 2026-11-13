@@ -380,7 +380,7 @@ st.markdown(
       <div class="fs-hero-title">Make detection more reliable. Then make it smarter.</div>
       <div class="fs-hero-copy">
         Four changes: improve alerts, check event groups, identify attack types,
-        and carry host history from one file to the next.
+        and move from uploaded files towards live network monitoring.
       </div>
       <div class="fs-hero-tag">4 PLANNED IMPROVEMENTS · NOT BUILT YET</div>
     </div>
@@ -456,14 +456,14 @@ roadmap = [
     },
     {
         "num": "04",
-        "kind": "DATA INPUT",
+        "kind": "LIVE MONITORING",
         "state": "NEW MODULE",
-        "title": "Remember activity from earlier files",
-        "summary": "Host history is available inside one file, but it is not kept for the next run.",
-        "flow": ["File 1", "Save host history", "File 2"],
-        "today": "The current batch can build host history, but a separate run starts without that saved history.",
-        "next": "Save recent host activity after each file and use it when scoring only the new rows. Avoid processing duplicate rows twice.",
-        "output": "A working demo that keeps host context across files.",
+        "title": "Monitor network traffic as it arrives",
+        "summary": "Today, CyberSentinel checks uploaded CSV files. It does not watch incoming traffic continuously.",
+        "flow": ["Live flow feed", "Score new flows", "Live dashboard"],
+        "today": "The app reads network-flow records from files. It has no live traffic source or continuous input loop.",
+        "next": "Connect a network-flow source, receive new records as they arrive, keep recent host history and score only new flows.",
+        "output": "A live-updating prototype that shows new suspicious activity without waiting for a full CSV batch.",
     },
 ]
 
@@ -541,7 +541,7 @@ st.markdown(
       </div>
       <div class="fs-build-step">
         <div class="fs-build-num">4</div>
-        <div class="fs-build-name">Keep host history</div>
+        <div class="fs-build-name">Build live monitoring</div>
       </div>
     </div>
     <div class="fs-note">
