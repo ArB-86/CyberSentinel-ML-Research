@@ -537,6 +537,14 @@ def run(
         "feature_columns": detector_feature_columns,
         "base_feature_columns": feature_columns,
         "behavioral_feature_columns": HOST_HISTORY_FEATURE_COLUMNS,
+        "host_history_spec": {
+            "bucket_size": "1 minute",
+            "windows": ["previous completed 1 minute", "previous completed 5 minutes"],
+            "window_boundary": "current minute excluded; strictly prior buckets only",
+            "history_scope": "source IP and destination IP",
+            "ip_addresses_are_model_features": False,
+            "inference_mode": "batch; history is rebuilt from rows in the supplied input",
+        },
         "threshold": threshold,
         "score_direction": "lower score is more anomalous",
         "calibration_score_quantiles": calibration_score_quantiles,
@@ -676,6 +684,14 @@ def run(
         "behavioral_feature_count": int(len(HOST_HISTORY_FEATURE_COLUMNS)),
         "feature_count": int(len(detector_feature_columns)),
         "feature_columns": detector_feature_columns,
+        "host_history_spec": {
+            "bucket_size": "1 minute",
+            "windows": ["previous completed 1 minute", "previous completed 5 minutes"],
+            "window_boundary": "current minute excluded; strictly prior buckets only",
+            "history_scope": "source IP and destination IP",
+            "ip_addresses_are_model_features": False,
+            "inference_mode": "batch; history is rebuilt from rows in the supplied input",
+        },
         "label_distribution_for_evaluation_only": {
             str(k): int(v) for k, v in labels.value_counts().items()
         },
@@ -733,6 +749,8 @@ def run(
             "The cleaned and metadata-rich files may omit connection identifiers or timestamps depending on the source; this pipeline requires timestamp and source/destination metadata for event/graph stages.",
             "Attack type remains Unclassified unless a separate trained classifier supplies predicted_attack_type.",
             "Potential incidents are graph-connected candidate groups, not confirmed incidents. Temporal edges denote correlation/order, not causation.",
+            "The nominal calibration FPR target is not a guarantee of the same FPR under future traffic or distribution shift.",
+            "Host-history inference is batch-oriented: each input must include the preceding traffic needed for 1-minute and 5-minute windows; state is not persisted across separate invocations.",
         ],
     }
     (output / "pipeline_summary.json").write_text(
@@ -861,6 +879,7 @@ def run_inference(
         "behavioral_feature_count": int(len(artifact.get("behavioral_feature_columns", []))),
         "feature_count": int(len(artifact["feature_columns"])),
         "feature_columns": list(artifact["feature_columns"]),
+        "host_history_spec": artifact.get("host_history_spec"),
         "ground_truth_labels_required": False,
         "ground_truth_labels_used": False,
         "model_name": artifact["model_name"],
@@ -889,6 +908,7 @@ def run_inference(
             "Attack type remains Unclassified unless a separately trained classifier supplies predicted_attack_type.",
             "Potential incidents are graph-based candidate correlations requiring analyst validation, not confirmed campaigns or causal chains.",
             "The feature schema and threshold must match the environment/data source for which the model artifact was validated.",
+            "Host-history inference is batch-oriented and does not persist rolling state between separate invocations.",
         ],
     }
     (output / "pipeline_summary.json").write_text(
