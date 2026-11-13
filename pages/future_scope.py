@@ -459,13 +459,7 @@ st.markdown(
 
 cards_html = ['<div class="fs-grid">']
 for item in roadmap:
-    nodes = "".join(
-        f'<div class="fs-mini-node">{escape(label)}</div>'
-        for label in item["flow"]
-    )
     flow_html = (
-        f'{nodes[:nodes.find("</div>") + 6]}'
-        if False else
         f'<div class="fs-mini-node">{escape(item["flow"][0])}</div>'
         f'<div class="fs-mini-arrow">›</div>'
         f'<div class="fs-mini-node">{escape(item["flow"][1])}</div>'
