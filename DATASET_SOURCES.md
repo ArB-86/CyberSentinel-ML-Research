@@ -29,28 +29,11 @@ The preprocessing notebook is [`notebooks/dataset_preprocessing.ipynb`](notebook
 - Preserve the original CICIDS2017 labels for evaluation, while excluding labels from the unsupervised feature matrix.
 - Record preprocessing steps, feature selection, dataset version and checksum with each experiment.
 
-## Dashboard attack-distribution reference
+## Dashboard reference counts
 
-The dashboard includes a small, checked-in reference table at
-`research/cicids2017_attack_distribution.csv`. Its 14 attack-family counts
-are taken from the final cleaned-data label-count output in
-`notebooks/dataset_preprocessing.ipynb` (after duplicate removal), and sum to
-336,299 attack rows. The dashboard prefers the local Parquet labels when that
-file is available; otherwise it displays this static CICIDS2017 dataset profile.
-The reference is not a live inference result and must not be interpreted as
-predictions from an unlabeled traffic batch.
+The dashboard includes two small, checked-in CICIDS2017 reference files:
 
+- `research/cicids2017_attack_distribution.csv`: counts for all 14 non-benign attack families, derived from the final cleaned label counts in `notebooks/dataset_preprocessing.ipynb`.
+- `research/cicids2017_traffic_summary.csv`: aggregate counts from the same cleaned dataset — **2,228,970 total flows**, **1,892,671 benign**, and **336,299 attack**.
 
-The same final cleaned label-count output contains **2,228,970 total flows**:
-**1,892,671 benign** and **336,299 attack** flows. The dashboard derives the
-reference benign count by subtracting the sum of the 14 checked-in attack
-families from the verified total. These values describe the complete cleaned
-CICIDS2017 dataset profile, not a benchmark holdout, current inference batch,
-or live detection stream.
-
-
-The dashboard also keeps aggregate totals in
-`research/cicids2017_traffic_summary.csv` (2,228,970 total; 1,892,671
-benign; 336,299 attack). At runtime, the dashboard checks that the aggregate
-attack count agrees with the sum of the 14 attack-family counts before using
-the reference values for its KPI cards and benign-versus-attack pie chart.
+When the local Parquet is absent, the dashboard cross-checks the sum of the 14 attack-family counts against the aggregate attack total before using the reference figures for its KPI cards and benign-versus-attack pie chart. These are full-dataset ground-truth statistics, not benchmark holdout results, current inference-batch counts, model predictions, or live detections.
