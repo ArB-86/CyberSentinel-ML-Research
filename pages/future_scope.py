@@ -226,22 +226,22 @@ def render_card(item: dict) -> str:
     return f"""
     <div class="fs-card">
       <div class="fs-card-head">
-        <div class="fs-card-index">{escape(item["number"])} / {escape(item["area"])}</div>
-        <div class="fs-card-status">{escape(item["status"])}</div>
+        <div class="fs-card-index">{escape(item['number'])} / {escape(item['area'])}</div>
+        <div class="fs-card-status">{escape(item['status'])}</div>
       </div>
-      <div class="fs-card-title">{escape(item["title"])}</div>
-      <div class="fs-card-summary">{escape(item["summary"])}</div>
+      <div class="fs-card-title">{escape(item['title'])}</div>
+      <div class="fs-card-summary">{escape(item['summary'])}</div>
       <div class="fs-card-grid">
         <div class="fs-card-panel">
           <div class="fs-label">In the project now</div>
-          <div class="fs-card-text">{escape(item["current"])}</div>
+          <div class="fs-card-text">{escape(item['current'])}</div>
         </div>
         <div class="fs-card-panel">
           <div class="fs-label">Next engineering step</div>
-          <div class="fs-card-text">{escape(item["next"])}</div>
+          <div class="fs-card-text">{escape(item['next'])}</div>
         </div>
       </div>
-      <div class="fs-output"><b>EXPECTED OUTPUT</b><br>{escape(item["output"])}</div>
+      <div class="fs-output"><b>EXPECTED OUTPUT</b><br>{escape(item['output'])}</div>
     </div>
     """
 
