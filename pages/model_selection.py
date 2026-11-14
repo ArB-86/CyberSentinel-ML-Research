@@ -780,7 +780,7 @@ quality.update_layout(
 )
 st.plotly_chart(
     style_chart(quality, 480),
-    use_container_width=True,
+    width="stretch",
     config={"displayModeBar": False, "responsive": True},
 )
 
@@ -844,7 +844,7 @@ fit_fig.update_layout(
 with fit_col:
     st.plotly_chart(
         style_chart(fit_fig, 390),
-        use_container_width=True,
+        width="stretch",
         config={"displayModeBar": False, "responsive": True},
     )
 
@@ -868,7 +868,7 @@ score_fig.update_layout(
 with score_col:
     st.plotly_chart(
         style_chart(score_fig, 390),
-        use_container_width=True,
+        width="stretch",
         config={"displayModeBar": False, "responsive": True},
     )
 
@@ -945,7 +945,7 @@ trend.update_layout(
 )
 st.plotly_chart(
     style_chart(trend, 420),
-    use_container_width=True,
+    width="stretch",
     config={"displayModeBar": False, "responsive": True},
 )
 
