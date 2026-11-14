@@ -7,6 +7,13 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from utils.cache_keys import file_cache_signature
+from utils.dashboard_data import (
+    build_attack_distribution,
+    build_reference_traffic_counts,
+    build_traffic_counts,
+    load_reference_attack_distribution,
+    load_reference_traffic_summary as read_reference_traffic_summary,
+)
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -162,6 +169,8 @@ st.markdown(
 ROOT = Path(__file__).resolve().parent
 
 DATA_PATH = ROOT / "data" / "cleaned_cicids2017.parquet"
+REFERENCE_DISTRIBUTION_PATH = ROOT / "research" / "cicids2017_attack_distribution.csv"
+REFERENCE_TRAFFIC_SUMMARY_PATH = ROOT / "research" / "cicids2017_traffic_summary.csv"
 
 OUTPUT_DIR = ROOT / "outputs"
 
@@ -188,6 +197,24 @@ def load_label_column(cache_signature):
             columns=["Label"]
         )
     except Exception:
+        return None
+
+
+@st.cache_data
+def load_reference_distribution(cache_signature):
+    """Load verified CICIDS2017 reference label counts."""
+    try:
+        return load_reference_attack_distribution(REFERENCE_DISTRIBUTION_PATH)
+    except (OSError, ValueError, pd.errors.ParserError):
+        return pd.DataFrame(columns=["Attack Type", "Flows"])
+
+
+@st.cache_data
+def load_reference_traffic_summary_data(cache_signature):
+    """Load verified full-dataset benign/attack totals for dashboard fallback."""
+    try:
+        return read_reference_traffic_summary(REFERENCE_TRAFFIC_SUMMARY_PATH)
+    except (OSError, ValueError, pd.errors.ParserError):
         return None
 
 
@@ -245,32 +272,46 @@ events_df = load_attack_events(file_cache_signature(EVENTS_PATH))
 # DATASET STATISTICS
 # ============================================================
 
-benchmark_evaluation_available = (
-    pipeline_summary.get("mode", "benchmark") == "benchmark"
-    and isinstance(pipeline_summary.get("evaluation_metrics"), dict)
-    and bool(pipeline_summary.get("evaluation_metrics"))
-)
+# Use local ground-truth labels when the cleaned Parquet is available.
+# Otherwise, derive the full-dataset profile from the checked-in reference
+# attack counts and the verified cleaned row count. This is dataset metadata,
+# not a count of predictions from the current unlabeled inference batch.
+local_traffic_counts = build_traffic_counts(labels_df)
 
-if (
-    benchmark_evaluation_available
-    and labels_df is not None
-    and "Label" in labels_df.columns
-):
-    labels = labels_df["Label"].astype(str).str.strip()
-    total_flows = int(len(labels))
-    benign_flows = int((labels.str.casefold() == "benign").sum())
-    attack_flows = total_flows - benign_flows
-    attack_distribution = (
-        labels[labels.str.casefold() != "benign"]
-        .value_counts()
-        .rename_axis("Attack Type")
-        .reset_index(name="Flows")
-    )
+if local_traffic_counts is not None:
+    traffic_counts = local_traffic_counts
+    attack_distribution = build_attack_distribution(labels_df)
+    traffic_profile_source = "Local cleaned CICIDS2017 ground-truth labels"
+    traffic_profile_kind = "Local dataset profile"
 else:
-    # Benchmark labels do not describe the current unlabeled inference run.
-    total_flows = benign_flows = attack_flows = None
-    attack_distribution = pd.DataFrame(columns=["Attack Type", "Flows"])
+    attack_distribution = load_reference_distribution(
+        file_cache_signature(REFERENCE_DISTRIBUTION_PATH)
+    )
+    reference_summary = load_reference_traffic_summary_data(
+        file_cache_signature(REFERENCE_TRAFFIC_SUMMARY_PATH)
+    )
+    traffic_counts = None
+    if reference_summary is not None:
+        # Cross-check the aggregate summary against the sum of all 14 attack
+        # families so stale or mismatched reference files are never combined.
+        derived_counts = build_reference_traffic_counts(
+            attack_distribution,
+            reference_summary["Total Flows"],
+        )
+        if derived_counts is not None and (
+            derived_counts["benign_flows"] == reference_summary["Benign Flows"]
+            and derived_counts["attack_flows"] == reference_summary["Attack Flows"]
+        ):
+            traffic_counts = derived_counts
+    traffic_profile_source = "Verified CICIDS2017 preprocessing reference"
+    traffic_profile_kind = "Checked-in reference profile"
 
+if traffic_counts is not None:
+    total_flows = traffic_counts["total_flows"]
+    benign_flows = traffic_counts["benign_flows"]
+    attack_flows = traffic_counts["attack_flows"]
+else:
+    total_flows = benign_flows = attack_flows = None
 
 # ============================================================
 # PIPELINE OUTPUT STATISTICS
@@ -366,6 +407,7 @@ with st.sidebar:
         label="Risk Assessment",
     )
 
+
     # st.page_link(
     #     "pages/ai_investigation.py",
     #     label="AI Investigation",
@@ -381,7 +423,7 @@ with st.sidebar:
 
             <div class="green"
                  style="font-weight:800;font-size:.76rem">
-                ● {"DATA READY" if labels_df is not None else "WAITING FOR DATA"}
+                ● {"LOCAL DATASET" if local_traffic_counts is not None else "REFERENCE PROFILE" if traffic_counts is not None else "DATA UNAVAILABLE"}
             </div>
 
             <div style="
@@ -389,7 +431,7 @@ with st.sidebar:
                 font-size:.7rem;
                 margin-top:6px;
             ">
-                {"CICIDS2017 · {:,} flows".format(total_flows) if total_flows is not None else "CICIDS2017 dataset not loaded"}
+                {"CICIDS2017 · {:,} flows".format(total_flows) if total_flows is not None else "CICIDS2017 counts unavailable"}
             </div>
 
         </div>
@@ -478,15 +520,35 @@ st.markdown(
 
 cols = st.columns(4)
 
+metric_source_description = (
+    "Local cleaned CICIDS2017 labels"
+    if local_traffic_counts is not None
+    else "Verified full-dataset reference; not current inference rows"
+)
+
 metric_data = [
-    ("Network Flows", f"{total_flows:,}" if total_flows is not None else "N/A" if pipeline_summary.get("mode") == "unlabeled_inference" else "Not loaded",
-     "Current labelled benchmark rows; not shown for unlabeled inference"),
-    ("Benign Flows", f"{benign_flows:,}" if benign_flows is not None else "N/A" if pipeline_summary.get("mode") == "unlabeled_inference" else "Not loaded",
-     "Ground-truth benchmark labels only"),
-    ("Attack Flows", f"{attack_flows:,}" if attack_flows is not None else "N/A" if pipeline_summary.get("mode") == "unlabeled_inference" else "Not loaded",
-     "Ground-truth benchmark labels only"),
-    ("Attack Rate", f"{attack_flows / total_flows * 100:.2f}%" if total_flows else "N/A",
-     "Benchmark label rate; unavailable during inference"),
+    (
+        "Network Flows",
+        f"{total_flows:,}" if total_flows is not None else "Unavailable",
+        metric_source_description,
+    ),
+    (
+        "Benign Flows",
+        f"{benign_flows:,}" if benign_flows is not None else "Unavailable",
+        "Ground-truth benign rows · " + metric_source_description,
+    ),
+    (
+        "Attack Flows",
+        f"{attack_flows:,}" if attack_flows is not None else "Unavailable",
+        "Ground-truth attack rows · " + metric_source_description,
+    ),
+    (
+        "Attack Rate",
+        f"{attack_flows / total_flows * 100:.2f}%"
+        if total_flows and attack_flows is not None
+        else "Unavailable",
+        "Share of attack-labelled rows in the dataset profile",
+    ),
 ]
 
 
@@ -641,47 +703,50 @@ chart_col, pipeline_col = st.columns(
 
 with chart_col:
 
-    fig = go.Figure(
-        go.Pie(
-            labels=["Benign", "Attack"],
-            values=[
-                benign_flows,
-                attack_flows
-            ],
-            hole=0.68,
-            textinfo="percent",
-            hovertemplate=(
-                "%{label}: %{value:,}"
-                "<extra></extra>"
-            ),
+    st.markdown("#### Benign vs Attack Composition")
+
+    if (
+        benign_flows is not None
+        and attack_flows is not None
+        and (benign_flows + attack_flows) > 0
+    ):
+        fig = go.Figure(
+            go.Pie(
+                labels=["Benign", "Attack"],
+                values=[benign_flows, attack_flows],
+                hole=0.68,
+                textinfo="percent",
+                hovertemplate=(
+                    "%{label}: %{value:,} flows"
+                    "<extra></extra>"
+                ),
+            )
         )
-    )
 
-    fig.update_layout(
-        height=330,
-        margin=dict(
-            l=5,
-            r=5,
-            t=5,
-            b=5
-        ),
-        paper_bgcolor="rgba(0,0,0,0)",
-        font=dict(
-            color="#dce7f2"
-        ),
-        legend=dict(
-            orientation="h",
-            y=-0.05,
-        ),
-    )
+        fig.update_layout(
+            height=330,
+            margin=dict(l=5, r=5, t=5, b=5),
+            paper_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#dce7f2"),
+            legend=dict(orientation="h", y=-0.05),
+        )
 
-    st.plotly_chart(
-        fig,
-        use_container_width=True,
-        config={
-            "displayModeBar": False
-        },
-    )
+        st.plotly_chart(
+            fig,
+            width="stretch",
+            config={"displayModeBar": False},
+        )
+        st.caption(
+            f"{traffic_profile_kind}: {traffic_profile_source}. "
+            "This is the cleaned CICIDS2017 dataset's ground-truth "
+            "composition, not predictions from the current inference batch."
+        )
+    else:
+        st.info(
+            "Traffic composition is unavailable because neither local "
+            "ground-truth labels nor the checked-in reference profile "
+            "could be loaded."
+        )
 
 
 # ============================================================
@@ -787,59 +852,64 @@ st.markdown(
 
 st.header("Attack Distribution")
 
-show = (
-    attack_distribution
-    .head(12)
-    .sort_values("Flows")
-)
+if attack_distribution.empty:
+    st.info(
+        "Attack distribution is unavailable. The local cleaned dataset "
+        "and the checked-in CICIDS2017 reference profile could not be loaded."
+    )
+else:
+    # Show every known attack family, including low-frequency classes.
+    show = attack_distribution.sort_values("Flows", ascending=True)
 
+    fig = px.bar(
+        show,
+        x="Flows",
+        y="Attack Type",
+        orientation="h",
+        text="Flows",
+    )
 
-fig = px.bar(
-    show,
-    x="Flows",
-    y="Attack Type",
-    orientation="h",
-    text="Flows",
-)
+    fig.update_traces(
+        marker_color="#49a8ff",
+        texttemplate="%{text:,}",
+        textposition="outside",
+        cliponaxis=False,
+    )
 
+    fig.update_layout(
+        height=max(430, 36 * len(show) + 110),
+        margin=dict(
+            l=0,
+            r=80,
+            t=10,
+            b=10
+        ),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="#0d151f",
+        font=dict(
+            color="#dce7f2"
+        ),
+        xaxis=dict(
+            gridcolor="#1f2d3d"
+        ),
+        yaxis=dict(
+            gridcolor="rgba(0,0,0,0)"
+        ),
+    )
 
-fig.update_traces(
-    marker_color="#49a8ff",
-    texttemplate="%{text:,}",
-    textposition="outside",
-    cliponaxis=False,
-)
+    st.plotly_chart(
+        fig,
+        width="stretch",
+        config={
+            "displayModeBar": False
+        },
+    )
 
-
-fig.update_layout(
-    height=430,
-    margin=dict(
-        l=0,
-        r=70,
-        t=10,
-        b=10
-    ),
-    paper_bgcolor="rgba(0,0,0,0)",
-    plot_bgcolor="#0d151f",
-    font=dict(
-        color="#dce7f2"
-    ),
-    xaxis=dict(
-        gridcolor="#1f2d3d"
-    ),
-    yaxis=dict(
-        gridcolor="rgba(0,0,0,0)"
-    ),
-)
-
-
-st.plotly_chart(
-    fig,
-    use_container_width=True,
-    config={
-        "displayModeBar": False
-    },
-)
+    st.caption(
+        f"{traffic_profile_source}. Counts are dataset-level "
+        "ground-truth labels, not predictions from the current "
+        "unlabeled inference batch."
+    )
 
 
 # ============================================================

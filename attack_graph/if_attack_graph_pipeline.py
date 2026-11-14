@@ -26,12 +26,20 @@ if __package__ in (None, ""):
     # Support the documented direct-script invocation from the repository root.
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
     from attack_graph.event_builder import EventConfig, build_attack_events, normalize_columns
+    from attack_graph.host_history import (
+        HOST_HISTORY_FEATURE_COLUMNS,
+        build_causal_host_history_features,
+    )
     from attack_graph.graph_builder import (
         add_sequence_edges, build_attack_graph, write_attack_graph_gexf,
     )
     from attack_graph.incident_builder import build_potential_incidents
 else:
     from .event_builder import EventConfig, build_attack_events, normalize_columns
+    from .host_history import (
+        HOST_HISTORY_FEATURE_COLUMNS,
+        build_causal_host_history_features,
+    )
     from .graph_builder import add_sequence_edges, build_attack_graph, write_attack_graph_gexf
     from .incident_builder import build_potential_incidents
 
@@ -93,6 +101,22 @@ def prepare_features(
     if x.empty or not feature_columns:
         raise ValueError("No usable numeric model features remain.")
     return work, x, feature_columns
+
+
+def _append_host_history_features(
+    work: pd.DataFrame,
+    numeric_features: pd.DataFrame,
+) -> tuple[pd.DataFrame, list[str]]:
+    """Append the shared causal host-history schema to per-flow features."""
+    history = build_causal_host_history_features(work, numeric_features)
+    combined = pd.concat(
+        [numeric_features.reset_index(drop=True), history.reset_index(drop=True)],
+        axis=1,
+    )
+    expected = list(numeric_features.columns) + HOST_HISTORY_FEATURE_COLUMNS
+    if combined.columns.tolist() != expected:
+        raise RuntimeError("Detector feature matrix does not match the persisted feature schema.")
+    return combined, expected
 
 
 def load_metadata_sample(data_dir: Path, nrows: int = 0) -> pd.DataFrame:
@@ -180,6 +204,17 @@ def _benign_three_way_split(
     return train_positions, calibration_positions, test_positions
 
 
+def parse_metadata_timestamps(values: pd.Series) -> pd.Series:
+    """Parse CICIDS metadata timestamps as day-first, including mixed ISO inputs."""
+    return pd.to_datetime(
+        values.astype("string").str.strip(),
+        errors="coerce",
+        utc=True,
+        format="mixed",
+        dayfirst=True,
+    )
+
+
 def _chronological_benign_split(
     benign_positions: np.ndarray,
     hashes: np.ndarray,
@@ -193,7 +228,7 @@ def _chronological_benign_split(
     when fewer than three distinct calendar days exist; callers must then
     label the fallback as a non-temporal duplicate-group split.
     """
-    parsed = pd.to_datetime(timestamps, errors="coerce", utc=True, format="mixed")
+    parsed = parse_metadata_timestamps(timestamps)
     if parsed.isna().any():
         raise ValueError("Benchmark mode requires valid timestamps on every flow row.")
     day_values = parsed.dt.floor("D")
@@ -291,12 +326,12 @@ def run(
     data_dir: str,
     output_dir: str,
     nrows: int = 0,
-    benign_sample_n: int = 500_000,
+    benign_sample_n: int = 25_000,
     n_estimators: int = 200,
-    calibration_quantile: float = 0.05,
+    calibration_quantile: float = 0.01,
     time_window_seconds: int = 60,
     max_sequence_gap_seconds: int = 300,
-    calibration_rows: int = 5_000,
+    calibration_rows: int = 120_000,
     evaluation_rows: int = 160_000,
 ) -> None:
     """Run held-out CICIDS2017 detection and graph construction.
@@ -337,6 +372,9 @@ def run(
     missing_label_rows = int((~valid_label_mask).sum())
     work = work.loc[valid_label_mask].reset_index(drop=True)
     x_raw = x_raw.loc[valid_label_mask].reset_index(drop=True)
+    detector_features, detector_feature_columns = _append_host_history_features(
+        work, x_raw
+    )
     labels = work["label"].astype("string").str.strip()
     if labels.empty:
         raise ValueError("No rows with valid ground-truth labels remain for benchmark evaluation.")
@@ -346,9 +384,7 @@ def run(
         raise ValueError("Benchmark mode contains missing ground-truth labels; clean or exclude those rows first.")
     if "timestamp" not in work.columns:
         raise ValueError("Benchmark mode requires a timestamp column for chronological holdout and event reconstruction.")
-    parsed_timestamps = pd.to_datetime(
-        work["timestamp"], errors="coerce", utc=True, format="mixed"
-    )
+    parsed_timestamps = parse_metadata_timestamps(work["timestamp"])
     if parsed_timestamps.isna().any():
         raise ValueError(
             f"Benchmark mode found {int(parsed_timestamps.isna().sum())} invalid timestamps. "
@@ -476,9 +512,9 @@ def run(
 
     # Imputation and the detector are fitted on the same benign training sample.
     imputer = SimpleImputer(strategy="median", keep_empty_features=True)
-    x_train = imputer.fit_transform(x_raw.iloc[chosen_train_positions])
-    x_calibration = imputer.transform(x_raw.iloc[chosen_calibration_positions])
-    x_evaluation = imputer.transform(x_raw.iloc[evaluation_positions])
+    x_train = imputer.fit_transform(detector_features.iloc[chosen_train_positions])
+    x_calibration = imputer.transform(detector_features.iloc[chosen_calibration_positions])
+    x_evaluation = imputer.transform(detector_features.iloc[evaluation_positions])
 
     model = IsolationForest(
         n_estimators=n_estimators,
@@ -502,11 +538,22 @@ def run(
 
     model_artifact_path = output / "isolation_forest_model.joblib"
     joblib.dump({
-        "artifact_version": 1,
+        "artifact_version": 2,
         "model_name": "IsolationForest",
+        "feature_mode": "raw_plus_causal_host_history_v1",
         "model": model,
         "imputer": imputer,
-        "feature_columns": feature_columns,
+        "feature_columns": detector_feature_columns,
+        "base_feature_columns": feature_columns,
+        "behavioral_feature_columns": HOST_HISTORY_FEATURE_COLUMNS,
+        "host_history_spec": {
+            "bucket_size": "1 minute",
+            "windows": ["previous completed 1 minute", "previous completed 5 minutes"],
+            "window_boundary": "current minute excluded; strictly prior buckets only",
+            "history_scope": "source IP and destination IP",
+            "ip_addresses_are_model_features": False,
+            "inference_mode": "batch; history is rebuilt from rows in the supplied input",
+        },
         "threshold": threshold,
         "score_direction": "lower score is more anomalous",
         "calibration_score_quantiles": calibration_score_quantiles,
@@ -638,11 +685,22 @@ def run(
     calibration_hashes = set(hashes[chosen_calibration_positions].tolist())
     test_hashes = set(hashes[evaluation_positions].tolist())
     summary = {
-        "pipeline_version": "2.2",
+        "pipeline_version": "2.3",
         "dataset_rows": int(len(work)),
         "missing_or_blank_label_rows_excluded": missing_label_rows,
-        "feature_count": int(len(feature_columns)),
-        "feature_columns": feature_columns,
+        "model_feature_mode": "raw_plus_causal_host_history_v1",
+        "base_feature_count": int(len(feature_columns)),
+        "behavioral_feature_count": int(len(HOST_HISTORY_FEATURE_COLUMNS)),
+        "feature_count": int(len(detector_feature_columns)),
+        "feature_columns": detector_feature_columns,
+        "host_history_spec": {
+            "bucket_size": "1 minute",
+            "windows": ["previous completed 1 minute", "previous completed 5 minutes"],
+            "window_boundary": "current minute excluded; strictly prior buckets only",
+            "history_scope": "source IP and destination IP",
+            "ip_addresses_are_model_features": False,
+            "inference_mode": "batch; history is rebuilt from rows in the supplied input",
+        },
         "label_distribution_for_evaluation_only": {
             str(k): int(v) for k, v in labels.value_counts().items()
         },
@@ -700,6 +758,8 @@ def run(
             "The cleaned and metadata-rich files may omit connection identifiers or timestamps depending on the source; this pipeline requires timestamp and source/destination metadata for event/graph stages.",
             "Attack type remains Unclassified unless a separate trained classifier supplies predicted_attack_type.",
             "Potential incidents are graph-connected candidate groups, not confirmed incidents. Temporal edges denote correlation/order, not causation.",
+            "The nominal calibration FPR target is not a guarantee of the same FPR under future traffic or distribution shift.",
+            "Host-history inference is batch-oriented: each input must include the preceding traffic needed for 1-minute and 5-minute windows; state is not persisted across separate invocations.",
         ],
     }
     (output / "pipeline_summary.json").write_text(
@@ -756,17 +816,37 @@ def run_inference(
     }
     if not isinstance(artifact, dict) or not required_artifact.issubset(artifact):
         raise ValueError("Model artifact is incomplete or has an unsupported format.")
-    if artifact["artifact_version"] != 1 or artifact["model_name"] != "IsolationForest":
+    if artifact["artifact_version"] not in {1, 2} or artifact["model_name"] != "IsolationForest":
         raise ValueError("Unsupported model artifact version or detector.")
 
+    feature_mode = artifact.get("feature_mode", "raw_numeric_v1")
+    base_feature_columns = artifact.get(
+        "base_feature_columns", artifact["feature_columns"]
+    )
     df = load_metadata_sample(Path(data_dir), nrows=nrows)
     work, x_raw, _ = prepare_features(
-        df, feature_columns=list(artifact["feature_columns"])
+        df, feature_columns=list(base_feature_columns)
     )
     if "label" in work.columns:
         # Ground-truth labels are deliberately excluded from inference outputs.
         work = work.drop(columns=["label"])
-    x_transformed = artifact["imputer"].transform(x_raw)
+
+    if feature_mode == "raw_plus_causal_host_history_v1":
+        detector_features, expected_columns = _append_host_history_features(
+            work, x_raw
+        )
+        if expected_columns != list(artifact["feature_columns"]):
+            raise ValueError(
+                "Host-history feature schema mismatch between input and model artifact."
+            )
+    elif feature_mode == "raw_numeric_v1":
+        detector_features = x_raw
+        if list(detector_features.columns) != list(artifact["feature_columns"]):
+            raise ValueError("Raw numeric feature schema mismatch with model artifact.")
+    else:
+        raise ValueError(f"Unsupported model feature mode: {feature_mode}")
+
+    x_transformed = artifact["imputer"].transform(detector_features)
     model = artifact["model"]
     score_started = time.perf_counter()
     scores = model.score_samples(x_transformed)
@@ -800,11 +880,15 @@ def run_inference(
     write_attack_graph_gexf(graph, str(output / "attack_graph.gexf"))
 
     summary = {
-        "pipeline_version": "2.2-inference",
+        "pipeline_version": "2.3-inference",
         "mode": "unlabeled_inference",
         "dataset_rows": int(len(work)),
+        "model_feature_mode": feature_mode,
+        "base_feature_count": int(len(base_feature_columns)),
+        "behavioral_feature_count": int(len(artifact.get("behavioral_feature_columns", []))),
         "feature_count": int(len(artifact["feature_columns"])),
         "feature_columns": list(artifact["feature_columns"]),
+        "host_history_spec": artifact.get("host_history_spec"),
         "ground_truth_labels_required": False,
         "ground_truth_labels_used": False,
         "model_name": artifact["model_name"],
@@ -833,6 +917,7 @@ def run_inference(
             "Attack type remains Unclassified unless a separately trained classifier supplies predicted_attack_type.",
             "Potential incidents are graph-based candidate correlations requiring analyst validation, not confirmed campaigns or causal chains.",
             "The feature schema and threshold must match the environment/data source for which the model artifact was validated.",
+            "Host-history inference is batch-oriented and does not persist rolling state between separate invocations.",
         ],
     }
     (output / "pipeline_summary.json").write_text(
@@ -862,12 +947,17 @@ if __name__ == "__main__":
         "--nrows", type=int, default=0,
         help="Default 0 reads every row. Positive value is a per-file prefix cap for smoke tests only."
     )
-    parser.add_argument("--benign-sample-n", type=int, default=500_000)
+    parser.add_argument("--benign-sample-n", type=int, default=25_000)
     parser.add_argument("--n-estimators", type=int, default=200)
-    parser.add_argument("--calibration-quantile", type=float, default=0.05)
+    parser.add_argument(
+        "--calibration-quantile",
+        type=float,
+        default=0.01,
+        help="Lower benign score quantile used as the anomaly threshold (default: 0.01).",
+    )
     parser.add_argument("--time-window-seconds", type=int, default=60)
     parser.add_argument("--max-sequence-gap-seconds", type=int, default=300)
-    parser.add_argument("--calibration-rows", type=int, default=5_000)
+    parser.add_argument("--calibration-rows", type=int, default=120_000)
     parser.add_argument("--evaluation-rows", type=int, default=160_000)
     args = parser.parse_args()
     if args.mode == "benchmark":

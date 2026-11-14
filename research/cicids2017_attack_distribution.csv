@@ -1,0 +1,15 @@
+Attack Type,Flows
+DoS Hulk,172688
+DDoS,127995
+DoS GoldenEye,10281
+FTP-Patator,5927
+DoS slowloris,5385
+DoS Slowhttptest,5228
+SSH-Patator,3217
+PortScan,1956
+Web Attack - Brute Force,1470
+Bot,1437
+Web Attack - XSS,652
+Infiltration,35
+Web Attack - SQL Injection,21
+Heartbleed,7

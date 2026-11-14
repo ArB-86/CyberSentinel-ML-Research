@@ -370,6 +370,7 @@ with st.sidebar:
         label="Risk Assessment",
     )
 
+
     # st.page_link(
     #     "pages/ai_investigation.py",
     #     label="AI Investigation",
@@ -817,7 +818,7 @@ fig.update_layout(
 
 st.plotly_chart(
     fig,
-    use_container_width=True,
+    width="stretch",
     config={
         "displayModeBar": False
     },
@@ -964,7 +965,7 @@ with left:
 
     st.plotly_chart(
         fig,
-        use_container_width=True,
+        width="stretch",
         config={
             "displayModeBar": False
         },
@@ -982,7 +983,7 @@ with right:
 
     st.dataframe(
         display_df,
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
         height=500,
     )
@@ -1139,7 +1140,7 @@ else:
 
         st.dataframe(
             view[preferred],
-            use_container_width=True,
+            width="stretch",
             height=420,
             hide_index=True,
         )
@@ -1148,7 +1149,7 @@ else:
 
         st.dataframe(
             view,
-            use_container_width=True,
+            width="stretch",
             height=420,
             hide_index=True,
         )
@@ -1206,7 +1207,7 @@ if not per_attack_evaluation.empty:
     st.markdown("#### Per-Attack Evaluation (Held-Out Benchmark)")
     st.dataframe(
         per_attack_evaluation,
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
     )
 elif detection_metrics:

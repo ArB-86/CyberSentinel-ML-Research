@@ -96,3 +96,160 @@ Outputs:
 - `event_correlation_sensitivity_metadata.json` — input SHA-256, data time range, parameter grid and interpretation limits.
 
 This is a **structural sensitivity** experiment only. Without analyst-labelled incident/stage ground truth it does not measure event precision/recall, causal reconstruction or which setting is correct. Run on the full detector-flagged metadata-rich export; do not treat a prefix-limited smoke-test file as representative.
+
+## Rolling temporal validation and Isolation Forest tuning
+
+Run this experiment on the original metadata-rich CICIDS2017 CSV archive (not
+the cleaned Parquet, which does not retain the required timestamps and host
+metadata):
+
+```powershell
+.\.venv\Scripts\python.exe experiments\temporal_threshold_optimization.py --data-dir data\cicids2017_metadata --outdir experiments\results\temporal-rolling-v1 --folds 3 --train-rows 25000 --validation-rows 120000 --test-rows 0 --target-fpr 0.01
+```
+
+The default three folds use expanding-window forward chaining:
+
+| Fold | Benign-only training period | Validation / threshold calibration | Untouched test |
+|---|---|---|---|
+| 1 | Monday (3 July) | Tuesday (4 July) | Wednesday (5 July) |
+| 2 | Monday–Tuesday | Wednesday (5 July) | Thursday (6 July) |
+| 3 | Monday–Wednesday | Thursday (6 July) | Friday (7 July) |
+
+The script parses CICIDS timestamps day-first (so 03/07/2017 means 3 July).
+Exact duplicate numeric-feature rows are retained in their earliest temporal
+partition only. The same benign training rows are used by all four detectors
+within a fold. The `--folds` option may be reduced for a shorter run, but cannot
+exceed the number of possible forward-chaining windows.
+
+Within each fold:
+- Isolation Forest searches the configured tree-count, max-samples and max-features grid. The selected configuration maximizes validation attack recall at the primary FPR budget (ties: F1, AP, then fit time).
+- Novelty LOF and RBF One-Class SVM are fitted on the same benign training sample.
+- Thresholds at 0.5%, 1%, 2% and 5% FPR are calibrated from validation-benign scores only, then frozen for that fold's later test day.
+- Test labels are never used for model or threshold selection. Actual test FPR is measured and may exceed the validation budget under temporal distribution shift.
+
+Outputs:
+- `rolling_if_validation_grid.csv` — all IF configurations and validation metrics per fold.
+- `rolling_validation_threshold_sweep.csv` — validation metrics at each FPR budget.
+- `rolling_test_metrics.csv` — per-fold later-day metrics at frozen thresholds.
+- `rolling_per_attack_recall.csv` — attack-family recall and support per fold.
+- `rolling_macro_metrics.csv` — fold-macro mean and standard deviation by detector/FPR.
+- `rolling_pooled_confusion_metrics.csv` — precision, recall, F1 and FPR from summed confusion counts; AP/ROC-AUC are intentionally not pooled across score scales.
+- `fold_1/`, `fold_2/`, `fold_3/` — fold-specific tuned Isolation Forest artifacts.
+- `rolling_temporal_summary.json` — fold dates, row counts, test prevalence, selected configurations, metrics and interpretation limits.
+
+The three test windows come from one CICIDS2017 capture, not three independent
+datasets. They provide a stronger temporal-shift check than a single holdout,
+but do not prove generalization to another network or future years. Precision
+and AP depend on each test window's attack prevalence. Do not call a detector
+the overall winner from one metric alone; inspect per-fold false-positive
+rates, recall and attack-family coverage together.
+
+
+## Isolation Forest feature-representation ablation
+
+After the rolling experiment shows weak coverage for Web Attacks and PortScan,
+run a targeted IF-only ablation. It keeps the same rolling folds, benign-only
+training policy, duplicate filtering and validation-benign threshold
+calibration, while comparing raw features with signed-log and quantile
+representations. Quantile transforms are fitted on the benign training sample
+only; no validation or test distribution is used to fit them.
+
+    .\.venv\Scripts\python.exe experiments\isolation_forest_ablation.py --data-dir data\cicids2017_metadata --outdir experiments\results\isolation-forest-ablation-v1 --folds 3 --train-rows 25000 --validation-rows 120000 --test-rows 0 --target-fpr 0.01
+
+The ablation compares four feature representations (raw, signed_log1p,
+quantile_uniform, quantile_normal) across a small IF configuration set,
+including the prior raw-feature default and larger per-tree subsamples. Each
+fold selects one candidate using validation attack recall at the fixed FPR
+budget (ties by F1, AP, then fit time). It then reports the untouched test-day
+metrics for that selected candidate and the raw default baseline.
+
+Outputs:
+- if_ablation_validation_grid.csv — all representation/configuration validation results.
+- if_ablation_test_metrics.csv — frozen baseline and validation-selected test results.
+- if_ablation_per_attack_recall.csv — per-family test recall/support for those results.
+- fold_1/, fold_2/, fold_3/ — selected fold-specific IF artifacts.
+- if_ablation_summary.json — fold definitions, choices, metrics and caveats.
+
+This is an ablation, not a promised improvement. Keep the original rolling
+results unchanged. Adopt a transformed candidate only if its untouched test
+results improve the relevant attack-family coverage without unacceptable FPR
+regression across folds. A gain on one CICIDS2017 capture is not evidence of
+generalization to another network.
+
+
+## Isolation Forest causal host-history feature experiment
+
+The preceding ablation found that changing per-flow feature distributions did
+not consistently improve attack-family recall. This IF-only experiment tests
+whether host behaviour over time adds information beyond the current flow's
+80 numeric features.
+
+Run from the repository root:
+
+    .\.venv\Scripts\python.exe experiments\isolation_forest_host_history.py --data-dir data\cicids2017_metadata --outdir experiments\results\isolation-forest-host-history-v1 --folds 3 --train-rows 25000 --validation-rows 120000 --test-rows 0 --target-fpr 0.01
+
+The experiment compares two models using the same folds, training rows,
+validation/test rows, Isolation Forest configuration, and threshold budget:
+- IF_raw_baseline — the existing numeric flow features.
+- IF_raw_plus_host_history — the same flow features plus 18 host-history features.
+
+History features are built from completed one-minute buckets only. A flow in
+minute T sees previous completed 1-minute and 5-minute windows; every rolling
+window is closed on the left, so the current minute and future traffic are
+excluded. Source-host features include prior flow counts, destination-IP and
+destination-port contact counts, bytes and packets. Destination-host features
+include inbound flow counts, distinct source-IP contacts, bytes and packets.
+The five-minute contact sums add per-minute cardinalities, so a host/port seen
+in multiple minutes can be counted more than once. IP addresses are grouping
+keys only; raw IP values are never detector inputs.
+
+Traffic history is computed from unlabeled past flows, including earlier
+validation/test windows, which reflects a stateful online detector. The model
+itself is fitted only on benign training rows. Each model gets its own threshold
+calibrated from validation-benign scores only; the frozen threshold is then
+evaluated on the later untouched test day.
+
+Outputs:
+- if_host_history_validation.csv — validation metrics for both feature sets.
+- if_host_history_test_metrics.csv — untouched temporal test metrics.
+- if_host_history_per_attack_recall.csv — attack-family recall and support.
+- fold_1/, fold_2/, fold_3/ — fold-specific engineered IF artifacts.
+- if_host_history_summary.json — feature definitions, fold metrics and caveats.
+
+This is a feature ablation, not a promised improvement. Compare per-attack
+recall alongside precision, F1 and actual test FPR. These three folds all come
+from one CICIDS2017 capture and do not establish cross-network generalization.
+
+
+## Isolation Forest causal host-behaviour features
+
+After the feature-representation ablation, run the IF-only causal behaviour
+experiment. It compares the same raw 80 flow features against source-host,
+destination-host, source-destination-pair and combined behavioural history
+features on the same rolling temporal folds.
+
+    .\.venv\Scripts\python.exe experiments\isolation_forest_behavioral.py --data-dir data\cicids2017_metadata --outdir experiments\results\isolation-forest-behavior-v1 --folds 3 --train-rows 25000 --validation-rows 120000 --test-rows 0 --target-fpr 0.01
+
+The behavioural features are computed without labels and only from flows with
+strictly earlier timestamps. Simultaneous flows share the same prior state.
+Features include prior source flow counts, source's previously seen destination
+IPs and ports, time since prior activity, prior inbound flow/source counts at
+the destination, prior repeated source-destination pair counts, and source plus
+protocol history. History is cumulative from the beginning of the capture;
+this permits a test-day flow to use earlier observed traffic, including the
+preceding validation day, without reading validation labels.
+
+All variants use the same benign training rows and fixed Isolation Forest
+configuration. Each variant calibrates its threshold independently on
+validation-benign scores only. The later test day is evaluated once after the
+threshold is frozen.
+
+Outputs:
+- if_behavior_test_metrics.csv — per-fold raw baseline and behavioural feature-set test metrics.
+- if_behavior_per_attack_recall.csv — attack-family recall/support for every variant.
+- fold_1/, fold_2/, fold_3/ — fold-specific model artifacts with feature specifications.
+- if_behavior_summary.json — feature policy, fold details, metrics and limitations.
+
+Host/IP history can be capture-specific. Improvement on CICIDS2017 is not proof
+that the same host behaviour transfers to a new network. Compare untouched
+test-day FPR and per-attack recall before considering any feature set.

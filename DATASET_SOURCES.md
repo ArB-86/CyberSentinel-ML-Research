@@ -28,3 +28,12 @@ The preprocessing notebook is [`notebooks/dataset_preprocessing.ipynb`](notebook
 - Do not include live credentials, personally identifying traffic metadata, or access tokens in committed files.
 - Preserve the original CICIDS2017 labels for evaluation, while excluding labels from the unsupervised feature matrix.
 - Record preprocessing steps, feature selection, dataset version and checksum with each experiment.
+
+## Dashboard reference counts
+
+The dashboard includes two small, checked-in CICIDS2017 reference files:
+
+- `research/cicids2017_attack_distribution.csv`: counts for all 14 non-benign attack families, derived from the final cleaned label counts in `notebooks/dataset_preprocessing.ipynb`.
+- `research/cicids2017_traffic_summary.csv`: aggregate counts from the same cleaned dataset — **2,228,970 total flows**, **1,892,671 benign**, and **336,299 attack**.
+
+When the local Parquet is absent, the dashboard cross-checks the sum of the 14 attack-family counts against the aggregate attack total before using the reference figures for its KPI cards and benign-versus-attack pie chart. These are full-dataset ground-truth statistics, not benchmark holdout results, current inference-batch counts, model predictions, or live detections.

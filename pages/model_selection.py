@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
@@ -15,19 +14,505 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    .stApp { background: #070b11; color: #edf3fa; }
-    [data-testid="stSidebar"] { background: #0b121c; border-right: 1px solid #1d2b3c; }
-    .block-container { max-width: 1500px; padding-top: 2rem; padding-bottom: 4rem; }
-    .smallcaps { color: #6f9fc8; font-size: .7rem; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
-    .subtitle { color: #8190a3; font-size: .92rem; margin-top: -.45rem; }
-    .card { background: linear-gradient(145deg, #0f1823, #0b121b); border: 1px solid #26374b; border-radius: 14px; padding: 18px; min-height: 112px; }
-    .label { color: #8190a3; font-size: .66rem; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
-    .value { font-size: 1.55rem; font-weight: 800; margin-top: 7px; color: #edf3fa; }
-    .desc { color: #718196; font-size: .75rem; margin-top: 5px; line-height: 1.45; }
-    .hero { background: radial-gradient(circle at 85% 0%, rgba(73,168,255,.13), transparent 38%), #0b141f; border: 1px solid #263b51; border-radius: 16px; padding: 24px; }
-    .callout { border: 1px solid #234c6a; border-left: 3px solid #49a8ff; background: #0b1824; border-radius: 10px; padding: 13px 15px; color: #91abc1; font-size: .82rem; line-height: 1.55; }
-    .warning { border: 1px solid #66511d; border-left: 3px solid #e9c46a; background: #19160c; border-radius: 10px; padding: 13px 15px; color: #b8aa83; font-size: .82rem; line-height: 1.55; }
-    .rule { height: 1px; background: #1c2938; margin: 28px 0; }
+    :root {
+        --page: #080e17;
+        --panel: #101b29;
+        --panel-soft: #0d1723;
+        --line: #2a4056;
+        --text: #f1f6fc;
+        --muted: #afbed0;
+        --blue: #7cc3f4;
+        --green: #48d19a;
+    }
+    .stApp { background:var(--page); color:var(--text); }
+    [data-testid="stAppViewContainer"] .main .block-container {
+        max-width:1520px;
+        padding:2.1rem clamp(1.1rem,3vw,3.2rem) 4.5rem;
+    }
+    [data-testid="stSidebar"] {
+        background:#0b1420;
+        border-right:1px solid #203348;
+    }
+    [data-testid="stMarkdownContainer"] p,
+    [data-testid="stMarkdownContainer"] li {
+        font-size:17px !important;
+        line-height:1.65 !important;
+    }
+    [data-testid="stMarkdownContainer"] h1 {
+        color:var(--text);
+        font-size:clamp(2.45rem,4vw,3.45rem) !important;
+        line-height:1.12 !important;
+        font-weight:850 !important;
+        letter-spacing:-.035em;
+        margin:.25rem 0 .7rem !important;
+    }
+    [data-testid="stMarkdownContainer"] h2 {
+        color:var(--text);
+        font-size:clamp(1.55rem,2.4vw,2rem) !important;
+        line-height:1.2 !important;
+        font-weight:820 !important;
+        margin:0 0 .55rem !important;
+    }
+    [data-testid="stMarkdownContainer"] h3 {
+        color:var(--text);
+        font-size:1.22rem !important;
+        line-height:1.3 !important;
+        font-weight:780 !important;
+    }
+    [data-testid="stCaptionContainer"] {
+        color:#a9b9ca !important;
+        font-size:15px !important;
+        line-height:1.6 !important;
+    }
+    [data-testid="stMetricValue"] {
+        font-size:2.25rem !important;
+        line-height:1.15 !important;
+        font-weight:850 !important;
+    }
+    [data-testid="stMetricLabel"] {
+        font-size:15px !important;
+        line-height:1.35 !important;
+    }
+    [data-testid="stPlotlyChart"] { width:100%; }
+    .eyebrow {
+        color:#8dc9f3;
+        font-size:13px;
+        font-weight:850;
+        letter-spacing:.15em;
+        text-transform:uppercase;
+        line-height:1.45;
+    }
+    .page-subtitle {
+        color:#bdcad8;
+        font-size:19px;
+        line-height:1.65;
+        max-width:1050px;
+        margin:0 0 22px;
+    }
+    .hero {
+        border:1px solid #355673;
+        border-radius:19px;
+        padding:27px 29px;
+        background:
+          radial-gradient(circle at 91% 2%,rgba(65,155,218,.20),transparent 32%),
+          linear-gradient(115deg,#12263a,#0d1928 66%,#0c1521);
+        margin:18px 0 22px;
+    }
+    .hero-kicker {
+        color:#9bcff3;
+        font-size:13px;
+        font-weight:850;
+        letter-spacing:.14em;
+        text-transform:uppercase;
+        line-height:1.5;
+    }
+    .hero-title {
+        color:#f4f8fd;
+        font-size:clamp(1.85rem,3.1vw,2.65rem);
+        font-weight:900;
+        line-height:1.16;
+        letter-spacing:-.025em;
+        margin:8px 0 10px;
+    }
+    .hero-copy {
+        color:#c0cede;
+        font-size:18px;
+        line-height:1.65;
+        max-width:1030px;
+    }
+    .hero-stats {
+        display:grid;
+        grid-template-columns:repeat(3,minmax(0,1fr));
+        gap:12px;
+        margin-top:22px;
+    }
+    .hero-stat {
+        min-width:0;
+        padding:15px 17px;
+        background:rgba(5,13,23,.52);
+        border:1px solid #35516a;
+        border-radius:12px;
+    }
+    .hero-stat strong {
+        display:block;
+        color:#f4f8fd;
+        font-size:clamp(1.75rem,2.8vw,2.35rem);
+        line-height:1.1;
+        font-weight:900;
+        font-variant-numeric:tabular-nums;
+    }
+    .hero-stat span {
+        display:block;
+        color:#b7c7d8;
+        font-size:14px;
+        line-height:1.45;
+        margin-top:7px;
+    }
+    .section-head {
+        display:flex;
+        flex-wrap:wrap;
+        align-items:flex-end;
+        justify-content:space-between;
+        gap:8px 18px;
+        margin:36px 0 15px;
+    }
+    .section-title {
+        color:#f0f5fb;
+        font-size:clamp(1.55rem,2.4vw,1.95rem);
+        line-height:1.2;
+        font-weight:850;
+    }
+    .section-hint {
+        color:#a7b6c7;
+        font-size:14px;
+        line-height:1.5;
+    }
+    .proof-grid {
+        display:grid;
+        grid-template-columns:repeat(5,minmax(0,1fr));
+        gap:11px;
+        margin:17px 0 8px;
+    }
+    .proof-item {
+        min-width:0;
+        padding:16px 15px;
+        border:1px solid #2b435b;
+        border-radius:12px;
+        background:#0d1825;
+    }
+    .proof-item strong {
+        display:block;
+        color:#f1f7fd;
+        font-size:clamp(1.45rem,2.3vw,1.9rem);
+        line-height:1.1;
+        font-weight:900;
+        font-variant-numeric:tabular-nums;
+        overflow-wrap:anywhere;
+    }
+    .proof-item span {
+        display:block;
+        color:#b3c2d1;
+        font-size:14px;
+        line-height:1.45;
+        margin-top:7px;
+    }
+    .pipeline {
+        display:grid;
+        grid-template-columns:repeat(5,minmax(0,1fr));
+        gap:10px;
+        margin:14px 0 8px;
+    }
+    .pipeline-step {
+        min-width:0;
+        padding:17px 16px 18px;
+        border:1px solid #2b435a;
+        border-radius:12px;
+        background:linear-gradient(150deg,#112033,#0d1723);
+    }
+    .step-no {
+        color:#83c8f4;
+        font-size:13px;
+        font-weight:900;
+        letter-spacing:.1em;
+    }
+    .step-title {
+        color:#f0f6fc;
+        font-size:17px;
+        line-height:1.3;
+        font-weight:850;
+        margin:8px 0 6px;
+    }
+    .step-copy {
+        color:#b0bfce;
+        font-size:14px;
+        line-height:1.5;
+    }
+    .model-grid {
+        display:grid;
+        grid-template-columns:repeat(3,minmax(0,1fr));
+        gap:15px;
+        margin-top:14px;
+    }
+    .model-card {
+        min-width:0;
+        padding:21px;
+        border:1px solid #304960;
+        border-radius:15px;
+        background:linear-gradient(150deg,#111f2e,#0c1622);
+    }
+    .model-card.selected {
+        border:1.5px solid #3b9c78;
+        box-shadow:inset 0 0 0 1px rgba(72,209,154,.08);
+    }
+    .model-head {
+        display:flex;
+        flex-wrap:wrap;
+        justify-content:space-between;
+        align-items:center;
+        gap:8px;
+    }
+    .model-name {
+        color:#f3f7fc;
+        font-size:21px;
+        line-height:1.25;
+        font-weight:900;
+    }
+    .model-status {
+        color:#9fe7c6;
+        border:1px solid #34785d;
+        background:#10291f;
+        border-radius:7px;
+        padding:5px 9px;
+        font-size:12px;
+        font-weight:850;
+        letter-spacing:.07em;
+        white-space:nowrap;
+    }
+    .model-tag {
+        color:#9bcdf0;
+        font-size:13px;
+        font-weight:850;
+        letter-spacing:.11em;
+        line-height:1.5;
+        margin-top:7px;
+    }
+    .model-description {
+        color:#c0ccda;
+        font-size:16px;
+        line-height:1.6;
+        margin:12px 0 15px;
+        min-height:0;
+    }
+    .model-flow {
+        display:grid;
+        grid-template-columns:minmax(0,1fr) 18px minmax(0,1fr) 18px minmax(0,1fr);
+        align-items:stretch;
+        gap:5px;
+        margin:14px 0;
+    }
+    .flow-node {
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        min-width:0;
+        min-height:68px;
+        padding:9px 7px;
+        border:1px solid #35516a;
+        border-radius:9px;
+        background:#091522;
+        color:#d6e3ef;
+        text-align:center;
+        font-size:13px;
+        line-height:1.35;
+        font-weight:750;
+        overflow-wrap:anywhere;
+    }
+    .flow-arrow {
+        align-self:center;
+        color:#77b8e8;
+        font-size:20px;
+        line-height:1;
+        font-weight:900;
+        text-align:center;
+    }
+    .model-config {
+        border-top:1px solid #263c51;
+        padding-top:12px;
+        color:#b4c4d4;
+        font-size:14px;
+        line-height:1.7;
+    }
+    .model-config b { color:#eef5fc; }
+    .decision-grid {
+        display:grid;
+        grid-template-columns:repeat(3,minmax(0,1fr));
+        gap:13px;
+        margin:14px 0;
+    }
+    .decision-card {
+        min-width:0;
+        padding:18px;
+        border:1px solid #30465c;
+        border-radius:13px;
+        background:#0e1926;
+    }
+    .decision-label {
+        color:#91c8ee;
+        font-size:13px;
+        font-weight:900;
+        letter-spacing:.1em;
+        line-height:1.5;
+    }
+    .decision-value {
+        color:#f3f7fc;
+        font-size:24px;
+        line-height:1.2;
+        font-weight:900;
+        margin:8px 0 6px;
+        font-variant-numeric:tabular-nums;
+    }
+    .decision-copy {
+        color:#b8c6d4;
+        font-size:15px;
+        line-height:1.55;
+    }
+    .selection-box {
+        border:1px solid #34785d;
+        border-left:5px solid #48d19a;
+        border-radius:14px;
+        background:linear-gradient(110deg,#0e241d,#0c1b1a);
+        padding:20px 22px;
+        margin:18px 0;
+    }
+    .selection-title {
+        color:#c4f2dc;
+        font-size:22px;
+        line-height:1.25;
+        font-weight:900;
+    }
+    .selection-copy {
+        color:#c0d4cb;
+        font-size:16px;
+        line-height:1.65;
+        margin-top:8px;
+    }
+    .table-scroll {
+        width:100%;
+        overflow-x:auto;
+        border:1px solid #2a4056;
+        border-radius:12px;
+        margin:14px 0 8px;
+    }
+    .evidence-table {
+        width:100%;
+        min-width:900px;
+        border-collapse:collapse;
+        background:#0d1723;
+        font-size:15px;
+    }
+    .evidence-table th {
+        background:#152438;
+        color:#d9e8f5;
+        text-align:left;
+        padding:14px 13px;
+        font-size:14px;
+        line-height:1.35;
+        font-weight:850;
+        white-space:nowrap;
+        border-bottom:1px solid #314a62;
+    }
+    .evidence-table td {
+        color:#d8e2ec;
+        padding:14px 13px;
+        line-height:1.45;
+        border-bottom:1px solid #26394c;
+        font-variant-numeric:tabular-nums;
+        white-space:nowrap;
+    }
+    .evidence-table tr:last-child td { border-bottom:0; }
+    .evidence-table .if-row td { background:rgba(53,145,105,.11); }
+    .evidence-table td:first-child { color:#f1f6fc; font-weight:850; }
+    .paper-grid {
+        display:grid;
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:13px;
+        margin:14px 0;
+    }
+    .paper-card {
+        min-width:0;
+        padding:18px 19px;
+        border:1px solid #2c4359;
+        border-radius:12px;
+        background:#0e1926;
+    }
+    .paper-type {
+        color:#91c9f0;
+        font-size:12px;
+        font-weight:900;
+        letter-spacing:.12em;
+        line-height:1.5;
+    }
+    .paper-title {
+        color:#eff5fb;
+        font-size:17px;
+        font-weight:850;
+        line-height:1.4;
+        margin:7px 0;
+    }
+    .paper-meta {
+        color:#aebed0;
+        font-size:14px;
+        line-height:1.5;
+    }
+    .paper-link {
+        display:inline-block;
+        color:#93ccf4 !important;
+        font-size:14px;
+        font-weight:800;
+        text-decoration:none;
+        margin-top:11px;
+    }
+    .paper-link:hover { text-decoration:underline; color:#c1e5ff !important; }
+    .proof-links {
+        display:grid;
+        grid-template-columns:repeat(4,minmax(0,1fr));
+        gap:12px;
+        margin:14px 0;
+    }
+    .proof-link-card {
+        min-width:0;
+        padding:17px 18px;
+        border:1px solid #34516a;
+        border-radius:12px;
+        background:#101f2e;
+    }
+    .proof-link-card a {
+        color:#a5d8ff !important;
+        font-size:16px;
+        font-weight:850;
+        line-height:1.45;
+        text-decoration:none;
+    }
+    .proof-link-card a:hover { text-decoration:underline; }
+    .proof-link-card p {
+        color:#b2c1cf;
+        font-size:14px;
+        line-height:1.5;
+        margin:8px 0 0;
+    }
+    .small-note {
+        color:#9eafc1;
+        font-size:14px;
+        line-height:1.6;
+        margin:10px 0;
+    }
+    @media (max-width:1100px) {
+        .proof-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+        .pipeline { grid-template-columns:repeat(3,minmax(0,1fr)); }
+        .model-grid { grid-template-columns:1fr; }
+        .proof-links { grid-template-columns:repeat(2,minmax(0,1fr)); }
+        .model-description { max-width:none; }
+    }
+    @media (max-width:760px) {
+        [data-testid="stAppViewContainer"] .main .block-container {
+            padding:1.15rem 1rem 3rem;
+        }
+        .hero { padding:20px 18px; }
+        .hero-stats { grid-template-columns:1fr; }
+        .proof-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+        .pipeline { grid-template-columns:1fr; }
+        .decision-grid { grid-template-columns:1fr; }
+        .paper-grid { grid-template-columns:1fr; }
+        .proof-links { grid-template-columns:1fr; }
+        .model-flow {
+            grid-template-columns:1fr;
+            gap:5px;
+        }
+        .flow-node { min-height:48px; }
+        .flow-arrow { transform:rotate(90deg); }
+        .model-card { padding:18px; }
+        .section-head { margin-top:29px; }
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -36,337 +521,528 @@ st.markdown(
 with st.sidebar:
     st.markdown("## 🛡️ CyberSentinel")
     st.divider()
-    st.markdown('<div class="smallcaps">Overview</div>', unsafe_allow_html=True)
+    st.markdown('<div class="eyebrow">Overview</div>', unsafe_allow_html=True)
     st.page_link("app.py", label="Dashboard")
-    st.markdown('<div class="smallcaps" style="margin-top:18px">Detection</div>', unsafe_allow_html=True)
+    st.markdown('<div class="eyebrow" style="margin-top:16px">Detection</div>', unsafe_allow_html=True)
     st.page_link("pages/attack_detection.py", label="Attack Detection")
     st.page_link("pages/model_selection.py", label="Model Selection & Evidence")
-    st.markdown('<div class="smallcaps" style="margin-top:18px">Investigation</div>', unsafe_allow_html=True)
-    st.page_link("pages/incident_investigation.py", label="Event Investigation")
+    st.markdown('<div class="eyebrow" style="margin-top:16px">Investigation</div>', unsafe_allow_html=True)
+    st.page_link("pages/incident_investigation.py", label="Incident Investigation")
     st.page_link("pages/attack_graph.py", label="Attack Graph")
-    st.markdown('<div class="smallcaps" style="margin-top:18px">Agentic Investigation & Risk Assessment</div>', unsafe_allow_html=True)
     st.page_link("pages/risk_assessment.py", label="Risk Assessment")
 
-st.markdown('<div class="smallcaps">Research & Model Governance</div>', unsafe_allow_html=True)
-st.title("Comparative Model Analysis")
-st.markdown(
-    '<div class="subtitle">Why Isolation Forest is the application detector, what the controlled benchmark measured, and where the alternatives performed better.</div>',
-    unsafe_allow_html=True,
-)
 
+MODELS = ["Isolation Forest", "LOF", "RBF One-Class SVM"]
+COLORS = {
+    "Isolation Forest": "#43ca91",
+    "LOF": "#e7ad57",
+    "RBF One-Class SVM": "#69aef0",
+}
+SIZES = ["5k", "25k", "50k"]
+RESULTS = {
+    "Isolation Forest": {
+        "roc": [0.8874, 0.8866, 0.8848], "roc_sd": [0.0023, 0.0027, 0.0039],
+        "ap": [0.6793, 0.6725, 0.6736], "ap_sd": [0.0114, 0.0070, 0.0185],
+        "precision": [0.7046, 0.6978, 0.7048], "precision_sd": [0.0151, 0.0088, 0.0103],
+        "recall": [0.6786, 0.6642, 0.6855], "recall_sd": [0.0391, 0.0395, 0.0429],
+        "f1": [0.6912, 0.6803, 0.6948], "f1_sd": [0.0275, 0.0246, 0.0269],
+        "fpr": [5.05, 5.10, 5.09], "fpr_sd": [0.08, 0.11, 0.07],
+        "fit": [0.274, 0.338, 0.411], "fit_sd": [0.008, 0.005, 0.002],
+        "score": [0.104, 0.103, 0.104], "score_sd": [0.003, 0.001, 0.001],
+    },
+    "LOF": {
+        "roc": [0.8899, 0.9084, 0.9087], "roc_sd": [0.0136, 0.0034, 0.0052],
+        "ap": [0.5624, 0.5576, 0.5687], "ap_sd": [0.0290, 0.0161, 0.0120],
+        "precision": [0.6170, 0.6380, 0.6553], "precision_sd": [0.0657, 0.0091, 0.0297],
+        "recall": [0.4314, 0.4588, 0.5129], "recall_sd": [0.1245, 0.0304, 0.0863],
+        "f1": [0.5053, 0.5335, 0.5740], "f1_sd": [0.1072, 0.0237, 0.0646],
+        "fpr": [4.60, 4.62, 4.74], "fpr_sd": [0.09, 0.16, 0.18],
+        "fit": [0.106, 1.966, 7.576], "fit_sd": [0.011, 0.003, 0.031],
+        "score": [0.290, 1.253, 2.313], "score_sd": [0.003, 0.101, 0.019],
+    },
+    "RBF One-Class SVM": {
+        "roc": [0.8514, 0.8439, 0.8430], "roc_sd": [0.0051, 0.0084, 0.0104],
+        "ap": [0.7486, 0.7620, 0.7665], "ap_sd": [0.0023, 0.0013, 0.0029],
+        "precision": [0.7293, 0.7222, 0.7225], "precision_sd": [0.0004, 0.0061, 0.0036],
+        "recall": [0.7436, 0.7430, 0.7446], "recall_sd": [0.0009, 0.0005, 0.0023],
+        "f1": [0.7363, 0.7324, 0.7334], "f1_sd": [0.0005, 0.0032, 0.0014],
+        "fpr": [4.90, 5.08, 5.08], "fpr_sd": [0.01, 0.15, 0.10],
+        "fit": [0.096, 2.383, 19.484], "fit_sd": [0.003, 0.012, 2.168],
+        "score": [0.230, 1.024, 2.106], "score_sd": [0.007, 0.003, 0.065],
+    },
+}
+
+
+def style_chart(fig: go.Figure, height: int = 430) -> go.Figure:
+    fig.update_layout(
+        height=height,
+        margin=dict(l=55, r=30, t=72, b=58),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(family="Arial, sans-serif", color="#dce8f4", size=16),
+        title=dict(font=dict(size=21, color="#f1f6fc"), x=0.02, xanchor="left"),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            x=0,
+            font=dict(size=15),
+            title_text="",
+        ),
+        hoverlabel=dict(bgcolor="#101b28", font_color="#f0f6ff", font_size=15),
+        bargap=0.25,
+        bargroupgap=0.10,
+    )
+    fig.update_xaxes(
+        showgrid=False,
+        zeroline=False,
+        color="#bdcada",
+        tickfont=dict(size=15),
+        automargin=True,
+    )
+    fig.update_yaxes(
+        gridcolor="rgba(140,160,185,.18)",
+        zeroline=False,
+        color="#bdcada",
+        tickfont=dict(size=15),
+        automargin=True,
+    )
+    return fig
+
+
+def section(title: str, hint: str = "") -> None:
+    hint_html = f'<div class="section-hint">{hint}</div>' if hint else ""
+    st.markdown(
+        f'<div class="section-head"><div class="section-title">{title}</div>{hint_html}</div>',
+        unsafe_allow_html=True,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Page heading and selected-model summary
+# ---------------------------------------------------------------------------
+
+st.markdown('<div class="eyebrow">CYBERSENTINEL · MODEL SELECTION STUDY</div>', unsafe_allow_html=True)
+st.title("Model Selection & Evidence")
 st.markdown(
     """
     <div class="hero">
-      <div class="smallcaps">APPLICATION MODEL</div>
-      <div style="font-size:1.35rem;font-weight:800;margin-top:7px">Isolation Forest remains the active detector</div>
-      <div style="color:#8190a3;font-size:.84rem;line-height:1.55;margin-top:7px">
-        The historical paired study recorded higher Average Precision and F1 for RBF One-Class SVM,
-        higher ROC-AUC for LOF at larger training sizes, and much lower observed fit/scoring time for
-        Isolation Forest. <b>Important:</b> that comparison predates the current preprocessing-hardening
-        changes. These figures are historical evidence, not the final ranking for the hardened pipeline.
-        Isolation Forest remains the integrated application detector pending a fresh controlled rerun.
+      <div class="hero-kicker">MODEL USED IN THE CURRENT APPLICATION</div>
+      <div class="hero-title">Isolation Forest</div>
+      <div class="hero-copy">
+        The measured reason for selecting it is its low training and scoring cost while
+        maintaining useful detection performance. On 50,000 benign training flows, it
+        trained in <b>0.411 seconds</b>; it scored the shared 15,000-flow test sample in
+        <b>0.104 seconds</b>.
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <strong>0.411 s</strong>
+          <span>Training time · 50,000 benign flows</span>
+        </div>
+        <div class="hero-stat">
+          <strong>0.104 s</strong>
+          <span>Scoring time · 15,000 test flows</span>
+        </div>
+        <div class="hero-stat">
+          <strong>0.6948</strong>
+          <span>F1 score · 50,000-flow benchmark</span>
+        </div>
       </div>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
-st.markdown("")
+# ---------------------------------------------------------------------------
+# Evidence that the comparison was actually executed
+# ---------------------------------------------------------------------------
+
+section("Experiment at a glance", "One shared evaluation protocol for all three detectors")
 st.markdown(
     """
-    <div class="warning">
-      <b>Validation status: HISTORICAL / PRE-HARDENING.</b> The paired 5k/25k/50k metrics and runtime
-      values below were generated before the latest feature-schema and train-only imputation fixes.
-      The hardening report explicitly says the comparison must be rerun before its ranking is treated as
-      current. The verified Parquet dataset is not committed to this repository, so this UI change does
-      not claim that the hardened rerun has been completed. All historical values are shown unchanged.
-      The older single-model Isolation Forest metrics on the Attack Detection page are from another
-      evaluation protocol and are not directly comparable either.
+    <div class="proof-grid">
+      <div class="proof-item"><strong>3</strong><span>Different unsupervised models</span></div>
+      <div class="proof-item"><strong>27</strong><span>Model fits recorded: 3 models × 3 data sizes × 3 seeds</span></div>
+      <div class="proof-item"><strong>15,000</strong><span>Same held-out test flows for every run</span></div>
+      <div class="proof-item"><strong>5,000</strong><span>Benign-only calibration flows</span></div>
+      <div class="proof-item"><strong>3 seeds</strong><span>42 · 43 · 44</span></div>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
-# Paired validation data: mean and sample standard deviation across seeds 42, 43 and 44.
-TRAIN_SIZES = [5000, 25000, 50000]
-MODEL_DATA = {
-    "Isolation Forest": {
-        "roc": [0.8874, 0.8866, 0.8848],
-        "roc_sd": [0.0023, 0.0027, 0.0039],
-        "ap": [0.6793, 0.6725, 0.6736],
-        "ap_sd": [0.0114, 0.0070, 0.0185],
-        "precision": [0.7046, 0.6978, 0.7048],
-        "precision_sd": [0.0151, 0.0088, 0.0103],
-        "recall": [0.6786, 0.6642, 0.6855],
-        "recall_sd": [0.0391, 0.0395, 0.0429],
-        "f1": [0.6912, 0.6803, 0.6948],
-        "f1_sd": [0.0275, 0.0246, 0.0269],
-        "fpr": [5.05, 5.10, 5.09],
-        "fit": [0.268, 0.338, 0.408],
-        "score": [0.103, 0.102, 0.103],
-    },
-    "LOF": {
-        "roc": [0.8899, 0.9084, 0.9087],
-        "roc_sd": [0.0136, 0.0033, 0.0052],
-        "ap": [0.5624, 0.5576, 0.5687],
-        "ap_sd": [0.0290, 0.0161, 0.0120],
-        "precision": [0.6170, 0.6380, 0.6553],
-        "precision_sd": [0.0657, 0.0091, 0.0297],
-        "recall": [0.4314, 0.4588, 0.5129],
-        "recall_sd": [0.1245, 0.0304, 0.0863],
-        "f1": [0.5053, 0.5335, 0.5740],
-        "f1_sd": [0.1072, 0.0237, 0.0646],
-        "fpr": [4.60, 4.62, 4.74],
-        "fit": [0.195, 3.865, 14.820],
-        "score": [0.559, 2.310, 4.439],
-    },
-    "RBF One-Class SVM": {
-        "roc": [0.8514, 0.8439, 0.8430],
-        "roc_sd": [0.0051, 0.0084, 0.0104],
-        "ap": [0.7486, 0.7620, 0.7665],
-        "ap_sd": [0.0023, 0.0013, 0.0029],
-        "precision": [0.7293, 0.7222, 0.7225],
-        "precision_sd": [0.0004, 0.0061, 0.0036],
-        "recall": [0.7436, 0.7430, 0.7446],
-        "recall_sd": [0.0009, 0.0005, 0.0023],
-        "f1": [0.7363, 0.7324, 0.7334],
-        "f1_sd": [0.0005, 0.0032, 0.0014],
-        "fpr": [4.90, 5.08, 5.08],
-        "fit": [0.095, 2.375, 17.391],
-        "score": [0.235, 1.076, 2.082],
-    },
-}
-
-MODEL_ORDER = ["Isolation Forest", "LOF", "RBF One-Class SVM"]
-
-rows = []
-for model_name in MODEL_ORDER:
-    d = MODEL_DATA[model_name]
-    for i, n in enumerate(TRAIN_SIZES):
-        rows.append({
-            "Model": model_name,
-            "Benign train rows": f"{n:,}",
-            "ROC-AUC (mean ± SD)": f"{d['roc'][i]:.4f} ± {d['roc_sd'][i]:.4f}",
-            "Average Precision (mean ± SD)": f"{d['ap'][i]:.4f} ± {d['ap_sd'][i]:.4f}",
-            "Precision (mean ± SD)": f"{d['precision'][i]:.4f} ± {d['precision_sd'][i]:.4f}",
-            "Recall (mean ± SD)": f"{d['recall'][i]:.4f} ± {d['recall_sd'][i]:.4f}",
-            "F1 (mean ± SD)": f"{d['f1'][i]:.4f} ± {d['f1_sd'][i]:.4f}",
-            "Test FPR": f"{d['fpr'][i]:.2f}%",
-        })
-
-quality_tab, runtime_tab, method_tab, references_tab = st.tabs(
-    ["Detection quality", "Runtime & scale", "Model-selection rationale", "Research references"]
+section("How the benchmark was run", "The same split, calibration sample and test rows were shared")
+pipeline = [
+    ("01", "CICIDS2017 data", "2,228,970 rows · 69 numeric modelling features"),
+    ("02", "Grouped split", "7-fold StratifiedGroupKFold; exact duplicate feature groups kept together"),
+    ("03", "Benign-only fitting", "5k, 25k and 50k normal flows per model"),
+    ("04", "Threshold calibration", "Same 5,000 benign rows; target false-positive rate 5%"),
+    ("05", "Held-out evaluation", "Same 15,000 test rows; repeated with seeds 42, 43 and 44"),
+]
+pipeline_html = "".join(
+    f'<div class="pipeline-step"><div class="step-no">{n}</div>'
+    f'<div class="step-title">{title}</div><div class="step-copy">{copy}</div></div>'
+    for n, title, copy in pipeline
+)
+st.markdown(f'<div class="pipeline">{pipeline_html}</div>', unsafe_allow_html=True)
+st.caption(
+    "Training used benign rows only. Attack labels were held back for measuring test performance; "
+    "they were not used to fit the three unsupervised detectors or to choose the alert threshold."
 )
 
-with quality_tab:
-    st.markdown("### Historical result at 50,000 benign training rows")
-    kpi_cols = st.columns(4)
-    kpis = [
-        ("Highest AP", "0.7665", "RBF One-Class SVM"),
-        ("Highest F1", "0.7334", "RBF One-Class SVM"),
-        ("Highest ROC-AUC", "0.9087", "LOF"),
-        ("Lowest test scoring time", "0.103 s", "Isolation Forest · 15k test rows"),
-    ]
-    for col, (label, value, note) in zip(kpi_cols, kpis):
-        with col:
-            st.markdown(
-                f'<div class="card"><div class="label">{label}</div>'
-                f'<div class="value">{value}</div><div class="desc">{note}</div></div>',
-                unsafe_allow_html=True,
-            )
+# ---------------------------------------------------------------------------
+# Three detector cards with fitted model configurations
+# ---------------------------------------------------------------------------
 
-    st.markdown("#### Paired comparison results")
-    st.caption("Pre-hardening historical run: mean ± sample standard deviation across seeds 42, 43 and 44. Average Precision (AP) is the PR-AUC summary reported by the experiment.")
-    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+section("The three models that were trained", "Each model uses a different way to describe unusual traffic")
+model_cards = [
+    {
+        "name": "Isolation Forest",
+        "tag": "RANDOM-PARTITION DETECTOR",
+        "desc": "Builds random feature splits. Flows isolated in fewer splits receive higher anomaly scores.",
+        "steps": ["Benign flow data", "Random feature splits", "Short path = unusual"],
+        "config": "<b>Fit settings:</b> 200 trees · max_samples 1,024 · contamination auto",
+        "selected": True,
+    },
+    {
+        "name": "Local Outlier Factor",
+        "tag": "LOCAL-DENSITY DETECTOR",
+        "desc": "Compares each new flow with nearby flows. A flow in a much sparser local region receives a higher anomaly score.",
+        "steps": ["Benign flow data", "Check 35 neighbours", "Low local density"],
+        "config": "<b>Fit settings:</b> 35 neighbours · novelty mode · StandardScaler",
+        "selected": False,
+    },
+    {
+        "name": "RBF One-Class SVM",
+        "tag": "NORMAL-BOUNDARY DETECTOR",
+        "desc": "Learns a boundary around benign traffic using an RBF kernel. Flows outside the learned region receive higher anomaly scores.",
+        "steps": ["Benign flow data", "Learn RBF boundary", "Outside = unusual"],
+        "config": "<b>Fit settings:</b> RBF kernel · nu 0.05 · gamma scale · StandardScaler",
+        "selected": False,
+    },
+]
+model_html = []
+for item in model_cards:
+    steps_html = (
+        f'<div class="flow-node">{item["steps"][0]}</div>'
+        f'<div class="flow-arrow">›</div>'
+        f'<div class="flow-node">{item["steps"][1]}</div>'
+        f'<div class="flow-arrow">›</div>'
+        f'<div class="flow-node">{item["steps"][2]}</div>'
+    )
+    selected_html = '<span class="model-status">IN CURRENT APP</span>' if item["selected"] else ""
+    selected_class = " selected" if item["selected"] else ""
+    model_html.append(
+        f'<div class="model-card{selected_class}">'
+        f'<div class="model-head"><div class="model-name">{item["name"]}</div>{selected_html}</div>'
+        f'<div class="model-tag">{item["tag"]}</div>'
+        f'<div class="model-description">{item["desc"]}</div>'
+        f'<div class="model-flow">{steps_html}</div>'
+        f'<div class="model-config">{item["config"]}</div>'
+        f'</div>'
+    )
+st.markdown(f'<div class="model-grid">{"".join(model_html)}</div>', unsafe_allow_html=True)
 
-    chart_left, chart_right = st.columns(2)
-    with chart_left:
-        fig_ap = go.Figure()
-        for model_name in MODEL_ORDER:
-            d = MODEL_DATA[model_name]
-            fig_ap.add_trace(go.Scatter(
-                x=["5k", "25k", "50k"],
-                y=d["ap"],
-                mode="lines+markers",
-                name=model_name,
-                error_y={"type": "data", "array": d["ap_sd"], "visible": True},
-            ))
-        fig_ap.update_layout(
-            title="Historical Average Precision vs benign training size",
-            xaxis_title="Benign training rows",
-            yaxis_title="Average Precision",
-            yaxis_range=[0, 1],
-            height=360,
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="#0d151f",
-            font={"color": "#dce7f2"},
-            legend={"orientation": "h", "y": -0.25},
-            margin={"l": 10, "r": 10, "t": 55, "b": 70},
+# ---------------------------------------------------------------------------
+# 50k comparison: chart and exact benchmark table
+# ---------------------------------------------------------------------------
+
+section("Measured detection quality", "50,000 benign training flows · mean ± standard deviation over 3 runs")
+
+quality = go.Figure()
+for model in MODELS:
+    d = RESULTS[model]
+    quality.add_trace(
+        go.Bar(
+            name=model,
+            x=["Average Precision", "F1 score", "ROC-AUC"],
+            y=[d["ap"][2], d["f1"][2], d["roc"][2]],
+            marker_color=COLORS[model],
+            error_y=dict(
+                type="data",
+                array=[d["ap_sd"][2], d["f1_sd"][2], d["roc_sd"][2]],
+                visible=True,
+                thickness=1.4,
+                width=4,
+            ),
+            text=[f"{v:.3f}" for v in [d["ap"][2], d["f1"][2], d["roc"][2]]],
+            textposition="outside",
+            cliponaxis=False,
+            hovertemplate="%{x}<br>Mean score: %{y:.4f}<extra>%{fullData.name}</extra>",
         )
-        st.plotly_chart(fig_ap, use_container_width=True, config={"displayModeBar": False})
-
-    with chart_right:
-        fig_f1 = go.Figure()
-        for model_name in MODEL_ORDER:
-            d = MODEL_DATA[model_name]
-            fig_f1.add_trace(go.Scatter(
-                x=["5k", "25k", "50k"],
-                y=d["f1"],
-                mode="lines+markers",
-                name=model_name,
-                error_y={"type": "data", "array": d["f1_sd"], "visible": True},
-            ))
-        fig_f1.update_layout(
-            title="Historical F1 vs benign training size",
-            xaxis_title="Benign training rows",
-            yaxis_title="F1",
-            yaxis_range=[0, 1],
-            height=360,
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="#0d151f",
-            font={"color": "#dce7f2"},
-            legend={"orientation": "h", "y": -0.25},
-            margin={"l": 10, "r": 10, "t": 55, "b": 70},
-        )
-        st.plotly_chart(fig_f1, use_container_width=True, config={"displayModeBar": False})
-
-    st.markdown(
-        '<div class="callout"><b>Interpretation:</b> RBF One-Class SVM led Average Precision and F1 at every tested training size. '
-        'LOF led ROC-AUC at 25k and 50k. Isolation Forest did not win the quality leaderboard; it remained comparatively stable '
-        'as the benign training set grew.</div>',
-        unsafe_allow_html=True,
     )
+quality.update_layout(
+    barmode="group",
+    title="Detection scores by model",
+    yaxis=dict(range=[0, 1.13], title="Score"),
+    xaxis_title=None,
+)
+st.plotly_chart(
+    style_chart(quality, 480),
+    width="stretch",
+    config={"displayModeBar": False, "responsive": True},
+)
 
-with runtime_tab:
-    st.markdown("### Historical runtime on the experiment runner (pre-hardening)")
-    runtime_rows = []
-    for model_name in MODEL_ORDER:
-        d = MODEL_DATA[model_name]
-        for i, n in enumerate(TRAIN_SIZES):
-            runtime_rows.append({
-                "Model": model_name,
-                "Benign train rows": f"{n:,}",
-                "Fit time (s)": d["fit"][i],
-                "Test scoring time (s)": d["score"][i],
-                "Test scoring rows": 15000,
-            })
-    runtime_df = pd.DataFrame(runtime_rows)
-    st.dataframe(
-        runtime_df,
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "Fit time (s)": st.column_config.NumberColumn(format="%.3f"),
-            "Test scoring time (s)": st.column_config.NumberColumn(format="%.3f"),
-        },
+rows = []
+for model in MODELS:
+    d = RESULTS[model]
+    css_class = "if-row" if model == "Isolation Forest" else ""
+    rows.append(
+        f'<tr class="{css_class}"><td>{model}</td>'
+        f'<td>{d["ap"][2]:.4f} ± {d["ap_sd"][2]:.4f}</td>'
+        f'<td>{d["f1"][2]:.4f} ± {d["f1_sd"][2]:.4f}</td>'
+        f'<td>{d["roc"][2]:.4f} ± {d["roc_sd"][2]:.4f}</td>'
+        f'<td>{d["fpr"][2]:.2f}% ± {d["fpr_sd"][2]:.2f}</td>'
+        f'<td>{d["fit"][2]:.3f} ± {d["fit_sd"][2]:.3f}</td>'
+        f'<td>{d["score"][2]:.3f} ± {d["score_sd"][2]:.3f}</td></tr>'
     )
-
-    st.markdown("#### 50k training-row comparison")
-    if_fit = MODEL_DATA["Isolation Forest"]["fit"][-1]
-    svm_fit = MODEL_DATA["RBF One-Class SVM"]["fit"][-1]
-    if_score = MODEL_DATA["Isolation Forest"]["score"][-1]
-    svm_score = MODEL_DATA["RBF One-Class SVM"]["score"][-1]
-    speed_cols = st.columns(2)
-    speed_cols[0].metric("Isolation Forest fit time", f"{if_fit:.3f} s", help="Mean wall-clock time on the GitHub Actions runner.")
-    speed_cols[1].metric("RBF One-Class SVM fit time", f"{svm_fit:.3f} s", f"{svm_fit / if_fit:.1f}× IF time", delta_color="inverse")
-    speed_cols[0].metric("Isolation Forest scoring time", f"{if_score:.3f} s", help="Scoring the same 15,000 held-out rows.")
-    speed_cols[1].metric("RBF One-Class SVM scoring time", f"{svm_score:.3f} s", f"{svm_score / if_score:.1f}× IF time", delta_color="inverse")
-
-    st.markdown(
-        '<div class="warning"><b>Runtime qualification:</b> timings are from one GitHub Actions runner and a 15,000-row test-scoring batch. '
-        'They are not target-hardware benchmarks or production throughput guarantees. A full memory/throughput assessment on deployment hardware remains open.</div>',
-        unsafe_allow_html=True,
-    )
-
-with method_tab:
-    st.markdown("### Why these three detectors?")
-    method_rows = [
-        {
-            "Detector": "Isolation Forest",
-            "Different assumption": "Global isolation by random partitions; unusual records are separated in fewer splits.",
-            "Purpose in study": "Existing application detector and scalable isolation-based baseline.",
-            "Key setup": "200 trees; max_samples=1,024; max_features=1.0.",
-        },
-        {
-            "Detector": "LOF",
-            "Different assumption": "Local reachability density; anomalies are sparse relative to nearby observations.",
-            "Purpose in study": "Tests a local-density approach unlike global isolation.",
-            "Key setup": "novelty=True; 35 neighbours; StandardScaler.",
-        },
-        {
-            "Detector": "RBF One-Class SVM",
-            "Different assumption": "Learns a nonlinear support boundary around benign observations.",
-            "Purpose in study": "Tests kernel-based normal-region estimation.",
-            "Key setup": "RBF kernel; nu=0.05; gamma=scale; StandardScaler.",
-        },
-    ]
-    st.dataframe(pd.DataFrame(method_rows), use_container_width=True, hide_index=True)
-
-    st.markdown("### Why retain Isolation Forest in the application?")
-    st.markdown(
-        """
-        - **Historical measured cost:** at 50k benign training rows, Isolation Forest fit in 0.408 s and scored the shared 15k test batch in 0.103 s on the experiment runner. RBF One-Class SVM took 17.391 s to fit and 2.082 s to score the same batch.
-        - **Historical quality trade-off:** SVM delivered higher AP/F1, while Isolation Forest's measured fit/scoring times grew much less across 5k–50k in that run.
-        - **Existing integration:** the current detection, event, graph and risk pipeline already consumes an Isolation Forest artifact. A switch is a model change that should be revalidated end-to-end, not made solely from flow-level F1.
-        - **Decision status:** retain Isolation Forest as the current integrated application detector; treat RBF One-Class SVM as the leading historical AP/F1 alternative for a fresh shadow evaluation.
-        - **Evidence qualification:** these runtime and quality rankings predate the latest comparison-preprocessing hardening and must be reproduced with the hardened scripts before final model selection.
-        """
-    )
-
-    st.markdown("### Why not compare every algorithm?")
-    st.markdown(
-        """
-        This was a focused three-paradigm comparison, not an exhaustive algorithm leaderboard:
-        - **Isolation Forest:** isolation-based detector (existing system baseline).
-        - **LOF:** local-density detector, testing a different anomaly assumption.
-        - **RBF One-Class SVM:** nonlinear support-estimation detector.
-        
-        The literature includes direct or dataset-relevant evaluations of these families. Autoencoders and PCA are valid future comparators, but require their own controlled architecture/threshold or reconstruction setup. Random Forest is a supervised reference trained with attack labels, so it is not a like-for-like unsupervised competitor.
-        """
-    )
-
-    st.markdown(
-        '<div class="warning"><b>Limits:</b> the processed Parquet permits exact-feature-duplicate grouping, but does not retain timestamps, IP addresses or ports. '
-        'This is not a temporal or five-tuple holdout. The study also reuses one 15k test sample across seeds, has low support for rare attack families, '
-        'and does not measure downstream incident/graph/agent outcomes. A fresh run with the hardened comparison code is still required.</div>',
-        unsafe_allow_html=True,
-    )
-
-with references_tab:
-    st.markdown("### Primary model papers")
-    references = [
-        ("Isolation Forest", "Liu, Ting & Zhou (2008), Isolation Forest, IEEE ICDM.", "https://doi.org/10.1109/ICDM.2008.17"),
-        ("Isolation-based anomaly detection", "Liu, Ting & Zhou (2012), Isolation-Based Anomaly Detection, ACM TKDD.", "https://doi.org/10.1145/2133360.2133363"),
-        ("Local Outlier Factor", "Breunig et al. (2000), LOF: Identifying Density-Based Local Outliers, ACM SIGMOD.", "https://doi.org/10.1145/342009.335388"),
-        ("One-Class SVM", "Schölkopf et al. (2001), Estimating the Support of a High-Dimensional Distribution, Neural Computation.", "https://doi.org/10.1162/089976601750264965"),
-    ]
-    for label, description, url in references:
-        st.markdown(f"- **{label}:** {description} [Paper]({url})")
-
-    st.markdown("### CICIDS / intrusion-detection comparative evidence")
-    st.markdown(
-        """
-        - Verkerken et al. (2022), *Towards Model Generalization for Intrusion Detection: Unsupervised Machine Learning Techniques*. [DOI](https://doi.org/10.1007/s10922-021-09615-7) — evaluates Isolation Forest and One-Class SVM on CICIDS2017/CSE-CIC-IDS-2018 and discusses cross-dataset generalisation.
-        - Xu & Liu (2025), *Robust Anomaly Detection in Network Traffic: Evaluating Machine Learning Models on CICIDS2017*. [DOI](https://doi.org/10.1109/ICETIS66286.2025.11144025) · [arXiv](https://arxiv.org/abs/2506.19877) — compares LOF and One-Class SVM among other methods on CICIDS2017 in known/unseen attack settings.
-        - Saito & Rehmsmeier (2015), *The Precision-Recall Plot Is More Informative than the ROC Plot When Evaluating Binary Classifiers on Imbalanced Datasets*. [DOI](https://doi.org/10.1371/journal.pone.0118432) — supports reporting precision-recall behaviour alongside ROC-AUC for imbalanced data.
-        """
-    )
-
-    st.markdown("### Reproducible project evidence")
-    st.markdown(
-        """
-        - [Scaling validation report](https://github.com/ArB-86/CyberSentinel-ML-Research/blob/research/extended-validation/research/SCALING_VALIDATION_RESULTS.md)
-        - [Research rationale and full evidence map](https://github.com/ArB-86/CyberSentinel-ML-Research/blob/research/extended-validation/research/RESEARCH_EVIDENCE_AND_MODEL_SELECTION.md)
-        - [Raw per-seed metrics and plots](https://github.com/ArB-86/CyberSentinel-ML-Research/tree/research/extended-validation/experiments/results/scaling-validation-v1)
-        - [Training workflow run](https://github.com/ArB-86/CyberSentinel-ML-Research/actions/runs/42521225029)
-        """
-    )
-
-st.markdown('<div class="rule"></div>', unsafe_allow_html=True)
+st.markdown(
+    f"""
+    <div class="table-scroll">
+      <table class="evidence-table">
+        <thead>
+          <tr>
+            <th>Model</th><th>Average Precision</th><th>F1</th><th>ROC-AUC</th>
+            <th>Test FPR</th><th>Fit time (s)</th><th>Score 15k (s)</th>
+          </tr>
+        </thead>
+        <tbody>{"".join(rows)}</tbody>
+      </table>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 st.caption(
-    "Source: historical pre-hardening processed CICIDS2017 validation, 2,228,970 records / 69 numeric features. "
-    "Three seeds (42, 43, 44), duplicate-feature-grouped split, shared 5,000-benign calibration sample, "
-    "shared 15,000-row test sample, and benign-only training budgets of 5k / 25k / 50k. "
-    "Means ± sample standard deviations; one benchmark dataset and one experiment runner. "
-    "Not yet rerun with the current hardened comparison preprocessing."
+    "Values are mean ± sample SD across seeds 42, 43 and 44. Error bars in the chart show the same run-to-run spread."
+)
+
+# ---------------------------------------------------------------------------
+# Runtime evidence and the selection decision
+# ---------------------------------------------------------------------------
+
+section("Runtime comparison", "Lower time means less compute for the same benchmark workload")
+fit_col, score_col = st.columns(2, gap="large")
+
+fit_fig = go.Figure(
+    go.Bar(
+        x=MODELS,
+        y=[RESULTS[m]["fit"][2] for m in MODELS],
+        marker_color=[COLORS[m] for m in MODELS],
+        error_y=dict(type="data", array=[RESULTS[m]["fit_sd"][2] for m in MODELS], visible=True),
+        text=[f'{RESULTS[m]["fit"][2]:.3f} s' for m in MODELS],
+        textposition="outside",
+        cliponaxis=False,
+        hovertemplate="%{x}<br>Fit: %{y:.3f} seconds<extra></extra>",
+    )
+)
+fit_fig.update_layout(
+    title="Training 50,000 benign flows",
+    showlegend=False,
+    yaxis=dict(title="Seconds", rangemode="tozero"),
+)
+with fit_col:
+    st.plotly_chart(
+        style_chart(fit_fig, 390),
+        width="stretch",
+        config={"displayModeBar": False, "responsive": True},
+    )
+
+score_fig = go.Figure(
+    go.Bar(
+        x=MODELS,
+        y=[RESULTS[m]["score"][2] for m in MODELS],
+        marker_color=[COLORS[m] for m in MODELS],
+        error_y=dict(type="data", array=[RESULTS[m]["score_sd"][2] for m in MODELS], visible=True),
+        text=[f'{RESULTS[m]["score"][2]:.3f} s' for m in MODELS],
+        textposition="outside",
+        cliponaxis=False,
+        hovertemplate="%{x}<br>Score 15k rows: %{y:.3f} seconds<extra></extra>",
+    )
+)
+score_fig.update_layout(
+    title="Scoring the same 15,000 test flows",
+    showlegend=False,
+    yaxis=dict(title="Seconds", rangemode="tozero"),
+)
+with score_col:
+    st.plotly_chart(
+        style_chart(score_fig, 390),
+        width="stretch",
+        config={"displayModeBar": False, "responsive": True},
+    )
+
+fit_vs_svm = RESULTS["RBF One-Class SVM"]["fit"][2] / RESULTS["Isolation Forest"]["fit"][2]
+score_vs_svm = RESULTS["RBF One-Class SVM"]["score"][2] / RESULTS["Isolation Forest"]["score"][2]
+fit_vs_lof = RESULTS["LOF"]["fit"][2] / RESULTS["Isolation Forest"]["fit"][2]
+score_vs_lof = RESULTS["LOF"]["score"][2] / RESULTS["Isolation Forest"]["score"][2]
+
+section("Why Isolation Forest is the selected application model", "The selection is based on measured quality and measured runtime")
+decision_cards = [
+    (
+        "TRAINING COST",
+        f"{fit_vs_svm:.0f}× faster than SVM",
+        f"0.411 s for Isolation Forest, compared with 19.484 s for One-Class SVM and 7.576 s for LOF."
+    ),
+    (
+        "SCORING COST",
+        f"{score_vs_svm:.0f}× faster than SVM",
+        f"0.104 s to score 15k flows, compared with 2.106 s for One-Class SVM and 2.313 s for LOF."
+    ),
+    (
+        "DETECTION QUALITY",
+        "F1 = 0.6948",
+        "Higher AP and F1 than LOF at the same threshold. ROC-AUC is 0.8848, above One-Class SVM at 0.8430."
+    ),
+]
+decision_html = "".join(
+    f'<div class="decision-card"><div class="decision-label">{label}</div>'
+    f'<div class="decision-value">{value}</div><div class="decision-copy">{copy}</div></div>'
+    for label, value, copy in decision_cards
+)
+st.markdown(f'<div class="decision-grid">{decision_html}</div>', unsafe_allow_html=True)
+
+st.markdown(
+    """
+    <div class="selection-box">
+      <div class="selection-title">Selection: Isolation Forest for the current application</div>
+      <div class="selection-copy">
+        Its measured advantage is speed: the lowest fit time and the lowest scoring time in this
+        50k comparison, with F1 of 0.6948. It also scores higher than LOF on Average Precision and F1.
+        One-Class SVM records the highest Average Precision (0.7665) and F1 (0.7334), while LOF
+        records the highest ROC-AUC (0.9087). The model choice shown here is therefore a
+        runtime–detection trade-off, not a claim that Isolation Forest has the highest score on every metric.
+      </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+# ---------------------------------------------------------------------------
+# Training-size evidence
+# ---------------------------------------------------------------------------
+
+section("Results at three training sizes", "All models received the same benign training budgets")
+trend = go.Figure()
+for model in MODELS:
+    d = RESULTS[model]
+    trend.add_trace(
+        go.Scatter(
+            x=SIZES,
+            y=d["f1"],
+            name=model,
+            mode="lines+markers",
+            line=dict(color=COLORS[model], width=3),
+            marker=dict(size=11),
+            error_y=dict(type="data", array=d["f1_sd"], visible=True, thickness=1.3, width=4),
+            hovertemplate="%{x} benign training flows<br>F1: %{y:.4f}<extra>%{fullData.name}</extra>",
+        )
+    )
+trend.update_layout(
+    title="F1 score as the benign training set grows",
+    yaxis=dict(range=[0, 0.85], title="F1 score"),
+    xaxis_title="Benign training rows",
+)
+st.plotly_chart(
+    style_chart(trend, 420),
+    width="stretch",
+    config={"displayModeBar": False, "responsive": True},
+)
+
+# ---------------------------------------------------------------------------
+# Research references
+# ---------------------------------------------------------------------------
+
+section("Research papers behind the model choices", "Foundational papers and intrusion-detection studies")
+papers = [
+    (
+        "ISOLATION FOREST · ORIGINAL METHOD",
+        "Liu, Ting & Zhou (2008) — Isolation Forest",
+        "Introduces anomaly isolation using random partitions and sub-sampling; the foundation for the Isolation Forest detector tested here.",
+        "https://doi.org/10.1109/ICDM.2008.17",
+        "Open paper reference ↗",
+    ),
+    (
+        "LOCAL OUTLIER FACTOR · ORIGINAL METHOD",
+        "Breunig et al. (2000) — LOF: Identifying Density-Based Local Outliers",
+        "Defines local-density outlier scoring; the method used for the LOF comparison.",
+        "https://doi.org/10.1145/342009.335388",
+        "Open paper reference ↗",
+    ),
+    (
+        "ONE-CLASS SVM · ORIGINAL METHOD",
+        "Schölkopf et al. (2001) — Estimating the Support of a High-Dimensional Distribution",
+        "Establishes one-class support estimation, the basis for the RBF One-Class SVM comparator.",
+        "https://doi.org/10.1162/089976601750264965",
+        "Open paper reference ↗",
+    ),
+    (
+        "INTRUSION DETECTION · CROSS-DATASET STUDY",
+        "Verkerken et al. (2022) — Towards Model Generalization for Intrusion Detection",
+        "Evaluates unsupervised intrusion-detection methods, including Isolation Forest and One-Class SVM, across CICIDS datasets.",
+        "https://doi.org/10.1007/s10922-021-09615-7",
+        "Read full text ↗",
+    ),
+    (
+        "CICIDS2017 · DIRECT COMPARISON",
+        "Xu & Liu (2025) — Robust Anomaly Detection in Network Traffic",
+        "Compares LOF and One-Class SVM on CICIDS2017, including a scenario with previously unseen attack types.",
+        "https://doi.org/10.1109/ICETIS66286.2025.11144025",
+        "Open IEEE paper ↗",
+    ),
+    (
+        "IMBALANCED METRICS · EVALUATION",
+        "Saito & Rehmsmeier (2015) — The Precision-Recall Plot Is More Informative than the ROC Plot",
+        "Explains why precision–recall analysis is important when the positive class is less common; supports reporting Average Precision alongside ROC-AUC.",
+        "https://doi.org/10.1371/journal.pone.0118432",
+        "Read PLOS paper ↗",
+    ),
+]
+paper_html = "".join(
+    f'<div class="paper-card"><div class="paper-type">{kind}</div>'
+    f'<div class="paper-title">{title}</div><div class="paper-meta">{summary}</div>'
+    f'<a class="paper-link" href="{url}" target="_blank" rel="noopener noreferrer">{link}</a></div>'
+    for kind, title, summary, url, link in papers
+)
+st.markdown(f'<div class="paper-grid">{paper_html}</div>', unsafe_allow_html=True)
+st.caption(
+    "These papers support the choice of algorithms and evaluation measures. "
+    "The scores and timings above are from the CyberSentinel benchmark, not copied from the papers."
+)
+
+# ---------------------------------------------------------------------------
+# Direct, reproducible evidence
+# ---------------------------------------------------------------------------
+
+section("Benchmark files and execution proof", "Open the report, code and successful GitHub Actions run")
+st.markdown(
+    """
+    <div class="proof-links">
+      <div class="proof-link-card">
+        <a href="https://github.com/ArB-86/CyberSentinel-ML-Research/blob/research/hardened-model-selection-results/research/HARDENED_SCALING_VALIDATION_2026-11-12.md" target="_blank" rel="noopener noreferrer">
+          Full benchmark report ↗
+        </a>
+        <p>Dataset identity, split protocol, full metrics, per-attack recall, runtime and limitations.</p>
+      </div>
+      <div class="proof-link-card">
+        <a href="https://github.com/ArB-86/CyberSentinel-ML-Research/blob/research/hardened-model-selection-results/experiments/compare_model_scales.py" target="_blank" rel="noopener noreferrer">
+          Experiment source code ↗
+        </a>
+        <p>Python code that constructs and fits all three detectors, calibrates thresholds and records scores.</p>
+      </div>
+      <div class="proof-link-card">
+        <a href="https://github.com/ArB-86/CyberSentinel-ML-Research/actions/runs/43156530860" target="_blank" rel="noopener noreferrer">
+          Successful benchmark run ↗
+        </a>
+        <p>GitHub Actions completed successfully on 12 November 2026. CSV metrics and run metadata are attached as an artifact.</p>
+      </div>
+      <div class="proof-link-card">
+        <a href="https://github.com/ArB-86/CyberSentinel-ML-Research/blob/research/hardened-model-selection-results/research/LITERATURE_REVIEW.md" target="_blank" rel="noopener noreferrer">
+          Full literature review ↗
+        </a>
+        <p>Research notes for Isolation Forest, LOF, One-Class SVM and network-intrusion evaluation.</p>
+      </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
 )

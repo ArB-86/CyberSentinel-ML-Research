@@ -1,5 +1,6 @@
 import json
 
+import joblib
 import pandas as pd
 
 from attack_graph.if_attack_graph_pipeline import (
@@ -52,6 +53,9 @@ def test_metadata_pipeline_runs_with_train_only_imputation(tmp_path):
             "Protocol": 6,
             "Flow Duration": float(i + 1) if i != 3 else None,
             "Total Fwd Packets": 2 + (i % 7),
+            "Total Backward Packets": 1 + (i % 3),
+            "Total Length of Fwd Packets": float(100 + i),
+            "Total Length of Bwd Packets": float(50 + i),
             "Label": label,
         })
     pd.DataFrame(rows).to_csv(data_dir / "flows.csv", index=False)
@@ -86,6 +90,13 @@ def test_metadata_pipeline_runs_with_train_only_imputation(tmp_path):
 
     model_artifact = output_dir / "isolation_forest_model.joblib"
     assert model_artifact.exists()
+    artifact = joblib.load(model_artifact)
+    assert artifact["artifact_version"] == 2
+    assert artifact["feature_mode"] == "raw_plus_causal_host_history_v1"
+    assert len(artifact["behavioral_feature_columns"]) == 18
+    assert len(artifact["feature_columns"]) == (
+        len(artifact["base_feature_columns"]) + 18
+    )
 
     # A separate production-style CSV without Label must be scoreable with the
     # persisted model, imputer, feature order and benign-calibrated threshold.
@@ -111,6 +122,10 @@ def test_metadata_pipeline_runs_with_train_only_imputation(tmp_path):
     assert inference_summary["mode"] == "unlabeled_inference"
     assert inference_summary["ground_truth_labels_required"] is False
     assert inference_summary["ground_truth_labels_used"] is False
+    assert inference_summary["model_feature_mode"] == (
+        "raw_plus_causal_host_history_v1"
+    )
+    assert inference_summary["behavioral_feature_count"] == 18
     assert not (inference_output / "detection_metrics.json").exists()
     assert not (inference_output / "per_attack_detection_evaluation.csv").exists()
     assert (inference_output / "event_risk_scores.csv").exists()
@@ -158,6 +173,24 @@ def test_chronological_split_holds_out_later_days_and_duplicate_hashes():
     assert not (set(hashes[train]) & set(hashes[evaluation]))
     assert not (set(hashes[calibration]) & set(hashes[evaluation]))
     assert result["benign_calibration_rows_excluded_for_earlier_duplicate_hash"] == 1
+
+
+def test_cicids_day_first_timestamps_keep_july_calendar_dates():
+    timestamps = pd.Series([
+        "03/07/2017 08:00:00", "03/07/2017 09:00:00",
+        "04/07/2017 08:00:00", "04/07/2017 09:00:00",
+        "05/07/2017 08:00:00", "05/07/2017 09:00:00",
+    ])
+    positions = pd.Series(range(6)).to_numpy()
+    hashes = pd.Series(range(6)).to_numpy(dtype="uint64")
+
+    result = _chronological_benign_split(positions, hashes, timestamps)
+
+    assert result is not None
+    assert result["train_day_start"].startswith("2017-07-03")
+    assert result["train_day_end"].startswith("2017-07-03")
+    assert result["calibration_day_start"].startswith("2017-07-04")
+    assert result["evaluation_day_start"].startswith("2017-07-05")
 
 
 def test_chronological_split_uses_explicit_fallback_for_single_day():
