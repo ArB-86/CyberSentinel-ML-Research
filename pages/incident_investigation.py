@@ -498,7 +498,7 @@ if not potential_incidents.empty:
     ]
     st.dataframe(
         potential_incidents[display_cols],
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
     )
     st.caption(
