@@ -733,7 +733,7 @@ with chart_col:
 
         st.plotly_chart(
             fig,
-            use_container_width=True,
+            width="stretch",
             config={"displayModeBar": False},
         )
         st.caption(
@@ -899,7 +899,7 @@ else:
 
     st.plotly_chart(
         fig,
-        use_container_width=True,
+        width="stretch",
         config={
             "displayModeBar": False
         },
