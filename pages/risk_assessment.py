@@ -300,7 +300,7 @@ if not df_incident_risks.empty:
     ]
     st.dataframe(
         df_incident_risks[incident_display_columns],
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
     )
     st.caption(
